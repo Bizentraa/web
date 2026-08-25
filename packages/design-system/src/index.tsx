@@ -114,6 +114,35 @@ export function StatusCard(props: {
   );
 }
 
+export function PageHeader({
+  actions,
+  className,
+  description,
+  eyebrow,
+  status,
+  title,
+}: HTMLAttributes<HTMLDivElement> & {
+  actions?: ReactNode;
+  description: string;
+  eyebrow?: string;
+  status?: ReactNode;
+  title: string;
+}) {
+  return (
+    <header className={cn("ui-page-header", className)}>
+      <div>
+        {eyebrow ? <Kicker>{eyebrow}</Kicker> : null}
+        <div className="ui-page-header-title-row">
+          <h2>{title}</h2>
+          {status}
+        </div>
+        <p>{description}</p>
+      </div>
+      {actions ? <div className="ui-page-header-actions">{actions}</div> : null}
+    </header>
+  );
+}
+
 export function Card({
   asForm = false,
   className,
@@ -125,6 +154,33 @@ export function Card({
   const Component = asForm ? "form" : "section";
 
   return <Component className={cn("ui-card", className)} {...props} />;
+}
+
+export function KpiCard({
+  className,
+  comparison,
+  label,
+  tone = "neutral",
+  trend,
+  value,
+}: HTMLAttributes<HTMLElement> & {
+  comparison?: string;
+  label: string;
+  tone?: Tone;
+  trend?: string;
+  value: string;
+}) {
+  return (
+    <article className={cn("ui-card", "ui-kpi-card", className)}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      {trend || comparison ? (
+        <small className={cn("ui-kpi-card-meta", `ui-kpi-card-meta--${tone}`)}>
+          {[trend, comparison].filter(Boolean).join(" · ")}
+        </small>
+      ) : null}
+    </article>
+  );
 }
 
 export function CardHeader({
@@ -180,6 +236,22 @@ export function Badge({
   return <span className={cn("ui-badge", `ui-badge--${tone}`, className)} {...props} />;
 }
 
+export function StatusChip({
+  children,
+  className,
+  tone = "neutral",
+}: HTMLAttributes<HTMLSpanElement> & {
+  children: ReactNode;
+  tone?: Tone;
+}) {
+  return (
+    <span className={cn("ui-status-chip", `ui-status-chip--${tone}`, className)}>
+      <span aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
 export function Progress({
   className,
   value,
@@ -201,6 +273,49 @@ export function Progress({
   );
 }
 
+export function OfflineBanner({
+  className,
+  pendingCount = 0,
+  state = "online",
+}: HTMLAttributes<HTMLDivElement> & {
+  pendingCount?: number;
+  state?: "online" | "offline" | "syncing" | "needs-review";
+}) {
+  const copy = {
+    online: {
+      description: "Cloud sync is available. Operational changes can be saved normally.",
+      label: "Online",
+      tone: "success",
+    },
+    offline: {
+      description: "Approved offline actions can continue locally. Cloud confirmation is paused.",
+      label: "Offline",
+      tone: "warning",
+    },
+    syncing: {
+      description: "Local actions are being uploaded. Keep this surface open until sync completes.",
+      label: "Syncing",
+      tone: "information",
+    },
+    "needs-review": {
+      description: "One or more actions need review before they can be trusted as final.",
+      label: "Needs review",
+      tone: "danger",
+    },
+  } as const;
+  const selected = copy[state];
+
+  return (
+    <aside className={cn("ui-offline-banner", className)}>
+      <StatusChip tone={selected.tone}>{selected.label}</StatusChip>
+      <p>
+        {selected.description}
+        {pendingCount > 0 ? ` Pending actions: ${pendingCount}.` : ""}
+      </p>
+    </aside>
+  );
+}
+
 export function Field({
   className,
   hint,
@@ -216,5 +331,25 @@ export function Field({
       <input {...props} />
       {hint ? <small>{hint}</small> : null}
     </label>
+  );
+}
+
+export function EmptyState({
+  action,
+  children,
+  className,
+  title,
+}: HTMLAttributes<HTMLElement> & {
+  action?: ReactNode;
+  children: ReactNode;
+  title: string;
+}) {
+  return (
+    <section className={cn("ui-empty-state", className)}>
+      <div aria-hidden="true" />
+      <h2>{title}</h2>
+      <p>{children}</p>
+      {action ? <div>{action}</div> : null}
+    </section>
   );
 }

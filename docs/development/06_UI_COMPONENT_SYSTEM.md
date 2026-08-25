@@ -29,6 +29,11 @@ The first primitives are:
 | `Badge` | Status and category pills |
 | `Progress` | Accessible progress indicator |
 | `Field` | Label, input and hint wrapper |
+| `PageHeader` | Page title, description, visible status and actions |
+| `KpiCard` | Role dashboard and status dashboard metrics |
+| `StatusChip` | Text + semantic state indicator |
+| `OfflineBanner` | Online/offline/sync/review visibility |
+| `EmptyState` | Empty or unavailable workflow explanation with next action |
 
 Shared styles live in:
 
@@ -47,11 +52,20 @@ The styles use existing theme tokens such as:
 
 ## Applied Screen
 
-The Back Office P1 catalog workspace now composes reusable primitives instead of keeping all UI markup local to the page:
+The Back Office P1 catalog workspace composes reusable primitives instead of keeping all UI markup local to the page:
 
 - `apps/backoffice/src/app/catalog/catalog-workspace.tsx`
 
-This keeps the P1 screen aligned with the future component-level approach while preserving the current Business theme system.
+The Back Office home page and POS home page also use the common UI primitives to show P0/P1/P2 state clearly:
+
+- `apps/backoffice/src/app/page.tsx`
+- `apps/pos/src/app/page.tsx`
+
+This keeps the common screens aligned with the future component-level approach while preserving the current Business theme system.
+
+Detailed UI/UX implementation status is tracked in:
+
+- `docs/development/07_UIUX_IMPLEMENTATION_STATUS.md`
 
 ## Future Tailwind/shadcn Migration Rule
 

@@ -5,6 +5,7 @@
 - **Development change log:** [`03_DEVELOPMENT_CHANGE_LOG.md`](./03_DEVELOPMENT_CHANGE_LOG.md)
 - **SRS traceability:** [`05_COMMON_CORE_SRS_TRACEABILITY.md`](./05_COMMON_CORE_SRS_TRACEABILITY.md)
 - **UI component system:** [`06_UI_COMPONENT_SYSTEM.md`](./06_UI_COMPONENT_SYSTEM.md)
+- **UI/UX implementation status:** [`07_UIUX_IMPLEMENTATION_STATUS.md`](./07_UIUX_IMPLEMENTATION_STATUS.md)
 - **Back Office screen:** <http://localhost:3001/catalog>
 
 ## Current Delivery Slice

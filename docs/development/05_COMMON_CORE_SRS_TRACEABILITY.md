@@ -12,7 +12,7 @@ This file compares the Common Core SRS against the implementation evidence curre
 |---|---|---|---|
 | P0 | Business setup, isolation, branches, locations, users, roles, approvals, feature access, audit and numbering | In progress | Foundation exists; appearance slice implemented; management UI and stronger automated tests remain |
 | P1 | Items, categories, variants, units, barcodes, prices, promotions, tax, customers, suppliers and imports | In progress | Database/API/client/catalog UI exist; edit/deactivate, rule builders, import processing and calculation tests remain |
-| P2 | POS sales and payments | Planned | Not started |
+| P2 | POS sales and payments | Planned with UI preview | POS deployable and readiness workspace exist; transactional sales/payment backend is not started |
 | P3 | Inventory, purchasing and fulfillment | Planned | Not started |
 | P4 | Finance, customer controls, loyalty and audit controls | Planned | Not started |
 | P5 | Reusable business engines | Planned | Not started |
@@ -59,6 +59,10 @@ This file compares the Common Core SRS against the implementation evidence curre
 4. CSV/XLSX import workflow with template validation, preview, apply and rollback evidence.
 5. Automated integration tests for P1 permission denial, audit/outbox creation and cross-Business RLS.
 6. Pricing and tax resolution tests before POS sales calculation starts.
+
+## UI/UX Traceability
+
+UI/UX implementation status is tracked separately in [`07_UIUX_IMPLEMENTATION_STATUS.md`](./07_UIUX_IMPLEMENTATION_STATUS.md). The current UI/UX implementation covers shared primitives, Back Office P0/P1 status surfaces, P1 catalog composition and a POS P2 readiness preview. It does not complete P2 sale posting, shift handling, payments, returns or offline synchronization.
 
 ## Implementation Rule
 
