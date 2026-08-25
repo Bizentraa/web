@@ -2,10 +2,12 @@ import type {
   ApiErrorBody,
   BusinessFoundationCreated,
   BusinessFoundationSummary,
+  BusinessThemeSettings,
   CreateBranchInput,
   CreateBusinessFoundationInput,
   HealthResponse,
   NextDocumentNumberInput,
+  UpdateBusinessThemeInput,
 } from "@bizentra/contracts";
 
 export interface ApiIdentity {
@@ -50,6 +52,13 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
     createBranch: (businessId: string, input: CreateBranchInput) =>
       request<{ branchId: string; locationId?: string }>(`/businesses/${businessId}/branches`, {
         method: "POST",
+        body: JSON.stringify(input),
+      }),
+    getBusinessTheme: (businessId: string) =>
+      request<BusinessThemeSettings>(`/businesses/${businessId}/theme`),
+    updateBusinessTheme: (businessId: string, input: UpdateBusinessThemeInput) =>
+      request<BusinessThemeSettings>(`/businesses/${businessId}/theme`, {
+        method: "PUT",
         body: JSON.stringify(input),
       }),
     nextDocumentNumber: (businessId: string, input: NextDocumentNumberInput) =>

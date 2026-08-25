@@ -56,6 +56,45 @@ enum AuditAction {
   GENERATE
 }
 
+enum ThemePreset {
+  GENERAL_RETAIL
+  GROCERY
+  FASHION
+  ELECTRONICS
+  HARDWARE
+  BOOKSTORE
+  COSMETICS
+  FURNITURE
+  JEWELRY
+  AUTO_PARTS
+  RESTAURANT
+  CAFE
+  BAKERY
+  FOOD_TRUCK
+  BAR
+  HOTEL_REVENUE
+  SALON
+  GARAGE
+  COMPUTER_REPAIR
+  LAUNDRY
+  TAILORING
+  FIELD_SERVICES
+  DISTRIBUTION
+  VAN_SALES
+  RENTAL
+  B2B_TRADE
+  PHARMACY
+  FUEL
+  HOTEL
+  HEALTHCARE
+}
+
+enum ThemeMode {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
 model Business {
   id              String       @id @default(uuid()) @db.Uuid
   slug            String       @unique @db.VarChar(80)
@@ -79,8 +118,25 @@ model Business {
   auditEvents       AuditEvent[]
   documentSequences DocumentSequence[]
   outboxEvents      OutboxEvent[]
+  theme             BusinessTheme?
 
   @@map("businesses")
+}
+
+model BusinessTheme {
+  businessId          String      @id @db.Uuid
+  preset              ThemePreset @default(GENERAL_RETAIL)
+  defaultMode         ThemeMode   @default(LIGHT)
+  allowUserModeChange Boolean     @default(true)
+  brandPrimary        String?     @db.Char(7)
+  brandAccent         String?     @db.Char(7)
+  revision            Int         @default(1)
+  createdAt           DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime    @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_themes")
 }
 
 model Branch {
@@ -153,7 +209,7 @@ model BusinessMembership {
   user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   branchAssignments BranchAssignment[]
   roleAssignments   MembershipRole[]
-  auditEvents       AuditEvent[]        @relation("AuditActor")
+  auditEvents       AuditEvent[]       @relation("AuditActor")
 
   @@unique([businessId, userId])
   @@unique([id, businessId])

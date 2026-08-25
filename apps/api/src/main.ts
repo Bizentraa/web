@@ -19,6 +19,7 @@ async function bootstrap(): Promise<void> {
   await app.register(cors, {
     origin: [/^http:\/\/localhost:\d+$/],
     credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
   app.setGlobalPrefix("api/v1");
@@ -27,7 +28,7 @@ async function bootstrap(): Promise<void> {
 
   const openApiConfig = new DocumentBuilder()
     .setTitle("Bizentra API")
-    .setDescription("P0 Business foundation API")
+    .setDescription("P0 Business foundation and appearance API")
     .setVersion("0.1.0")
     .addApiKey({ type: "apiKey", in: "header", name: "x-business-id" }, "business")
     .addApiKey({ type: "apiKey", in: "header", name: "x-user-id" }, "user")

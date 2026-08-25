@@ -7,11 +7,18 @@ export function AppShell(props: {
   children: ReactNode;
 }) {
   return (
-    <main style={{ minHeight: "100vh", background: "#f4f7fb", color: "#132238" }}>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "var(--color-background)",
+        color: "var(--color-text-primary)",
+        transition: "background-color 180ms ease, color 180ms ease",
+      }}
+    >
       <header
         style={{
-          background: "linear-gradient(135deg, #0f766e, #115e59)",
-          color: "white",
+          background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))",
+          color: "var(--color-primary-foreground)",
           padding: "48px clamp(24px, 6vw, 88px)",
         }}
       >
@@ -46,17 +53,29 @@ export function StatusCard(props: {
   children: ReactNode;
 }) {
   const colors = {
-    ready: { background: "#dcfce7", foreground: "#166534", label: "Ready" },
-    planned: { background: "#e0e7ff", foreground: "#3730a3", label: "Planned" },
-    attention: { background: "#fef3c7", foreground: "#92400e", label: "Check" },
+    ready: {
+      background: "color-mix(in srgb, var(--color-success) 14%, var(--color-surface))",
+      foreground: "var(--color-success)",
+      label: "Ready",
+    },
+    planned: {
+      background: "color-mix(in srgb, var(--color-information) 14%, var(--color-surface))",
+      foreground: "var(--color-information)",
+      label: "Planned",
+    },
+    attention: {
+      background: "color-mix(in srgb, var(--color-warning) 14%, var(--color-surface))",
+      foreground: "var(--color-warning)",
+      label: "Check",
+    },
   } as const;
   const color = colors[props.status];
 
   return (
     <article
       style={{
-        background: "white",
-        border: "1px solid #dce4ee",
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
         borderRadius: 16,
         boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
         padding: 24,
@@ -78,7 +97,7 @@ export function StatusCard(props: {
           {color.label}
         </span>
       </div>
-      <div style={{ color: "#52637a", lineHeight: 1.6 }}>{props.children}</div>
+      <div style={{ color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{props.children}</div>
     </article>
   );
 }

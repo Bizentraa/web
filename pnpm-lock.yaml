@@ -20,6 +20,9 @@ importers:
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3
+      dotenv-cli:
+        specifier: ^11.0.0
+        version: 11.0.0
       eslint:
         specifier: ^9.0.0
         version: 9.39.5(jiti@2.7.0)
@@ -117,6 +120,9 @@ importers:
       '@bizentra/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@bizentra/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       next:
         specifier: 16.3.3
         version: 16.3.3(@babel/core@7.29.7)(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -139,12 +145,18 @@ importers:
 
   apps/pos:
     dependencies:
+      '@bizentra/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@bizentra/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
       '@bizentra/design-system':
         specifier: workspace:*
         version: link:../../packages/design-system
+      '@bizentra/themes':
+        specifier: workspace:*
+        version: link:../../packages/themes
       next:
         specifier: 16.3.3
         version: 16.3.3(@babel/core@7.29.7)(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -213,6 +225,9 @@ importers:
 
   packages/contracts:
     dependencies:
+      '@bizentra/themes':
+        specifier: workspace:*
+        version: link:../themes
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -240,6 +255,10 @@ importers:
         version: 7.10.0(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
 
   packages/design-system:
+    dependencies:
+      '@bizentra/themes':
+        specifier: workspace:*
+        version: link:../themes
     devDependencies:
       '@types/react':
         specifier: ^19.2.18
@@ -263,6 +282,12 @@ importers:
   packages/ids: {}
 
   packages/observability: {}
+
+  packages/themes:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
 
 packages:
 
@@ -2609,6 +2634,10 @@ packages:
   doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
     engines: {node: '>=0.10.0'}
+
+  dotenv-cli@11.0.0:
+    resolution: {integrity: sha512-r5pA8idbk7GFWuHEU7trSTflWcdBpQEK+Aw17UrSHjS6CReuhrrPcyC3zcQBPQvhArRHnBo/h6eLH1fkCvNlww==}
+    hasBin: true
 
   dotenv-expand@12.0.3:
     resolution: {integrity: sha512-uc47g4b+4k/M/SeaW1y4OApx+mtLWl92l5LMPP0GNXctZqELk+YGgOPIIC5elYmUH4OuoK3JLhuRUYegeySiFA==}
@@ -6855,6 +6884,13 @@ snapshots:
   doctrine@2.1.0:
     dependencies:
       esutils: 2.0.3
+
+  dotenv-cli@11.0.0:
+    dependencies:
+      cross-spawn: 7.0.6
+      dotenv: 17.4.2
+      dotenv-expand: 12.0.3
+      minimist: 1.2.8
 
   dotenv-expand@12.0.3:
     dependencies:

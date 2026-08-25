@@ -54,6 +54,16 @@ Worker -> Redis/BullMQ
 - An attempted update to an audit event was rejected by PostgreSQL with `Audit events are append-only`.
 - Lint, type checking, unit tests and production builds passed for the full monorepo.
 
+## Business Theme Slice — 2026-08-26
+
+- Added 30 controlled business-type theme presets using one shared neutral and semantic design system.
+- Added a row-isolated `BusinessTheme` record with preset, default mode, per-device permission, optional brand colours, revision and timestamps.
+- Business owners use the existing `BUSINESS_UPDATE` permission; every saved change creates an append-only audit event and an outbox event.
+- The API supports permission-checked theme read/update with optimistic concurrency. A stale revision returned HTTP `409`, and a cross-Business read returned HTTP `403`.
+- Back Office provides the appearance-management screen. POS and Back Office both resolve the same saved Business theme.
+- Each browser origin validates and caches its copy. A before-hydration bootstrap applies cached tokens immediately, then the application refreshes them from PostgreSQL.
+- Light, dark, system and allowed per-device modes were verified, including persistence across reloads.
+
 ## Next P0 Slices
 
 1. Convert the proven PostgreSQL RLS and cross-Business checks into repeatable integration tests.

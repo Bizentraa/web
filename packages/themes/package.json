@@ -1,5 +1,5 @@
 {
-  "name": "@bizentra/contracts",
+  "name": "@bizentra/themes",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,12 +17,11 @@
     "build": "tsup src/index.ts --format esm --dts --clean",
     "clean": "rimraf dist",
     "lint": "eslint src --max-warnings=0",
-    "test": "vitest run --passWithNoTests",
-    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@bizentra/themes": "workspace:*",
     "zod": "catalog:"
   }
 }

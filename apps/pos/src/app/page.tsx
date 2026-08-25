@@ -1,5 +1,7 @@
 import { AppShell, StatusCard } from "@bizentra/design-system";
 
+import { ThemeStatusCard } from "./theme-status-card";
+
 export default function Home() {
   return (
     <AppShell
@@ -17,6 +19,7 @@ export default function Home() {
         <StatusCard title="P0 Business context" status="ready">
           <p>The data and API foundation can identify the active Business and Branch.</p>
         </StatusCard>
+        <ThemeStatusCard />
         <StatusCard title="P1 catalog" status="planned">
           <p>Items, variants, barcodes, pricing and tax are built after the P0 exit gate.</p>
         </StatusCard>

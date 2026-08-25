@@ -7,6 +7,7 @@ import {
   Inject,
   Param,
   Post,
+  Put,
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { assertDevelopmentAuthMode, readDevelopmentIdentity } from "@bizentra/auth";
@@ -14,6 +15,7 @@ import {
   createBranchSchema,
   createBusinessFoundationSchema,
   nextDocumentNumberSchema,
+  updateBusinessThemeSchema,
 } from "@bizentra/contracts";
 import { BusinessAccessService } from "@bizentra/domain-business-access";
 
@@ -53,6 +55,31 @@ export class BusinessFoundationController {
       businessId,
       identity.userId,
       createBranchSchema.parse(body),
+    );
+  }
+
+  @Get("businesses/:businessId/theme")
+  @ApiOperation({ summary: "Read the saved Business theme" })
+  getBusinessTheme(
+    @Param("businessId") businessId: string,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+  ) {
+    const identity = this.identityForBusiness(headers, businessId);
+    return this.businessAccess.getBusinessTheme(businessId, identity.userId);
+  }
+
+  @Put("businesses/:businessId/theme")
+  @ApiOperation({ summary: "Update the Business theme with optimistic concurrency" })
+  updateBusinessTheme(
+    @Param("businessId") businessId: string,
+    @Headers() headers: Record<string, string | string[] | undefined>,
+    @Body() body: unknown,
+  ) {
+    const identity = this.identityForBusiness(headers, businessId);
+    return this.businessAccess.updateBusinessTheme(
+      businessId,
+      identity.userId,
+      updateBusinessThemeSchema.parse(body),
     );
   }
 

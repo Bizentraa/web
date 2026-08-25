@@ -1,6 +1,7 @@
 import { createApiClient } from "@bizentra/api-client";
 import { AppShell, StatusCard } from "@bizentra/design-system";
 import { connection } from "next/server";
+import Link from "next/link";
 
 async function readApiStatus(): Promise<"ready" | "attention"> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
@@ -42,7 +43,10 @@ export default async function Home() {
           </p>
         </StatusCard>
         <StatusCard title="Management screens" status="planned">
-          <p>User, Role, approval-rule and feature-pack screens are the next P0 delivery slices.</p>
+          <p>
+            <Link href="/appearance">Choose the Business colour theme</Link>, default display mode
+            and optional brand colours. User and Role screens follow.
+          </p>
         </StatusCard>
       </div>
     </AppShell>

@@ -1,9 +1,11 @@
 import type {
   BusinessFoundationCreated,
   BusinessFoundationSummary,
+  BusinessThemeSettings,
   CreateBranchInput,
   CreateBusinessFoundationInput,
   NextDocumentNumberInput,
+  UpdateBusinessThemeInput,
 } from "@bizentra/contracts";
 import {
   type DatabaseClient,
@@ -40,6 +42,10 @@ export class BusinessAccessService {
           timeZone: input.business.timeZone,
           countryCode: input.business.countryCode.toUpperCase(),
         },
+      });
+
+      await transaction.businessTheme.create({
+        data: { businessId },
       });
 
       const owner = await transaction.user.upsert({
@@ -314,6 +320,111 @@ export class BusinessAccessService {
       });
 
       return locationId ? { branchId, locationId } : { branchId };
+    });
+  }
+
+  async getBusinessTheme(businessId: string, actorUserId: string): Promise<BusinessThemeSettings> {
+    return withBusinessContext(this.database, businessId, async (transaction) => {
+      await this.requirePermission(transaction, businessId, actorUserId, "BUSINESS_VIEW");
+
+      const theme = await transaction.businessTheme.findUnique({ where: { businessId } });
+      if (!theme) throw new BusinessAccessError("NOT_FOUND", "Business theme was not found.");
+
+      return {
+        businessId: theme.businessId,
+        preset: theme.preset,
+        defaultMode: theme.defaultMode,
+        allowUserModeChange: theme.allowUserModeChange,
+        brandPrimary: theme.brandPrimary,
+        brandAccent: theme.brandAccent,
+        revision: theme.revision,
+        updatedAt: theme.updatedAt.toISOString(),
+      };
+    });
+  }
+
+  async updateBusinessTheme(
+    businessId: string,
+    actorUserId: string,
+    input: UpdateBusinessThemeInput,
+  ): Promise<BusinessThemeSettings> {
+    return withBusinessContext(this.database, businessId, async (transaction) => {
+      const membershipId = await this.requirePermission(
+        transaction,
+        businessId,
+        actorUserId,
+        "BUSINESS_UPDATE",
+      );
+      const before = await transaction.businessTheme.findUnique({ where: { businessId } });
+      if (!before) throw new BusinessAccessError("NOT_FOUND", "Business theme was not found.");
+
+      const result = await transaction.businessTheme.updateMany({
+        where: { businessId, revision: input.expectedRevision },
+        data: {
+          preset: input.preset,
+          defaultMode: input.defaultMode,
+          allowUserModeChange: input.allowUserModeChange,
+          brandPrimary: input.brandPrimary,
+          brandAccent: input.brandAccent,
+          revision: { increment: 1 },
+        },
+      });
+      if (result.count !== 1) {
+        throw new BusinessAccessError(
+          "CONFLICT",
+          "The Business theme changed in another session. Refresh it and try again.",
+        );
+      }
+
+      const theme = await transaction.businessTheme.findUniqueOrThrow({ where: { businessId } });
+      const after = {
+        preset: theme.preset,
+        defaultMode: theme.defaultMode,
+        allowUserModeChange: theme.allowUserModeChange,
+        brandPrimary: theme.brandPrimary,
+        brandAccent: theme.brandAccent,
+        revision: theme.revision,
+      };
+
+      await transaction.auditEvent.create({
+        data: {
+          businessId,
+          actorMembershipId: membershipId,
+          action: "UPDATE",
+          entityType: "BusinessTheme",
+          entityId: businessId,
+          before: {
+            preset: before.preset,
+            defaultMode: before.defaultMode,
+            allowUserModeChange: before.allowUserModeChange,
+            brandPrimary: before.brandPrimary,
+            brandAccent: before.brandAccent,
+            revision: before.revision,
+          },
+          after,
+        },
+      });
+
+      await transaction.outboxEvent.create({
+        data: {
+          businessId,
+          eventType: "BusinessThemeUpdated",
+          aggregateType: "BusinessTheme",
+          aggregateId: businessId,
+          payload: { businessId, ...after },
+        },
+      });
+
+      return {
+        businessId: theme.businessId,
+        preset: theme.preset,
+        defaultMode: theme.defaultMode,
+        allowUserModeChange: theme.allowUserModeChange,
+        brandPrimary: theme.brandPrimary,
+        brandAccent: theme.brandAccent,
+        revision: theme.revision,
+        updatedAt: theme.updatedAt.toISOString(),
+      };
     });
   }
 

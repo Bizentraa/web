@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export { themeModeSchema, themePresetSchema, updateBusinessThemeSchema } from "@bizentra/themes";
+export type {
+  BusinessThemeSettings,
+  ThemeMode,
+  ThemePreset,
+  UpdateBusinessThemeInput,
+} from "@bizentra/themes";
+
 export const recordStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 
 export const locationTypeSchema = z.enum([
