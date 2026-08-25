@@ -141,6 +141,7 @@ Applications may import public package entry points. They shall not reach into a
 | [03_BACKEND_DATABASE_AND_EVENTING.md](./03_BACKEND_DATABASE_AND_EVENTING.md) | NestJS backend, PostgreSQL/Prisma rules, API contracts, transactions, events, queues, and reporting. |
 | [04_PLATFORM_SECURITY_AND_OPERATIONS.md](./04_PLATFORM_SECURITY_AND_OPERATIONS.md) | Deployment, identity, security, observability, CI/CD, backup, DR, and operations. |
 | [05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md](./05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md) | Delivery phases, architecture gates, quality gates, risks, and Definition of Done. |
+| [06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md](./06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md) | Beginner-friendly teaching guide with real workflows, folder connections, local development, deployment, migrations, scaling, and exercises. |
 
 ## 6. Fixed, Conditional, and Deferred Decisions
 
@@ -200,4 +201,3 @@ Applications may import public package entry points. They shall not reach into a
 - [NestJS Fastify adapter](https://docs.nestjs.com/techniques/performance)
 - [Turborepo repository structure](https://turborepo.dev/docs/crafting-your-repository/structuring-a-repository)
 - [Module Federation Next.js integration status](https://module-federation.io/integrations/framework/nextjs/)
-

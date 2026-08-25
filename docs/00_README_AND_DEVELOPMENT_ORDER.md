@@ -110,3 +110,4 @@ The implementation stack, scalability model, frontend split, backend/database ru
 4. [`technology/03_BACKEND_DATABASE_AND_EVENTING.md`](./technology/03_BACKEND_DATABASE_AND_EVENTING.md) — NestJS, PostgreSQL, Prisma, APIs, transactions, outbox, queues, and reporting.
 5. [`technology/04_PLATFORM_SECURITY_AND_OPERATIONS.md`](./technology/04_PLATFORM_SECURITY_AND_OPERATIONS.md) — infrastructure, identity, security, observability, CI/CD, backup, and disaster recovery.
 6. [`technology/05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md`](./technology/05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md) — technology phases aligned to Common Core P0–P8 and the first business packs.
+7. [`technology/06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md`](./technology/06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md) — easy-to-follow architecture lessons using real sales, offline, payment, folder, repository, and deployment examples.
