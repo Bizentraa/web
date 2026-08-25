@@ -99,3 +99,14 @@ Common P0-P4
 → Distribution / Rental
 → Regulated / integration-heavy packs last
 ```
+
+## Technology Architecture and Stack Plan
+
+The implementation stack, scalability model, frontend split, backend/database rules, security/operations plan, and delivery gates are documented separately so the SRS remains technology-independent:
+
+1. [`technology/00_TECHNOLOGY_STACK_INDEX.md`](./technology/00_TECHNOLOGY_STACK_INDEX.md) — selected stack and decision summary.
+2. [`technology/01_ARCHITECTURE_RECOMMENDATION.md`](./technology/01_ARCHITECTURE_RECOMMENDATION.md) — modular-monolith boundaries and scaling/service-extraction rules.
+3. [`technology/02_FRONTEND_AND_MICRO_FRONTEND.md`](./technology/02_FRONTEND_AND_MICRO_FRONTEND.md) — Next.js, POS offline architecture, devices, and micro-frontend decision.
+4. [`technology/03_BACKEND_DATABASE_AND_EVENTING.md`](./technology/03_BACKEND_DATABASE_AND_EVENTING.md) — NestJS, PostgreSQL, Prisma, APIs, transactions, outbox, queues, and reporting.
+5. [`technology/04_PLATFORM_SECURITY_AND_OPERATIONS.md`](./technology/04_PLATFORM_SECURITY_AND_OPERATIONS.md) — infrastructure, identity, security, observability, CI/CD, backup, and disaster recovery.
+6. [`technology/05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md`](./technology/05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md) — technology phases aligned to Common Core P0–P8 and the first business packs.
