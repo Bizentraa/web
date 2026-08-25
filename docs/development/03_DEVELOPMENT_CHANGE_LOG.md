@@ -53,7 +53,7 @@ Each change entry should include:
 
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
-| 2026-08-26 | Implemented for common P0/P1/P2 readiness slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `Uncommitted` | Added the UI/UX source docs to project tracking; expanded shared UI primitives; upgraded Back Office home into a P0/P1/P2 status dashboard; upgraded POS home into a P2 readiness workspace preview; added UI/UX implementation status and remaining-work tracking. |
+| 2026-08-26 | Implemented for common P0/P1/P2 readiness slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `ebd977a` | Added the UI/UX source docs to project tracking; expanded shared UI primitives; upgraded Back Office home into a P0/P1/P2 status dashboard; upgraded POS home into a P2 readiness workspace preview; added UI/UX implementation status and remaining-work tracking. |
 
 ## 4. Detailed Change Entries
 
@@ -132,7 +132,7 @@ Each change entry should include:
 | What changed | Added `docs/ui-ux` specifications to the repository tracking scope. Expanded the shared design system with `PageHeader`, `KpiCard`, `StatusChip`, `OfflineBanner` and `EmptyState`. Updated Back Office home to show P0/P1/P2 state, API readiness, KPIs and next actions using common UI components. Updated POS home into a P2 readiness preview that shows online state, product/search area, cart summary and explicit "selling not enabled" state. Added UI/UX implementation status and updated SRS traceability to distinguish developed backend, developed UI, preview-only UI and remaining transactional work. |
 | Main files | `docs/ui-ux`; `packages/design-system/src/index.tsx`; `apps/backoffice/src/app/page.tsx`; `apps/backoffice/src/app/globals.css`; `apps/pos/src/app/page.tsx`; `apps/pos/src/app/globals.css`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/07_UIUX_IMPLEMENTATION_STATUS.md` |
 | Verification | `pnpm format:check` passed; design-system typecheck/lint/build passed; Back Office typecheck/lint/build passed; POS typecheck/lint/build passed; browser checks confirmed Back Office home renders 1 page header, 4 KPI cards, 5 status chips, 1 offline banner and 1 empty state with no desktop or 390px mobile overflow; browser checks confirmed POS home renders 1 page header, 3 KPI cards, 6 status chips, 1 offline banner and 1 empty state with no desktop or 390px mobile overflow. |
-| Commit | Uncommitted |
+| Commit | `ebd977a feat: add common UIUX readiness surfaces` |
 | Remaining work | P0: sidebar/topbar navigation, Business/Branch switcher, command palette, users, roles, approvals, feature-pack management, audit UI and numbering UI. P1: edit/deactivate screens, item detail, category/brand/tax/price management, import workflow, promotion builder and pricing/tax preview. P2: open/close shift, live scan/search, cart state, idempotent sale posting, payment sheet, split tenders, receipts, returns/refunds/exchanges, offline queue and conflict review. Shared UI: DataTable, FilterBar, EntityHeader, Timeline, ApprovalDrawer, DangerConfirmation, PaymentSheet, MoneySummary, StockBadge and IntegrationState. |
 
 ## 5. Entry Template
