@@ -46,7 +46,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-26 | In progress | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `3af4410` | Added the first P1 master-data foundation with database models, Business isolation, permissions, API routes, API client calls and Back Office `/catalog` screen. |
-| 2026-08-26 | Implemented for Back Office UI slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `Uncommitted` | Upgraded the Back Office `/catalog` workspace into a responsive operational UI with command center, readiness score, grouped master-data cards, guided item/customer/supplier forms, recent-record panels and mobile-safe layouts. |
+| 2026-08-26 | Implemented for Back Office UI slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `ed7fdc4` | Upgraded the Back Office `/catalog` workspace into a responsive operational UI with command center, readiness score, grouped master-data cards, guided item/customer/supplier forms, recent-record panels and mobile-safe layouts. |
 
 ## 4. Detailed Change Entries
 
@@ -99,7 +99,7 @@ Each change entry should include:
 | What changed | Reworked the Back Office `/catalog` screen into a professional P1 operating workspace. Added a command center with Business context, refresh/default setup actions and status pill; added readiness score and progress bar; grouped raw counts into setup, catalog, party and import score cards; added a P1 completion checklist; improved item, customer and supplier forms with operational hints; upgraded recent lists; added responsive desktop/tablet/mobile layouts with no horizontal overflow at phone width. |
 | Main files | `apps/backoffice/src/app/catalog/catalog-workspace.tsx`; `apps/backoffice/src/app/globals.css`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md`; `docs/development/04_P1_IMPLEMENTATION_STATUS.md` |
 | Verification | `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/backoffice lint` passed; `pnpm --filter @bizentra/backoffice build` passed; browser inspection confirmed `/catalog` renders the command center, 4 score cards, 3 forms and 3 recent lists; desktop and 390px mobile viewport checks had no horizontal overflow. |
-| Commit | Uncommitted |
+| Commit | `ed7fdc4 feat: upgrade P1 catalog workspace UI` |
 | Remaining work | Add management screens for editing/deactivating P1 records and add automated browser/component regression tests when the UI test harness is introduced. |
 
 ## 5. Entry Template
