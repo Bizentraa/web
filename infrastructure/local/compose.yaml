@@ -1,0 +1,39 @@
+name: bizentra-local
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bizentra}
+      POSTGRES_USER: ${POSTGRES_USER:-bizentra}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bizentra_local_only}
+    ports:
+      - "5432:5432"
+    volumes:
+      # PostgreSQL 18 stores data below a major-version directory.
+      - bizentra_postgres_data:/var/lib/postgresql
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/10-bizentra-app-role.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bizentra} -d ${POSTGRES_DB:-bizentra}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - bizentra_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  bizentra_postgres_data:
+  bizentra_redis_data:

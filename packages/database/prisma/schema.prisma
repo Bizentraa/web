@@ -1,0 +1,352 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+}
+
+enum LocationType {
+  SHOP_FLOOR
+  WAREHOUSE
+  KITCHEN
+  VAN
+  SERVICE_BAY
+  QUARANTINE
+  OTHER
+}
+
+enum FeatureKind {
+  CORE
+  BUSINESS_PACK
+  OPTIONAL
+}
+
+enum ApprovalStrategy {
+  ANY_APPROVER
+  ALL_APPROVERS
+  MINIMUM_APPROVERS
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  ACTIVATE
+  DEACTIVATE
+  APPROVE
+  REJECT
+  CANCEL
+  DELETE
+  ASSIGN
+  ENABLE
+  DISABLE
+  GENERATE
+}
+
+model Business {
+  id              String       @id @default(uuid()) @db.Uuid
+  slug            String       @unique @db.VarChar(80)
+  name            String       @db.VarChar(160)
+  legalName       String?      @db.VarChar(200)
+  email           String?      @db.VarChar(254)
+  phone           String?      @db.VarChar(40)
+  defaultCurrency String       @db.Char(3)
+  timeZone        String       @db.VarChar(80)
+  countryCode     String       @db.Char(2)
+  status          RecordStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  branches          Branch[]
+  locations         Location[]
+  memberships       BusinessMembership[]
+  roles             Role[]
+  approvalPolicies  ApprovalPolicy[]
+  features          BusinessFeature[]
+  auditEvents       AuditEvent[]
+  documentSequences DocumentSequence[]
+  outboxEvents      OutboxEvent[]
+
+  @@map("businesses")
+}
+
+model Branch {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(32)
+  name       String       @db.VarChar(120)
+  email      String?      @db.VarChar(254)
+  phone      String?      @db.VarChar(40)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  locations         Location[]
+  userAssignments   BranchAssignment[]
+  auditEvents       AuditEvent[]
+  documentSequences DocumentSequence[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("branches")
+}
+
+model Location {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  branchId   String       @db.Uuid
+  code       String       @db.VarChar(32)
+  name       String       @db.VarChar(120)
+  type       LocationType
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch   Branch   @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, branchId, code])
+  @@unique([id, businessId])
+  @@index([businessId, branchId, status])
+  @@map("locations")
+}
+
+model User {
+  id              String       @id @default(uuid()) @db.Uuid
+  externalSubject String       @unique @db.VarChar(200)
+  email           String       @unique @db.VarChar(254)
+  displayName     String       @db.VarChar(160)
+  status          RecordStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  memberships BusinessMembership[]
+
+  @@map("users")
+}
+
+model BusinessMembership {
+  id         String           @id @default(uuid()) @db.Uuid
+  businessId String           @db.Uuid
+  userId     String           @db.Uuid
+  status     MembershipStatus @default(INVITED)
+  joinedAt   DateTime?        @db.Timestamptz(3)
+  createdAt  DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime         @updatedAt @db.Timestamptz(3)
+
+  business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  branchAssignments BranchAssignment[]
+  roleAssignments   MembershipRole[]
+  auditEvents       AuditEvent[]        @relation("AuditActor")
+
+  @@unique([businessId, userId])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("business_memberships")
+}
+
+model BranchAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @db.Uuid
+  membershipId String   @db.Uuid
+  branchId     String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  membership BusinessMembership @relation(fields: [membershipId, businessId], references: [id, businessId], onDelete: Cascade)
+  branch     Branch             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, membershipId, branchId])
+  @@index([businessId, branchId])
+  @@map("branch_assignments")
+}
+
+model Role {
+  id          String       @id @default(uuid()) @db.Uuid
+  businessId  String       @db.Uuid
+  code        String       @db.VarChar(50)
+  name        String       @db.VarChar(100)
+  description String?      @db.VarChar(240)
+  isSystem    Boolean      @default(false)
+  status      RecordStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+
+  business        Business         @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  permissions     RolePermission[]
+  userAssignments MembershipRole[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.VarChar(240)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @db.Uuid
+  roleId       String   @db.Uuid
+  permissionId String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  role       Role       @relation(fields: [roleId, businessId], references: [id, businessId], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, roleId, permissionId])
+  @@index([businessId, roleId])
+  @@map("role_permissions")
+}
+
+model MembershipRole {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @db.Uuid
+  membershipId String   @db.Uuid
+  roleId       String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  membership BusinessMembership @relation(fields: [membershipId, businessId], references: [id, businessId], onDelete: Cascade)
+  role       Role               @relation(fields: [roleId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, membershipId, roleId])
+  @@index([businessId, membershipId])
+  @@map("membership_roles")
+}
+
+model ApprovalPolicy {
+  id               String           @id @default(uuid()) @db.Uuid
+  businessId       String           @db.Uuid
+  actionCode       String           @db.VarChar(80)
+  name             String           @db.VarChar(120)
+  strategy         ApprovalStrategy @default(ANY_APPROVER)
+  minimumApprovers Int              @default(1)
+  thresholdAmount  Decimal?         @db.Decimal(19, 4)
+  currencyCode     String?          @db.Char(3)
+  conditions       Json?
+  enabled          Boolean          @default(true)
+  createdAt        DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, actionCode])
+  @@index([businessId, enabled])
+  @@map("approval_policies")
+}
+
+model FeatureDefinition {
+  id          String      @id @default(uuid()) @db.Uuid
+  key         String      @unique @db.VarChar(80)
+  name        String      @db.VarChar(120)
+  description String?     @db.VarChar(240)
+  kind        FeatureKind
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+
+  businesses BusinessFeature[]
+
+  @@map("feature_definitions")
+}
+
+model BusinessFeature {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @db.Uuid
+  featureId  String   @db.Uuid
+  enabled    Boolean  @default(true)
+  settings   Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  feature  FeatureDefinition @relation(fields: [featureId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, featureId])
+  @@index([businessId, enabled])
+  @@map("business_features")
+}
+
+model AuditEvent {
+  id                String      @id @default(uuid()) @db.Uuid
+  businessId        String      @db.Uuid
+  branchId          String?     @db.Uuid
+  actorMembershipId String?     @db.Uuid
+  action            AuditAction
+  entityType        String      @db.VarChar(80)
+  entityId          String      @db.VarChar(80)
+  before            Json?
+  after             Json?
+  metadata          Json?
+  occurredAt        DateTime    @default(now()) @db.Timestamptz(3)
+
+  business        Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch          Branch?             @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  actorMembership BusinessMembership? @relation("AuditActor", fields: [actorMembershipId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, occurredAt])
+  @@index([businessId, entityType, entityId])
+  @@map("audit_events")
+}
+
+model DocumentSequence {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @db.Uuid
+  branchId     String?  @db.Uuid
+  scopeKey     String   @db.VarChar(80)
+  documentType String   @db.VarChar(50)
+  prefix       String   @db.VarChar(24)
+  nextValue    BigInt   @default(1)
+  padding      Int      @default(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch   Branch?  @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, scopeKey, documentType])
+  @@index([businessId, branchId])
+  @@map("document_sequences")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  businessId    String    @db.Uuid
+  eventType     String    @db.VarChar(120)
+  aggregateType String    @db.VarChar(80)
+  aggregateId   String    @db.VarChar(80)
+  payload       Json
+  occurredAt    DateTime  @default(now()) @db.Timestamptz(3)
+  publishedAt   DateTime? @db.Timestamptz(3)
+  attempts      Int       @default(0)
+  lastError     String?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@index([publishedAt, occurredAt])
+  @@index([businessId, aggregateType, aggregateId])
+  @@map("outbox_events")
+}

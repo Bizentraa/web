@@ -1,0 +1,15 @@
+node_modules/
+.turbo/
+.next/
+dist/
+coverage/
+packages/database/src/generated/
+
+# Generated and tool-managed files
+pnpm-lock.yaml
+apps/*/AGENTS.md
+apps/*/CLAUDE.md
+
+# Product specifications are authored documents, not source-code formatting targets
+docs/**/*.md
+README.md

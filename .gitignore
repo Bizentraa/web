@@ -1,0 +1,27 @@
+# Dependencies and build outputs
+node_modules/
+.turbo/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Generated Prisma client
+packages/database/src/generated/
+
+# Runtime files
+*.log
+.pnpm-debug.log
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+

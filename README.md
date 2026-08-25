@@ -1,5 +1,7 @@
 # POS SaaS — Markdown SRS File Set
 
+> **Development has started:** the Common Core P0 monorepo foundation now lives in `apps/`, `packages/`, and `infrastructure/`. See [`docs/development/00_LOCAL_DEVELOPMENT_SETUP.md`](./docs/development/00_LOCAL_DEVELOPMENT_SETUP.md) to install, run and test it, and [`docs/development/01_P0_IMPLEMENTATION_STATUS.md`](./docs/development/01_P0_IMPLEMENTATION_STATUS.md) for honest requirement-by-requirement progress.
+
 This folder converts the product architecture into **separate development-ready Markdown SRS files**.
 
 ## Naming approach
