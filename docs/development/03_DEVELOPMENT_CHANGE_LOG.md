@@ -47,7 +47,7 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-26 | In progress | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `3af4410` | Added the first P1 master-data foundation with database models, Business isolation, permissions, API routes, API client calls and Back Office `/catalog` screen. |
 | 2026-08-26 | Implemented for Back Office UI slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `ed7fdc4` | Upgraded the Back Office `/catalog` workspace into a responsive operational UI with command center, readiness score, grouped master-data cards, guided item/customer/supplier forms, recent-record panels and mobile-safe layouts. |
-| 2026-08-26 | Implemented for UI architecture slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `Uncommitted` | Refactored the Back Office `/catalog` workspace to use owned shadcn-style design-system primitives and added SRS traceability/pending-work documentation for Common Core. |
+| 2026-08-26 | Implemented for UI architecture slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `82eb36e` | Refactored the Back Office `/catalog` workspace to use owned shadcn-style design-system primitives and added SRS traceability/pending-work documentation for Common Core. |
 
 ## 4. Detailed Change Entries
 
@@ -113,7 +113,7 @@ Each change entry should include:
 | What changed | Added owned design-system primitives following the shadcn copy-and-own approach: `Card`, `CardHeader`, `CardContent`, `CardTitle`, `CardDescription`, `Kicker`, `Button`, `Badge`, `Progress` and `Field`. Refactored Back Office `/catalog` to compose these primitives instead of local page-only UI elements. Added shared primitive styles using existing Business theme CSS variables. Added Common Core SRS traceability and UI component-system documentation. |
 | Main files | `packages/design-system/src/index.tsx`; `apps/backoffice/src/app/catalog/catalog-workspace.tsx`; `apps/backoffice/src/app/globals.css`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/06_UI_COMPONENT_SYSTEM.md` |
 | Verification | `pnpm --filter @bizentra/design-system build` passed; `pnpm --filter @bizentra/design-system typecheck` passed; `pnpm --filter @bizentra/design-system lint` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/backoffice lint` passed; `pnpm --filter @bizentra/backoffice build` passed; browser checks confirmed `/catalog` renders 12 modular cards, 8 badges, 5 buttons and 8 fields with no horizontal overflow on desktop and 390px mobile viewport. |
-| Commit | Uncommitted |
+| Commit | `82eb36e feat: add modular catalog UI primitives` |
 | Remaining work | Decide later whether to perform a full Tailwind/shadcn CLI migration. Current implementation intentionally avoids that migration until it is planned as a dedicated design-system phase. |
 
 ## 5. Entry Template
