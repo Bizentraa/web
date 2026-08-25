@@ -1,16 +1,6 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Headers,
-  Inject,
-  Param,
-  Post,
-  Put,
-} from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Param, Post, Put } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { assertDevelopmentAuthMode, readDevelopmentIdentity } from "@bizentra/auth";
+import { assertDevelopmentAuthMode } from "@bizentra/auth";
 import {
   createBranchSchema,
   createBusinessFoundationSchema,
@@ -18,6 +8,8 @@ import {
   updateBusinessThemeSchema,
 } from "@bizentra/contracts";
 import { BusinessAccessService } from "@bizentra/domain-business-access";
+
+import { identityForBusiness } from "./identity.js";
 
 @ApiTags("P0 Business Foundation")
 @Controller()
@@ -39,7 +31,7 @@ export class BusinessFoundationController {
     @Param("businessId") businessId: string,
     @Headers() headers: Record<string, string | string[] | undefined>,
   ) {
-    const identity = this.identityForBusiness(headers, businessId);
+    const identity = identityForBusiness(headers, businessId);
     return this.businessAccess.getBusinessFoundation(businessId, identity.userId);
   }
 
@@ -50,7 +42,7 @@ export class BusinessFoundationController {
     @Headers() headers: Record<string, string | string[] | undefined>,
     @Body() body: unknown,
   ) {
-    const identity = this.identityForBusiness(headers, businessId);
+    const identity = identityForBusiness(headers, businessId);
     return this.businessAccess.createBranch(
       businessId,
       identity.userId,
@@ -64,7 +56,7 @@ export class BusinessFoundationController {
     @Param("businessId") businessId: string,
     @Headers() headers: Record<string, string | string[] | undefined>,
   ) {
-    const identity = this.identityForBusiness(headers, businessId);
+    const identity = identityForBusiness(headers, businessId);
     return this.businessAccess.getBusinessTheme(businessId, identity.userId);
   }
 
@@ -75,7 +67,7 @@ export class BusinessFoundationController {
     @Headers() headers: Record<string, string | string[] | undefined>,
     @Body() body: unknown,
   ) {
-    const identity = this.identityForBusiness(headers, businessId);
+    const identity = identityForBusiness(headers, businessId);
     return this.businessAccess.updateBusinessTheme(
       businessId,
       identity.userId,
@@ -90,24 +82,12 @@ export class BusinessFoundationController {
     @Headers() headers: Record<string, string | string[] | undefined>,
     @Body() body: unknown,
   ) {
-    const identity = this.identityForBusiness(headers, businessId);
+    const identity = identityForBusiness(headers, businessId);
     const number = await this.businessAccess.nextDocumentNumber(
       businessId,
       identity.userId,
       nextDocumentNumberSchema.parse(body),
     );
     return { number };
-  }
-
-  private identityForBusiness(
-    headers: Record<string, string | string[] | undefined>,
-    businessId: string,
-  ) {
-    assertDevelopmentAuthMode(process.env.AUTH_MODE);
-    const identity = readDevelopmentIdentity(headers);
-    if (identity.businessId !== businessId) {
-      throw new BadRequestException("The path Business and x-business-id must match.");
-    }
-    return identity;
   }
 }

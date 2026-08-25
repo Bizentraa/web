@@ -14,7 +14,7 @@ import {
 } from "@bizentra/database";
 import { createId } from "@bizentra/ids";
 
-import { P0_PERMISSIONS, type P0PermissionCode } from "../domain/permissions.js";
+import { PLATFORM_PERMISSIONS, type PlatformPermissionCode } from "../domain/permissions.js";
 import { BusinessAccessError } from "./errors.js";
 
 export class BusinessAccessService {
@@ -100,7 +100,7 @@ export class BusinessAccessService {
       });
 
       const permissions = await Promise.all(
-        P0_PERMISSIONS.map((permission) =>
+        PLATFORM_PERMISSIONS.map((permission) =>
           transaction.permission.upsert({
             where: { code: permission.code },
             update: { name: permission.name },
@@ -490,7 +490,7 @@ export class BusinessAccessService {
     transaction: DatabaseTransaction,
     businessId: string,
     userId: string,
-    permissionCode: P0PermissionCode,
+    permissionCode: PlatformPermissionCode,
   ): Promise<string> {
     const membership = await transaction.businessMembership.findUnique({
       where: { businessId_userId: { businessId, userId } },

@@ -95,6 +95,49 @@ enum ThemeMode {
   SYSTEM
 }
 
+enum ItemKind {
+  PRODUCT
+  SERVICE
+  INGREDIENT
+  PART
+  BUNDLE
+  FEE
+  RENTAL
+}
+
+enum IdentifierKind {
+  SKU
+  BARCODE
+  QR
+  SUPPLIER_CODE
+  OTHER
+}
+
+enum DiscountKind {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum TaxRateKind {
+  SALES
+  PURCHASE
+  BOTH
+}
+
+enum ImportEntityKind {
+  ITEMS
+  CUSTOMERS
+  SUPPLIERS
+  OPENING_DATA
+}
+
+enum ImportStatus {
+  RECEIVED
+  VALIDATED
+  FAILED
+  APPLIED
+}
+
 model Business {
   id              String       @id @default(uuid()) @db.Uuid
   slug            String       @unique @db.VarChar(80)
@@ -119,8 +162,450 @@ model Business {
   documentSequences DocumentSequence[]
   outboxEvents      OutboxEvent[]
   theme             BusinessTheme?
+  units             Unit[]
+  itemCategories    ItemCategory[]
+  brands            Brand[]
+  itemTags          ItemTag[]
+  attributes        CustomAttributeDefinition[]
+  taxCategories     TaxCategory[]
+  priceLists        PriceList[]
+  items             Item[]
+  promotions        Promotion[]
+  customerGroups    CustomerGroup[]
+  customers         Customer[]
+  suppliers         Supplier[]
+  importBatches     ImportBatch[]
 
   @@map("businesses")
+}
+
+model Unit {
+  id              String       @id @default(uuid()) @db.Uuid
+  businessId      String       @db.Uuid
+  code            String       @db.VarChar(24)
+  name            String       @db.VarChar(80)
+  precision       Int          @default(0)
+  status          RecordStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+
+  business        Business         @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  baseConversions UnitConversion[] @relation("BaseUnit")
+  toConversions   UnitConversion[] @relation("ToUnit")
+  items           Item[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("units")
+}
+
+model UnitConversion {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @db.Uuid
+  fromUnitId String   @db.Uuid
+  toUnitId   String   @db.Uuid
+  factor     Decimal  @db.Decimal(19, 6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  fromUnit Unit @relation("BaseUnit", fields: [fromUnitId, businessId], references: [id, businessId], onDelete: Cascade)
+  toUnit   Unit @relation("ToUnit", fields: [toUnitId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, fromUnitId, toUnitId])
+  @@map("unit_conversions")
+}
+
+model ItemCategory {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(40)
+  name       String       @db.VarChar(120)
+  parentId   String?      @db.Uuid
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  items    Item[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("item_categories")
+}
+
+model Brand {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(40)
+  name       String       @db.VarChar(120)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  items    Item[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("brands")
+}
+
+model ItemTag {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(40)
+  name       String       @db.VarChar(80)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business    Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  assignments ItemTagAssignment[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("item_tags")
+}
+
+model ItemTagAssignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  businessId String   @db.Uuid
+  itemId     String   @db.Uuid
+  tagId      String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  item Item    @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
+  tag  ItemTag @relation(fields: [tagId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, itemId, tagId])
+  @@index([businessId, tagId])
+  @@map("item_tag_assignments")
+}
+
+model CustomAttributeDefinition {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(40)
+  name       String       @db.VarChar(120)
+  appliesTo  String       @db.VarChar(40)
+  dataType   String       @db.VarChar(30)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  values   ItemAttributeValue[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("custom_attribute_definitions")
+}
+
+model TaxCategory {
+  id          String       @id @default(uuid()) @db.Uuid
+  businessId  String       @db.Uuid
+  code        String       @db.VarChar(40)
+  name        String       @db.VarChar(120)
+  description String?      @db.VarChar(240)
+  status      RecordStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  rates    TaxRate[]
+  items    Item[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("tax_categories")
+}
+
+model TaxRate {
+  id            String       @id @default(uuid()) @db.Uuid
+  businessId    String       @db.Uuid
+  taxCategoryId String       @db.Uuid
+  code          String       @db.VarChar(40)
+  name          String       @db.VarChar(120)
+  rate          Decimal      @db.Decimal(9, 6)
+  kind          TaxRateKind  @default(BOTH)
+  effectiveFrom DateTime     @db.Date
+  effectiveTo   DateTime?    @db.Date
+  status        RecordStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  category TaxCategory @relation(fields: [taxCategoryId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, code])
+  @@index([businessId, taxCategoryId, status])
+  @@map("tax_rates")
+}
+
+model PriceList {
+  id           String       @id @default(uuid()) @db.Uuid
+  businessId   String       @db.Uuid
+  code         String       @db.VarChar(40)
+  name         String       @db.VarChar(120)
+  currencyCode String       @db.Char(3)
+  isDefault    Boolean      @default(false)
+  status       RecordStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  prices   ItemPrice[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("price_lists")
+}
+
+model Item {
+  id            String       @id @default(uuid()) @db.Uuid
+  businessId    String       @db.Uuid
+  code          String       @db.VarChar(50)
+  name          String       @db.VarChar(180)
+  kind          ItemKind
+  description   String?      @db.VarChar(500)
+  categoryId    String?      @db.Uuid
+  brandId       String?      @db.Uuid
+  baseUnitId    String       @db.Uuid
+  taxCategoryId String?      @db.Uuid
+  sellable      Boolean      @default(true)
+  purchasable   Boolean      @default(false)
+  stockTracked  Boolean      @default(false)
+  status        RecordStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  business        Business                 @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  category        ItemCategory?            @relation(fields: [categoryId, businessId], references: [id, businessId], onDelete: Restrict)
+  brand           Brand?                   @relation(fields: [brandId, businessId], references: [id, businessId], onDelete: Restrict)
+  baseUnit        Unit                     @relation(fields: [baseUnitId, businessId], references: [id, businessId], onDelete: Restrict)
+  taxCategory     TaxCategory?             @relation(fields: [taxCategoryId, businessId], references: [id, businessId], onDelete: Restrict)
+  variants        ItemVariant[]
+  identifiers     ItemIdentifier[]
+  prices          ItemPrice[]
+  tagAssignments  ItemTagAssignment[]
+  attributeValues ItemAttributeValue[]
+  supplierItems   SupplierItem[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, name])
+  @@index([businessId, status])
+  @@map("items")
+}
+
+model ItemVariant {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  itemId     String       @db.Uuid
+  code       String       @db.VarChar(60)
+  name       String       @db.VarChar(180)
+  attributes Json         @default("{}")
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  item        Item             @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
+  identifiers ItemIdentifier[]
+  prices      ItemPrice[]
+
+  @@unique([businessId, itemId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("item_variants")
+}
+
+model ItemIdentifier {
+  id         String         @id @default(uuid()) @db.Uuid
+  businessId String         @db.Uuid
+  itemId     String         @db.Uuid
+  variantId  String?        @db.Uuid
+  kind       IdentifierKind
+  value      String         @db.VarChar(120)
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+
+  item    Item         @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
+  variant ItemVariant? @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, value])
+  @@index([businessId, itemId])
+  @@map("item_identifiers")
+}
+
+model ItemPrice {
+  id          String   @id @default(uuid()) @db.Uuid
+  businessId  String   @db.Uuid
+  priceListId String   @db.Uuid
+  itemId      String   @db.Uuid
+  variantId   String?  @db.Uuid
+  branchId    String?  @db.Uuid
+  unitPrice   Decimal  @db.Decimal(19, 4)
+  costPrice   Decimal? @db.Decimal(19, 4)
+  minQuantity Decimal  @default(1) @db.Decimal(19, 4)
+  validFrom   DateTime @default(now()) @db.Timestamptz(3)
+  validTo     DateTime? @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  priceList PriceList    @relation(fields: [priceListId, businessId], references: [id, businessId], onDelete: Cascade)
+  item      Item         @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
+  variant   ItemVariant? @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Cascade)
+  branch    Branch?      @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@index([businessId, itemId, branchId])
+  @@index([businessId, priceListId])
+  @@map("item_prices")
+}
+
+model Promotion {
+  id            String       @id @default(uuid()) @db.Uuid
+  businessId    String       @db.Uuid
+  code          String       @db.VarChar(40)
+  name          String       @db.VarChar(120)
+  discountKind  DiscountKind
+  discountValue Decimal      @db.Decimal(19, 4)
+  startsAt      DateTime     @db.Timestamptz(3)
+  endsAt        DateTime?    @db.Timestamptz(3)
+  conditions    Json?
+  status        RecordStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, code])
+  @@index([businessId, status, startsAt])
+  @@map("promotions")
+}
+
+model CustomerGroup {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(40)
+  name       String       @db.VarChar(120)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customers Customer[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("customer_groups")
+}
+
+model Customer {
+  id            String       @id @default(uuid()) @db.Uuid
+  businessId    String       @db.Uuid
+  code          String       @db.VarChar(50)
+  name          String       @db.VarChar(180)
+  email         String?      @db.VarChar(254)
+  phone         String?      @db.VarChar(40)
+  groupId       String?      @db.Uuid
+  billingAddress Json?
+  notes         String?      @db.VarChar(500)
+  status        RecordStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  group    CustomerGroup? @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, name])
+  @@index([businessId, status])
+  @@map("customers")
+}
+
+model Supplier {
+  id            String       @id @default(uuid()) @db.Uuid
+  businessId    String       @db.Uuid
+  code          String       @db.VarChar(50)
+  name          String       @db.VarChar(180)
+  email         String?      @db.VarChar(254)
+  phone         String?      @db.VarChar(40)
+  leadTimeDays  Int?
+  paymentTerms  String?      @db.VarChar(120)
+  address       Json?
+  notes         String?      @db.VarChar(500)
+  status        RecordStatus @default(ACTIVE)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
+
+  business      Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  supplierItems SupplierItem[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, name])
+  @@index([businessId, status])
+  @@map("suppliers")
+}
+
+model SupplierItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @db.Uuid
+  supplierId   String   @db.Uuid
+  itemId       String   @db.Uuid
+  supplierCode String?  @db.VarChar(80)
+  costPrice    Decimal? @db.Decimal(19, 4)
+  leadTimeDays Int?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  supplier Supplier @relation(fields: [supplierId, businessId], references: [id, businessId], onDelete: Cascade)
+  item     Item     @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, supplierId, itemId])
+  @@index([businessId, itemId])
+  @@map("supplier_items")
+}
+
+model ItemAttributeValue {
+  id            String   @id @default(uuid()) @db.Uuid
+  businessId    String   @db.Uuid
+  itemId        String   @db.Uuid
+  attributeId   String   @db.Uuid
+  value         Json
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+
+  item       Item                      @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
+  definition CustomAttributeDefinition @relation(fields: [attributeId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, itemId, attributeId])
+  @@map("item_attribute_values")
+}
+
+model ImportBatch {
+  id          String           @id @default(uuid()) @db.Uuid
+  businessId  String           @db.Uuid
+  entityKind  ImportEntityKind
+  status      ImportStatus     @default(RECEIVED)
+  fileName    String           @db.VarChar(240)
+  totalRows   Int              @default(0)
+  validRows   Int              @default(0)
+  invalidRows Int              @default(0)
+  errors      Json?
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, entityKind, status])
+  @@map("import_batches")
 }
 
 model BusinessTheme {
@@ -155,6 +640,7 @@ model Branch {
   userAssignments   BranchAssignment[]
   auditEvents       AuditEvent[]
   documentSequences DocumentSequence[]
+  itemPrices        ItemPrice[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])

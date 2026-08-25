@@ -87,6 +87,12 @@ P8 Security / Operations / Production
 
 A business-specific phase may start only when the Common Core features it depends on are stable enough for that business workflow.
 
+Implementation evidence is tracked separately from this SRS:
+
+- P0 status: [`development/01_P0_IMPLEMENTATION_STATUS.md`](./development/01_P0_IMPLEMENTATION_STATUS.md)
+- P1 status: [`development/04_P1_IMPLEMENTATION_STATUS.md`](./development/04_P1_IMPLEMENTATION_STATUS.md)
+- Dated change history: [`development/03_DEVELOPMENT_CHANGE_LOG.md`](./development/03_DEVELOPMENT_CHANGE_LOG.md)
+
 ## 5. Shared Business Events
 
 | Event | Meaning |

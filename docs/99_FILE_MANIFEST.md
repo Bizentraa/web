@@ -38,3 +38,4 @@
 | development/01_P0_IMPLEMENTATION_STATUS.md | Tracked | Current P0 implementation status mapped to Common Core SRS |
 | development/02_BUSINESS_THEME_SYSTEM.md | Tracked | Business-selectable colour theme architecture and runtime behavior |
 | development/03_DEVELOPMENT_CHANGE_LOG.md | Tracked | Append-only dated development history with SRS mapping and verification evidence |
+| development/04_P1_IMPLEMENTATION_STATUS.md | Tracked | Current P1 master-data implementation status mapped to Common Core SRS |

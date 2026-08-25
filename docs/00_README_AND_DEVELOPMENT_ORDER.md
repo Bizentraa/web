@@ -122,3 +122,8 @@ Use [`development/03_DEVELOPMENT_CHANGE_LOG.md`](./development/03_DEVELOPMENT_CH
 - Map each change to the related SRS requirement IDs and user stories.
 - Keep old entries even when the same feature changes again.
 - Record verification evidence before marking a slice implemented.
+
+Current implementation status files:
+
+- [`development/01_P0_IMPLEMENTATION_STATUS.md`](./development/01_P0_IMPLEMENTATION_STATUS.md)
+- [`development/04_P1_IMPLEMENTATION_STATUS.md`](./development/04_P1_IMPLEMENTATION_STATUS.md)

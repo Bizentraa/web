@@ -48,6 +48,15 @@ export default async function Home() {
             and optional brand colours. User and Role screens follow.
           </p>
         </StatusCard>
+        <StatusCard title="P1 master data" status="ready">
+          <p>
+            <Link href="/catalog">
+              Create catalog defaults, items, prices, customers and suppliers
+            </Link>
+            . These records prepare POS and purchasing without creating sales or stock movements
+            yet.
+          </p>
+        </StatusCard>
       </div>
     </AppShell>
   );

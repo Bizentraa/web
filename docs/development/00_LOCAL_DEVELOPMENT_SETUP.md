@@ -81,6 +81,7 @@ pnpm dev:pos
 | POS | <http://localhost:3000> | Store-facing deployable; sales arrive in P2 |
 | Back Office | <http://localhost:3001> | Business setup and management deployable |
 | Appearance settings | <http://localhost:3001/appearance> | Business theme, brand colours and display modes |
+| Master data | <http://localhost:3001/catalog> | P1 catalog defaults, items, prices, customers and suppliers |
 | API | <http://localhost:4000/api/v1/health/ready> | Business rules and database access |
 | API documentation | <http://localhost:4000/api/docs> | Interactive OpenAPI documentation |
 | Worker | no browser address | Background BullMQ process using Redis |
@@ -149,6 +150,8 @@ DEVELOPMENT_USER_ID=<ownerUserId>
 ```
 
 Restart POS and Back Office after changing these values. Open <http://localhost:3001/appearance> to select from the controlled industry presets. The saved Business theme is shared through PostgreSQL; each browser origin keeps its own local cache for fast, flash-free startup.
+
+Open <http://localhost:3001/catalog> to start P1 master data. Use **Initialize P1 defaults** first, then create the first item, customer and supplier for the active Business.
 
 ## 6. Quality Checks
 

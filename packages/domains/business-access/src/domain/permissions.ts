@@ -27,4 +27,24 @@ export const P0_PERMISSIONS = [
   { code: "NUMBERING_MANAGE", name: "Manage number sequences" },
 ] as const;
 
+export const P1_PERMISSIONS = [
+  { code: "CATALOG_VIEW", name: "View catalog master data" },
+  { code: "CATALOG_MANAGE", name: "Manage catalog master data" },
+  { code: "PRICE_VIEW", name: "View prices" },
+  { code: "PRICE_MANAGE", name: "Manage prices" },
+  { code: "PROMOTION_VIEW", name: "View promotions" },
+  { code: "PROMOTION_MANAGE", name: "Manage promotions" },
+  { code: "TAX_VIEW", name: "View tax setup" },
+  { code: "TAX_MANAGE", name: "Manage tax setup" },
+  { code: "CUSTOMER_VIEW", name: "View customers" },
+  { code: "CUSTOMER_MANAGE", name: "Manage customers" },
+  { code: "SUPPLIER_VIEW", name: "View suppliers" },
+  { code: "SUPPLIER_MANAGE", name: "Manage suppliers" },
+  { code: "IMPORT_VIEW", name: "View import batches" },
+  { code: "IMPORT_MANAGE", name: "Manage import batches" },
+] as const;
+
+export const PLATFORM_PERMISSIONS = [...P0_PERMISSIONS, ...P1_PERMISSIONS] as const;
+
 export type P0PermissionCode = (typeof P0_PERMISSIONS)[number]["code"];
+export type PlatformPermissionCode = (typeof PLATFORM_PERMISSIONS)[number]["code"];
