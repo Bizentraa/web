@@ -2,6 +2,17 @@
 
 import { ApiClientError, createApiClient } from "@bizentra/api-client";
 import type { CatalogSummary, P1DefaultsCreated } from "@bizentra/contracts";
+import {
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Field,
+  Kicker,
+  Progress,
+} from "@bizentra/design-system";
 import { useBusinessTheme } from "@bizentra/design-system/theme";
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -78,17 +89,17 @@ export function CatalogWorkspace() {
 
   if (!identity) {
     return (
-      <section className="theme-panel catalog-empty-state">
-        <span className="theme-kicker">Local development only</span>
-        <h2>Load a Business identity first</h2>
-        <p className="theme-help">
+      <Card className="catalog-empty-state">
+        <Kicker>Local development only</Kicker>
+        <CardTitle>Load a Business identity first</CardTitle>
+        <CardDescription>
           Open Appearance and enter the Business and owner user IDs. The catalog page will use the
           same local identity until production sign-in is connected.
-        </p>
+        </CardDescription>
         <Link className="theme-primary-button catalog-link-button" href="/appearance">
           Open Appearance
         </Link>
-      </section>
+      </Card>
     );
   }
 
@@ -178,18 +189,27 @@ export function CatalogWorkspace() {
 
   return (
     <div className="catalog-workspace">
-      <section className="theme-panel catalog-command-center">
+      <Card className="catalog-command-center">
         <div className="catalog-command-copy">
-          <span className="theme-kicker">Common Core · P1 workspace</span>
-          <h2>Catalog foundation for POS, purchasing and reporting</h2>
-          <p className="theme-help">
+          <Kicker>Common Core · P1 workspace</Kicker>
+          <CardTitle>Catalog foundation for POS, purchasing and reporting</CardTitle>
+          <CardDescription>
             Set up reusable master data once, then later phases can sell, buy, count and report from
             the same clean records.
-          </p>
+          </CardDescription>
           <div className="catalog-business-strip" aria-label="Active catalog context">
             <span>Business</span>
             <strong>{identity.businessId}</strong>
-            <span className={`catalog-state-pill catalog-state-pill--${state}`}>
+            <Badge
+              className={`catalog-state-pill catalog-state-pill--${state}`}
+              tone={
+                state === "error"
+                  ? "danger"
+                  : state === "loading" || state === "saving"
+                    ? "warning"
+                    : "information"
+              }
+            >
               {state === "loading"
                 ? "Loading"
                 : state === "saving"
@@ -197,28 +217,26 @@ export function CatalogWorkspace() {
                   : state === "error"
                     ? "Needs attention"
                     : "Ready"}
-            </span>
+            </Badge>
           </div>
         </div>
         <div className="catalog-command-score" aria-label="P1 readiness score">
           <span>Readiness</span>
           <strong>{readinessScore}%</strong>
-          <div className="catalog-progress" aria-hidden="true">
-            <span style={{ width: `${readinessScore}%` }} />
-          </div>
+          <Progress value={readinessScore} />
           <small>{totalRecords} records tracked</small>
         </div>
         <div className="catalog-command-actions">
-          <button
-            className="theme-text-button catalog-secondary-action"
+          <Button
+            className="catalog-secondary-action"
             disabled={isBusy}
             type="button"
+            variant="ghost"
             onClick={() => void refreshSummary()}
           >
             Refresh
-          </button>
-          <button
-            className="theme-primary-button"
+          </Button>
+          <Button
             disabled={state === "saving"}
             type="button"
             onClick={() => void initializeDefaults()}
@@ -228,9 +246,9 @@ export function CatalogWorkspace() {
               : defaultsReady
                 ? "Defaults ready"
                 : "Initialize P1 defaults"}
-          </button>
+          </Button>
         </div>
-      </section>
+      </Card>
 
       {message ? (
         <p className={`theme-message theme-message--${state === "error" ? "error" : "success"}`}>
@@ -282,56 +300,64 @@ export function CatalogWorkspace() {
       </section>
 
       <section className="catalog-main-grid">
-        <form className="theme-panel catalog-form" onSubmit={(event) => void createItem(event)}>
-          <div className="catalog-section-title">
+        <Card
+          asForm
+          className="catalog-form"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => void createItem(event)}
+        >
+          <CardHeader className="catalog-section-title">
             <div>
-              <span className="theme-kicker">CC-P1-001 to CC-P1-008</span>
-              <h2>Create sellable item</h2>
+              <Kicker>CC-P1-001 to CC-P1-008</Kicker>
+              <CardTitle>Create sellable item</CardTitle>
             </div>
-            <span className="catalog-chip">Required before POS sales</span>
-          </div>
-          <p className="theme-help">
+            <Badge>Required before POS sales</Badge>
+          </CardHeader>
+          <CardDescription>
             This creates the first item record with barcode and selling price. P2 POS can later
             search, scan and sell from this same catalog.
-          </p>
+          </CardDescription>
           <div className="catalog-form-grid">
-            <CatalogField
+            <Field
               label="Item code"
               hint="Short unique code used by staff and imports."
+              required
               value={item.code}
-              onChange={(code) => setItem({ ...item, code })}
+              onChange={(event) => setItem({ ...item, code: event.target.value })}
             />
-            <CatalogField
+            <Field
               label="Item name"
               hint="Clear customer-facing name."
+              required
               value={item.name}
-              onChange={(name) => setItem({ ...item, name })}
+              onChange={(event) => setItem({ ...item, name: event.target.value })}
             />
-            <CatalogField
+            <Field
               label="Barcode"
               hint="Scanner value for checkout."
+              required
               value={item.barcode}
-              onChange={(barcode) => setItem({ ...item, barcode })}
+              onChange={(event) => setItem({ ...item, barcode: event.target.value })}
             />
-            <CatalogField
+            <Field
               label="Selling price"
               hint="Default retail price in business currency."
+              required
               value={item.price}
-              onChange={(price) => setItem({ ...item, price })}
+              onChange={(event) => setItem({ ...item, price: event.target.value })}
             />
           </div>
           <div className="catalog-form-footer">
             <span>Defaults are created automatically when needed.</span>
-            <button className="theme-primary-button" disabled={state === "saving"} type="submit">
+            <Button disabled={state === "saving"} type="submit">
               Save item
-            </button>
+            </Button>
           </div>
-        </form>
+        </Card>
 
         <aside className="catalog-side-stack">
-          <section className="theme-panel catalog-readiness-panel">
-            <span className="theme-kicker">P1 completion path</span>
-            <h2>What this phase unlocks</h2>
+          <Card className="catalog-readiness-panel">
+            <Kicker>P1 completion path</Kicker>
+            <CardTitle>What this phase unlocks</CardTitle>
             <ChecklistItem
               done={defaultsReady}
               title="Default setup"
@@ -352,7 +378,7 @@ export function CatalogWorkspace() {
               title="Supplier record"
               text="Purchasing can later receive stock from known suppliers."
             />
-          </section>
+          </Card>
 
           <RecentList
             title="Recent items"
@@ -367,59 +393,71 @@ export function CatalogWorkspace() {
       </section>
 
       <section className="catalog-party-grid">
-        <form className="theme-panel catalog-form" onSubmit={(event) => void createCustomer(event)}>
-          <div className="catalog-section-title">
+        <Card
+          asForm
+          className="catalog-form"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => void createCustomer(event)}
+        >
+          <CardHeader className="catalog-section-title">
             <div>
-              <span className="theme-kicker">CC-P1-009</span>
-              <h2>Customer</h2>
+              <Kicker>CC-P1-009</Kicker>
+              <CardTitle>Customer</CardTitle>
             </div>
-            <span className="catalog-chip catalog-chip--soft">Sales party</span>
-          </div>
-          <CatalogField
+            <Badge tone="neutral">Sales party</Badge>
+          </CardHeader>
+          <Field
             label="Customer code"
             hint="Use WALK-IN for default counter sales."
+            required
             value={customer.code}
-            onChange={(code) => setCustomer({ ...customer, code })}
+            onChange={(event) => setCustomer({ ...customer, code: event.target.value })}
           />
-          <CatalogField
+          <Field
             label="Customer name"
             hint="Shown in sales, ledgers and reports."
+            required
             value={customer.name}
-            onChange={(name) => setCustomer({ ...customer, name })}
+            onChange={(event) => setCustomer({ ...customer, name: event.target.value })}
           />
           <div className="catalog-form-footer catalog-form-footer--single">
-            <button className="theme-primary-button" disabled={state === "saving"} type="submit">
+            <Button disabled={state === "saving"} type="submit">
               Save customer
-            </button>
+            </Button>
           </div>
-        </form>
+        </Card>
 
-        <form className="theme-panel catalog-form" onSubmit={(event) => void createSupplier(event)}>
-          <div className="catalog-section-title">
+        <Card
+          asForm
+          className="catalog-form"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => void createSupplier(event)}
+        >
+          <CardHeader className="catalog-section-title">
             <div>
-              <span className="theme-kicker">CC-P1-010</span>
-              <h2>Supplier</h2>
+              <Kicker>CC-P1-010</Kicker>
+              <CardTitle>Supplier</CardTitle>
             </div>
-            <span className="catalog-chip catalog-chip--soft">Purchase party</span>
-          </div>
-          <CatalogField
+            <Badge tone="neutral">Purchase party</Badge>
+          </CardHeader>
+          <Field
             label="Supplier code"
             hint="Short code used on purchase documents."
+            required
             value={supplier.code}
-            onChange={(code) => setSupplier({ ...supplier, code })}
+            onChange={(event) => setSupplier({ ...supplier, code: event.target.value })}
           />
-          <CatalogField
+          <Field
             label="Supplier name"
             hint="Official name used by purchasing and payables."
+            required
             value={supplier.name}
-            onChange={(name) => setSupplier({ ...supplier, name })}
+            onChange={(event) => setSupplier({ ...supplier, name: event.target.value })}
           />
           <div className="catalog-form-footer catalog-form-footer--single">
-            <button className="theme-primary-button" disabled={state === "saving"} type="submit">
+            <Button disabled={state === "saving"} type="submit">
               Save supplier
-            </button>
+            </Button>
           </div>
-        </form>
+        </Card>
       </section>
 
       <section className="catalog-party-grid">
@@ -446,26 +484,6 @@ export function CatalogWorkspace() {
   );
 }
 
-function CatalogField({
-  label,
-  hint,
-  value,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="theme-field">
-      <span>{label}</span>
-      <input required value={value} onChange={(event) => onChange(event.target.value)} />
-      <small>{hint}</small>
-    </label>
-  );
-}
-
 function CatalogScoreCard({
   label,
   value,
@@ -480,10 +498,12 @@ function CatalogScoreCard({
   details: Array<[string, number]>;
 }) {
   return (
-    <article className="theme-panel catalog-score-card">
+    <Card className="catalog-score-card">
       <div className="catalog-score-heading">
         <span>{label}</span>
-        <em className={`catalog-score-status catalog-score-status--${tone}`}>{status}</em>
+        <Badge className="catalog-score-status" tone={tone}>
+          {status}
+        </Badge>
       </div>
       <strong>{value}</strong>
       <dl>
@@ -494,7 +514,7 @@ function CatalogScoreCard({
           </div>
         ))}
       </dl>
-    </article>
+    </Card>
   );
 }
 
@@ -520,14 +540,14 @@ function RecentList({
   rows: Array<{ key: string; title: string; meta: string }>;
 }) {
   return (
-    <section className="theme-panel catalog-recent-list">
-      <div className="catalog-section-title">
+    <Card className="catalog-recent-list">
+      <CardHeader className="catalog-section-title">
         <div>
-          <span className="theme-kicker">Recent records</span>
-          <h2>{title}</h2>
+          <Kicker>Recent records</Kicker>
+          <CardTitle>{title}</CardTitle>
         </div>
-      </div>
-      <p className="theme-help">{description}</p>
+      </CardHeader>
+      <CardDescription>{description}</CardDescription>
       {rows.length ? (
         <ul>
           {rows.map((row) => (
@@ -540,7 +560,7 @@ function RecentList({
       ) : (
         <p className="theme-help">No records yet.</p>
       )}
-    </section>
+    </Card>
   );
 }
 

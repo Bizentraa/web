@@ -3,6 +3,8 @@
 - **Started:** 2026-08-26
 - **Requirements:** [`01_COMMON_CORE_SRS.md`](../01_COMMON_CORE_SRS.md)
 - **Development change log:** [`03_DEVELOPMENT_CHANGE_LOG.md`](./03_DEVELOPMENT_CHANGE_LOG.md)
+- **SRS traceability:** [`05_COMMON_CORE_SRS_TRACEABILITY.md`](./05_COMMON_CORE_SRS_TRACEABILITY.md)
+- **UI component system:** [`06_UI_COMPONENT_SYSTEM.md`](./06_UI_COMPONENT_SYSTEM.md)
 - **Back Office screen:** <http://localhost:3001/catalog>
 
 ## Current Delivery Slice
@@ -20,6 +22,8 @@ Back Office / API client
 P1 records are definitions. They do not create sales, stock movements, payments, invoices or supplier bills.
 
 The Back Office `/catalog` screen has also been upgraded into the current P1 operating workspace. It now shows the active Business context, setup actions, readiness score, grouped master-data cards, guided forms for item/customer/supplier creation, a P1 completion checklist and recent-record panels. The layout is responsive across desktop, tablet and phone widths.
+
+The screen now composes owned shadcn-style primitives from the design system (`Card`, `Button`, `Badge`, `Progress`, `Field` and related helpers) while preserving the existing Business theme CSS variables.
 
 ## Requirement Status
 
@@ -82,6 +86,7 @@ POST /api/v1/businesses/{businessId}/catalog/import-batches
 - Back Office production build passed and includes `/catalog`.
 - Back Office `/catalog` UI browser check confirmed the command center, 4 score cards, 3 forms and 3 recent lists render.
 - Desktop and 390px mobile browser checks completed with no horizontal overflow.
+- Modular component browser check confirmed `/catalog` renders shared design-system cards, badges, buttons and fields after the refactor.
 - Runtime API smoke test created P1 defaults, one item with barcode/price, one customer and one supplier.
 - Direct PostgreSQL check as `bizentra_app` returned zero item rows without Business context and one item row with the active Business context.
 

@@ -1,4 +1,16 @@
-import type { ReactNode } from "react";
+import type {
+  ButtonHTMLAttributes,
+  FormHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+} from "react";
+
+type Tone = "default" | "success" | "warning" | "danger" | "information" | "neutral";
+
+function cn(...classes: Array<false | null | string | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
 export function AppShell(props: {
   eyebrow: string;
@@ -99,5 +111,110 @@ export function StatusCard(props: {
       </div>
       <div style={{ color: "var(--color-text-secondary)", lineHeight: 1.6 }}>{props.children}</div>
     </article>
+  );
+}
+
+export function Card({
+  asForm = false,
+  className,
+  ...props
+}: (HTMLAttributes<HTMLElement> | FormHTMLAttributes<HTMLFormElement>) & {
+  asForm?: boolean;
+  children: ReactNode;
+}) {
+  const Component = asForm ? "form" : "section";
+
+  return <Component className={cn("ui-card", className)} {...props} />;
+}
+
+export function CardHeader({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
+  return <div className={cn("ui-card-header", className)} {...props} />;
+}
+
+export function CardContent({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
+  return <div className={cn("ui-card-content", className)} {...props} />;
+}
+
+export function CardTitle({
+  className,
+  ...props
+}: HTMLAttributes<HTMLHeadingElement> & { children: ReactNode }) {
+  return <h2 className={cn("ui-card-title", className)} {...props} />;
+}
+
+export function CardDescription({
+  className,
+  ...props
+}: HTMLAttributes<HTMLParagraphElement> & { children: ReactNode }) {
+  return <p className={cn("ui-card-description", className)} {...props} />;
+}
+
+export function Kicker({
+  className,
+  ...props
+}: HTMLAttributes<HTMLSpanElement> & { children: ReactNode }) {
+  return <span className={cn("ui-kicker", className)} {...props} />;
+}
+
+export function Button({
+  className,
+  variant = "primary",
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "secondary" | "ghost";
+}) {
+  return <button className={cn("ui-button", `ui-button--${variant}`, className)} {...props} />;
+}
+
+export function Badge({
+  className,
+  tone = "default",
+  ...props
+}: HTMLAttributes<HTMLSpanElement> & { children: ReactNode; tone?: Tone }) {
+  return <span className={cn("ui-badge", `ui-badge--${tone}`, className)} {...props} />;
+}
+
+export function Progress({
+  className,
+  value,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { value: number }) {
+  const safeValue = Math.max(0, Math.min(100, value));
+
+  return (
+    <div
+      aria-valuemax={100}
+      aria-valuemin={0}
+      aria-valuenow={safeValue}
+      className={cn("ui-progress", className)}
+      role="progressbar"
+      {...props}
+    >
+      <span style={{ width: `${safeValue}%` }} />
+    </div>
+  );
+}
+
+export function Field({
+  className,
+  hint,
+  label,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & {
+  hint?: string;
+  label: string;
+}) {
+  return (
+    <label className={cn("ui-field", className)}>
+      <span>{label}</span>
+      <input {...props} />
+      {hint ? <small>{hint}</small> : null}
+    </label>
   );
 }
