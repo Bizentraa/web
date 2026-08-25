@@ -1,8 +1,9 @@
 # Common Core P0 — Implementation Status
 
-**Started:** 2026-08-25  
-**Requirements:** [`01_COMMON_CORE_SRS.md`](../01_COMMON_CORE_SRS.md)  
-**Local runbook:** [`00_LOCAL_DEVELOPMENT_SETUP.md`](./00_LOCAL_DEVELOPMENT_SETUP.md)
+- **Started:** 2026-08-25
+- **Requirements:** [`01_COMMON_CORE_SRS.md`](../01_COMMON_CORE_SRS.md)
+- **Local runbook:** [`00_LOCAL_DEVELOPMENT_SETUP.md`](./00_LOCAL_DEVELOPMENT_SETUP.md)
+- **Development change log:** [`03_DEVELOPMENT_CHANGE_LOG.md`](./03_DEVELOPMENT_CHANGE_LOG.md)
 
 ## Current Delivery Slice
 

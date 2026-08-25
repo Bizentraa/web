@@ -20,6 +20,7 @@ Use simple business language:
 6. Track requirements by ID in your issue tracker.
 7. Track user stories by Story ID and connect them to tests/UAT.
 8. Treat the business-specific files as extensions of the Common Core, not independent products.
+9. Record every developed change in [`development/03_DEVELOPMENT_CHANGE_LOG.md`](./development/03_DEVELOPMENT_CHANGE_LOG.md) with date, SRS mapping, evidence and commit.
 
 ## Recommended Development Order
 
@@ -112,3 +113,12 @@ The implementation stack, scalability model, frontend split, backend/database ru
 6. [`technology/05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md`](./technology/05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md) — technology phases aligned to Common Core P0–P8 and the first business packs.
 7. [`technology/06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md`](./technology/06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md) — easy-to-follow architecture lessons using real sales, offline, payment, folder, repository, and deployment examples.
 8. [`technology/07_TECHNICAL_ARCHITECTURE_MERMAID_DIAGRAMS.md`](./technology/07_TECHNICAL_ARCHITECTURE_MERMAID_DIAGRAMS.md) — complete Mermaid diagrams for technologies, application/domain connections, repository packages, runtime flows, CI/CD, migrations, and Business isolation.
+
+## Development Tracking
+
+Use [`development/03_DEVELOPMENT_CHANGE_LOG.md`](./development/03_DEVELOPMENT_CHANGE_LOG.md) as the permanent record of implemented features and technical changes.
+
+- Add a new dated entry for every meaningful change.
+- Map each change to the related SRS requirement IDs and user stories.
+- Keep old entries even when the same feature changes again.
+- Record verification evidence before marking a slice implemented.

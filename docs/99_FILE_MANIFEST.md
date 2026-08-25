@@ -34,3 +34,7 @@
 | 29_FUEL_CONVENIENCE_SRS.md | 176 | 6,240 chars |
 | 30_HOTEL_PMS_HEAVY_OPERATIONS_SRS.md | 167 | 5,862 chars |
 | 31_CLINIC_HEALTHCARE_BILLING_SRS.md | 169 | 6,147 chars |
+| development/00_LOCAL_DEVELOPMENT_SETUP.md | Tracked | Local P0 setup, run, verification and troubleshooting guide |
+| development/01_P0_IMPLEMENTATION_STATUS.md | Tracked | Current P0 implementation status mapped to Common Core SRS |
+| development/02_BUSINESS_THEME_SYSTEM.md | Tracked | Business-selectable colour theme architecture and runtime behavior |
+| development/03_DEVELOPMENT_CHANGE_LOG.md | Tracked | Append-only dated development history with SRS mapping and verification evidence |
