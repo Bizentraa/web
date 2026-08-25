@@ -46,6 +46,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-26 | In progress | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `3af4410` | Added the first P1 master-data foundation with database models, Business isolation, permissions, API routes, API client calls and Back Office `/catalog` screen. |
+| 2026-08-26 | Implemented for Back Office UI slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `Uncommitted` | Upgraded the Back Office `/catalog` workspace into a responsive operational UI with command center, readiness score, grouped master-data cards, guided item/customer/supplier forms, recent-record panels and mobile-safe layouts. |
 
 ## 4. Detailed Change Entries
 
@@ -87,6 +88,19 @@ Each change entry should include:
 | Verification | Prisma generation passed; P1 migrations applied locally; contracts, API client, domain service, API and Back Office type checks passed; full `pnpm check` passed; Back Office production build generated `/catalog`; runtime API smoke test created defaults, item, customer and supplier; direct PostgreSQL check as `bizentra_app` returned zero P1 item rows without Business context and one row with the active Business context. |
 | Commit | `3af4410 feat: add common core P1 master data` |
 | Remaining work | Add edit/deactivate screens, promotion rule builder, CSV/XLSX import processing, automated P1 integration tests, and pricing/tax resolution tests before P2 POS sale calculation. |
+
+### 2026-08-26 - Common Core P1 Catalog Workspace UI Upgrade
+
+| Field | Details |
+|---|---|
+| Feature / slice | Back Office P1 catalog workspace UI and responsive UX |
+| Status | Implemented for current P1 UI slice |
+| SRS mapping | `CC-P1-001` Item; `CC-P1-002` Categories; `CC-P1-003` Variants; `CC-P1-004` Units; `CC-P1-005` Barcodes; `CC-P1-006` Prices; `CC-P1-007` Promotions; `CC-P1-008` Tax; `CC-P1-009` Customers; `CC-P1-010` Suppliers; `CC-P1-011` Import; `CC-US-003` |
+| What changed | Reworked the Back Office `/catalog` screen into a professional P1 operating workspace. Added a command center with Business context, refresh/default setup actions and status pill; added readiness score and progress bar; grouped raw counts into setup, catalog, party and import score cards; added a P1 completion checklist; improved item, customer and supplier forms with operational hints; upgraded recent lists; added responsive desktop/tablet/mobile layouts with no horizontal overflow at phone width. |
+| Main files | `apps/backoffice/src/app/catalog/catalog-workspace.tsx`; `apps/backoffice/src/app/globals.css`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md`; `docs/development/04_P1_IMPLEMENTATION_STATUS.md` |
+| Verification | `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/backoffice lint` passed; `pnpm --filter @bizentra/backoffice build` passed; browser inspection confirmed `/catalog` renders the command center, 4 score cards, 3 forms and 3 recent lists; desktop and 390px mobile viewport checks had no horizontal overflow. |
+| Commit | Uncommitted |
+| Remaining work | Add management screens for editing/deactivating P1 records and add automated browser/component regression tests when the UI test harness is introduced. |
 
 ## 5. Entry Template
 

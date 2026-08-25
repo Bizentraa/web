@@ -4,7 +4,7 @@ import { ApiClientError, createApiClient } from "@bizentra/api-client";
 import type { CatalogSummary, P1DefaultsCreated } from "@bizentra/contracts";
 import { useBusinessTheme } from "@bizentra/design-system/theme";
 import Link from "next/link";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 type SaveState = "idle" | "loading" | "saving" | "error";
 
@@ -59,23 +59,22 @@ export function CatalogWorkspace() {
   const [customer, setCustomer] = useState({ code: "WALK-IN", name: "Walk-in Customer" });
   const [supplier, setSupplier] = useState({ code: "SUP-001", name: "Main Supplier" });
 
-  useEffect(() => {
+  const refreshSummary = useCallback(async () => {
     if (!api || !identity) return;
-    const client = api;
-    const businessId = identity.businessId;
-    void refresh();
-    async function refresh() {
-      setState("loading");
-      try {
-        setSummary(await client.getCatalogSummary(businessId));
-        setMessage(null);
-        setState("idle");
-      } catch (error) {
-        setMessage(errorMessage(error));
-        setState("error");
-      }
+    setState("loading");
+    try {
+      setSummary(await api.getCatalogSummary(identity.businessId));
+      setMessage(null);
+      setState("idle");
+    } catch (error) {
+      setMessage(errorMessage(error));
+      setState("error");
     }
   }, [api, identity]);
+
+  useEffect(() => {
+    void refreshSummary();
+  }, [refreshSummary]);
 
   if (!identity) {
     return (
@@ -160,21 +159,77 @@ export function CatalogWorkspace() {
     }
   }
 
+  const foundationCount =
+    summary.counts.units +
+    summary.counts.categories +
+    summary.counts.taxCategories +
+    summary.counts.priceLists;
+  const partyCount = summary.counts.customers + summary.counts.suppliers;
+  const readySteps = [
+    foundationCount >= 4,
+    summary.counts.items > 0,
+    partyCount >= 2,
+    summary.counts.importBatches >= 0,
+  ].filter(Boolean).length;
+  const readinessScore = Math.round((readySteps / 4) * 100);
+  const isBusy = state === "saving" || state === "loading";
+  const defaultsReady = foundationCount >= 4;
+  const totalRecords = Object.values(summary.counts).reduce((total, count) => total + count, 0);
+
   return (
     <div className="catalog-workspace">
-      <section className="theme-panel theme-context-panel">
-        <div>
-          <span className="theme-kicker">Active Business</span>
-          <strong>{identity.businessId}</strong>
+      <section className="theme-panel catalog-command-center">
+        <div className="catalog-command-copy">
+          <span className="theme-kicker">Common Core · P1 workspace</span>
+          <h2>Catalog foundation for POS, purchasing and reporting</h2>
+          <p className="theme-help">
+            Set up reusable master data once, then later phases can sell, buy, count and report from
+            the same clean records.
+          </p>
+          <div className="catalog-business-strip" aria-label="Active catalog context">
+            <span>Business</span>
+            <strong>{identity.businessId}</strong>
+            <span className={`catalog-state-pill catalog-state-pill--${state}`}>
+              {state === "loading"
+                ? "Loading"
+                : state === "saving"
+                  ? "Saving"
+                  : state === "error"
+                    ? "Needs attention"
+                    : "Ready"}
+            </span>
+          </div>
         </div>
-        <button
-          className="theme-primary-button"
-          disabled={state === "saving"}
-          type="button"
-          onClick={() => void initializeDefaults()}
-        >
-          {state === "saving" ? "Working..." : "Initialize P1 defaults"}
-        </button>
+        <div className="catalog-command-score" aria-label="P1 readiness score">
+          <span>Readiness</span>
+          <strong>{readinessScore}%</strong>
+          <div className="catalog-progress" aria-hidden="true">
+            <span style={{ width: `${readinessScore}%` }} />
+          </div>
+          <small>{totalRecords} records tracked</small>
+        </div>
+        <div className="catalog-command-actions">
+          <button
+            className="theme-text-button catalog-secondary-action"
+            disabled={isBusy}
+            type="button"
+            onClick={() => void refreshSummary()}
+          >
+            Refresh
+          </button>
+          <button
+            className="theme-primary-button"
+            disabled={state === "saving"}
+            type="button"
+            onClick={() => void initializeDefaults()}
+          >
+            {state === "saving"
+              ? "Working..."
+              : defaultsReady
+                ? "Defaults ready"
+                : "Initialize P1 defaults"}
+          </button>
+        </div>
       </section>
 
       {message ? (
@@ -183,110 +238,222 @@ export function CatalogWorkspace() {
         </p>
       ) : null}
 
-      <section className="catalog-counts" aria-label="P1 master data counts">
-        {Object.entries(summary.counts).map(([key, value]) => (
-          <article className="catalog-count" key={key}>
-            <span>{key.replace(/([A-Z])/g, " $1")}</span>
-            <strong>{value}</strong>
-          </article>
-        ))}
+      <section className="catalog-score-grid" aria-label="P1 master data readiness">
+        <CatalogScoreCard
+          label="Setup foundation"
+          value={foundationCount}
+          status={defaultsReady ? "Ready" : "Setup needed"}
+          tone={defaultsReady ? "success" : "warning"}
+          details={[
+            ["Units", summary.counts.units],
+            ["Categories", summary.counts.categories],
+            ["Tax", summary.counts.taxCategories],
+            ["Price lists", summary.counts.priceLists],
+          ]}
+        />
+        <CatalogScoreCard
+          label="Sellable catalog"
+          value={summary.counts.items}
+          status={summary.counts.items ? "POS ready" : "No items yet"}
+          tone={summary.counts.items ? "success" : "neutral"}
+          details={[
+            ["Items", summary.counts.items],
+            ["Brands", summary.counts.brands],
+            ["Promotions", summary.counts.promotions],
+          ]}
+        />
+        <CatalogScoreCard
+          label="Business parties"
+          value={partyCount}
+          status={partyCount >= 2 ? "Customer and supplier ready" : "Add parties"}
+          tone={partyCount >= 2 ? "success" : "neutral"}
+          details={[
+            ["Customers", summary.counts.customers],
+            ["Suppliers", summary.counts.suppliers],
+          ]}
+        />
+        <CatalogScoreCard
+          label="Import control"
+          value={summary.counts.importBatches}
+          status="Audit-ready path"
+          tone="information"
+          details={[["Import batches", summary.counts.importBatches]]}
+        />
       </section>
 
-      <div className="theme-two-column">
+      <section className="catalog-main-grid">
         <form className="theme-panel catalog-form" onSubmit={(event) => void createItem(event)}>
-          <span className="theme-kicker">CC-P1-001 to CC-P1-008</span>
-          <h2>Item, barcode and price</h2>
-          <CatalogField
-            label="Item code"
-            value={item.code}
-            onChange={(code) => setItem({ ...item, code })}
-          />
-          <CatalogField
-            label="Item name"
-            value={item.name}
-            onChange={(name) => setItem({ ...item, name })}
-          />
-          <CatalogField
-            label="Barcode"
-            value={item.barcode}
-            onChange={(barcode) => setItem({ ...item, barcode })}
-          />
-          <CatalogField
-            label="Selling price"
-            value={item.price}
-            onChange={(price) => setItem({ ...item, price })}
-          />
-          <button className="theme-primary-button" disabled={state === "saving"} type="submit">
-            Save item
-          </button>
+          <div className="catalog-section-title">
+            <div>
+              <span className="theme-kicker">CC-P1-001 to CC-P1-008</span>
+              <h2>Create sellable item</h2>
+            </div>
+            <span className="catalog-chip">Required before POS sales</span>
+          </div>
+          <p className="theme-help">
+            This creates the first item record with barcode and selling price. P2 POS can later
+            search, scan and sell from this same catalog.
+          </p>
+          <div className="catalog-form-grid">
+            <CatalogField
+              label="Item code"
+              hint="Short unique code used by staff and imports."
+              value={item.code}
+              onChange={(code) => setItem({ ...item, code })}
+            />
+            <CatalogField
+              label="Item name"
+              hint="Clear customer-facing name."
+              value={item.name}
+              onChange={(name) => setItem({ ...item, name })}
+            />
+            <CatalogField
+              label="Barcode"
+              hint="Scanner value for checkout."
+              value={item.barcode}
+              onChange={(barcode) => setItem({ ...item, barcode })}
+            />
+            <CatalogField
+              label="Selling price"
+              hint="Default retail price in business currency."
+              value={item.price}
+              onChange={(price) => setItem({ ...item, price })}
+            />
+          </div>
+          <div className="catalog-form-footer">
+            <span>Defaults are created automatically when needed.</span>
+            <button className="theme-primary-button" disabled={state === "saving"} type="submit">
+              Save item
+            </button>
+          </div>
         </form>
 
-        <section className="catalog-lists">
+        <aside className="catalog-side-stack">
+          <section className="theme-panel catalog-readiness-panel">
+            <span className="theme-kicker">P1 completion path</span>
+            <h2>What this phase unlocks</h2>
+            <ChecklistItem
+              done={defaultsReady}
+              title="Default setup"
+              text="Units, categories, tax and price list are available."
+            />
+            <ChecklistItem
+              done={summary.counts.items > 0}
+              title="First sellable item"
+              text="Catalog item can be scanned or selected later in POS."
+            />
+            <ChecklistItem
+              done={summary.counts.customers > 0}
+              title="Customer record"
+              text="Walk-in or named customer can be attached to sales."
+            />
+            <ChecklistItem
+              done={summary.counts.suppliers > 0}
+              title="Supplier record"
+              text="Purchasing can later receive stock from known suppliers."
+            />
+          </section>
+
           <RecentList
             title="Recent items"
-            rows={summary.items.map((row) => `${row.code} - ${row.name}`)}
+            description="Latest saved catalog records."
+            rows={summary.items.map((row) => ({
+              key: row.code,
+              title: row.name,
+              meta: row.code,
+            }))}
           />
-        </section>
-      </div>
+        </aside>
+      </section>
 
-      <div className="theme-two-column">
+      <section className="catalog-party-grid">
         <form className="theme-panel catalog-form" onSubmit={(event) => void createCustomer(event)}>
-          <span className="theme-kicker">CC-P1-009</span>
-          <h2>Customer</h2>
+          <div className="catalog-section-title">
+            <div>
+              <span className="theme-kicker">CC-P1-009</span>
+              <h2>Customer</h2>
+            </div>
+            <span className="catalog-chip catalog-chip--soft">Sales party</span>
+          </div>
           <CatalogField
             label="Customer code"
+            hint="Use WALK-IN for default counter sales."
             value={customer.code}
             onChange={(code) => setCustomer({ ...customer, code })}
           />
           <CatalogField
             label="Customer name"
+            hint="Shown in sales, ledgers and reports."
             value={customer.name}
             onChange={(name) => setCustomer({ ...customer, name })}
           />
-          <button className="theme-primary-button" disabled={state === "saving"} type="submit">
-            Save customer
-          </button>
+          <div className="catalog-form-footer catalog-form-footer--single">
+            <button className="theme-primary-button" disabled={state === "saving"} type="submit">
+              Save customer
+            </button>
+          </div>
         </form>
 
         <form className="theme-panel catalog-form" onSubmit={(event) => void createSupplier(event)}>
-          <span className="theme-kicker">CC-P1-010</span>
-          <h2>Supplier</h2>
+          <div className="catalog-section-title">
+            <div>
+              <span className="theme-kicker">CC-P1-010</span>
+              <h2>Supplier</h2>
+            </div>
+            <span className="catalog-chip catalog-chip--soft">Purchase party</span>
+          </div>
           <CatalogField
             label="Supplier code"
+            hint="Short code used on purchase documents."
             value={supplier.code}
             onChange={(code) => setSupplier({ ...supplier, code })}
           />
           <CatalogField
             label="Supplier name"
+            hint="Official name used by purchasing and payables."
             value={supplier.name}
             onChange={(name) => setSupplier({ ...supplier, name })}
           />
-          <button className="theme-primary-button" disabled={state === "saving"} type="submit">
-            Save supplier
-          </button>
+          <div className="catalog-form-footer catalog-form-footer--single">
+            <button className="theme-primary-button" disabled={state === "saving"} type="submit">
+              Save supplier
+            </button>
+          </div>
         </form>
-      </div>
+      </section>
 
-      <div className="theme-two-column">
+      <section className="catalog-party-grid">
         <RecentList
           title="Recent customers"
-          rows={summary.customers.map((row) => `${row.code} - ${row.name}`)}
+          description="Customer records ready for sales and credit workflows."
+          rows={summary.customers.map((row) => ({
+            key: row.code,
+            title: row.name,
+            meta: row.code,
+          }))}
         />
         <RecentList
           title="Recent suppliers"
-          rows={summary.suppliers.map((row) => `${row.code} - ${row.name}`)}
+          description="Supplier records ready for future purchasing flows."
+          rows={summary.suppliers.map((row) => ({
+            key: row.code,
+            title: row.name,
+            meta: row.code,
+          }))}
         />
-      </div>
+      </section>
     </div>
   );
 }
 
 function CatalogField({
   label,
+  hint,
   value,
   onChange,
 }: {
   label: string;
+  hint: string;
   value: string;
   onChange: (value: string) => void;
 }) {
@@ -294,18 +461,80 @@ function CatalogField({
     <label className="theme-field">
       <span>{label}</span>
       <input required value={value} onChange={(event) => onChange(event.target.value)} />
+      <small>{hint}</small>
     </label>
   );
 }
 
-function RecentList({ title, rows }: { title: string; rows: string[] }) {
+function CatalogScoreCard({
+  label,
+  value,
+  status,
+  tone,
+  details,
+}: {
+  label: string;
+  value: number;
+  status: string;
+  tone: "success" | "warning" | "information" | "neutral";
+  details: Array<[string, number]>;
+}) {
+  return (
+    <article className="theme-panel catalog-score-card">
+      <div className="catalog-score-heading">
+        <span>{label}</span>
+        <em className={`catalog-score-status catalog-score-status--${tone}`}>{status}</em>
+      </div>
+      <strong>{value}</strong>
+      <dl>
+        {details.map(([name, count]) => (
+          <div key={name}>
+            <dt>{name}</dt>
+            <dd>{count}</dd>
+          </div>
+        ))}
+      </dl>
+    </article>
+  );
+}
+
+function ChecklistItem({ done, title, text }: { done: boolean; title: string; text: string }) {
+  return (
+    <article className="catalog-checklist-item">
+      <span aria-hidden="true">{done ? "✓" : "•"}</span>
+      <div>
+        <strong>{title}</strong>
+        <p>{text}</p>
+      </div>
+    </article>
+  );
+}
+
+function RecentList({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Array<{ key: string; title: string; meta: string }>;
+}) {
   return (
     <section className="theme-panel catalog-recent-list">
-      <h2>{title}</h2>
+      <div className="catalog-section-title">
+        <div>
+          <span className="theme-kicker">Recent records</span>
+          <h2>{title}</h2>
+        </div>
+      </div>
+      <p className="theme-help">{description}</p>
       {rows.length ? (
         <ul>
           {rows.map((row) => (
-            <li key={row}>{row}</li>
+            <li key={row.key}>
+              <span>{row.title}</span>
+              <small>{row.meta}</small>
+            </li>
           ))}
         </ul>
       ) : (

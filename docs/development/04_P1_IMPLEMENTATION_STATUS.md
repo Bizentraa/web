@@ -19,6 +19,8 @@ Back Office / API client
 
 P1 records are definitions. They do not create sales, stock movements, payments, invoices or supplier bills.
 
+The Back Office `/catalog` screen has also been upgraded into the current P1 operating workspace. It now shows the active Business context, setup actions, readiness score, grouped master-data cards, guided forms for item/customer/supplier creation, a P1 completion checklist and recent-record panels. The layout is responsive across desktop, tablet and phone widths.
+
 ## Requirement Status
 
 | Requirement | Status | Current evidence | Remaining P1 work |
@@ -78,6 +80,8 @@ POST /api/v1/businesses/{businessId}/catalog/import-batches
 - P1 migrations applied to local PostgreSQL.
 - Contract, API client, domain service, API and Back Office type checks passed.
 - Back Office production build passed and includes `/catalog`.
+- Back Office `/catalog` UI browser check confirmed the command center, 4 score cards, 3 forms and 3 recent lists render.
+- Desktop and 390px mobile browser checks completed with no horizontal overflow.
 - Runtime API smoke test created P1 defaults, one item with barcode/price, one customer and one supplier.
 - Direct PostgreSQL check as `bizentra_app` returned zero item rows without Business context and one item row with the active Business context.
 
