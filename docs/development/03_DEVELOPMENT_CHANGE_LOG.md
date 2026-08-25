@@ -45,7 +45,7 @@ Each change entry should include:
 
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
-| 2026-08-26 | In progress | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `d7227e7` | Added the first P1 master-data foundation with database models, Business isolation, permissions, API routes, API client calls and Back Office `/catalog` screen. |
+| 2026-08-26 | In progress | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `3af4410` | Added the first P1 master-data foundation with database models, Business isolation, permissions, API routes, API client calls and Back Office `/catalog` screen. |
 
 ## 4. Detailed Change Entries
 
@@ -85,7 +85,7 @@ Each change entry should include:
 | What changed | Added P1 master-data schema for units, conversions, categories, brands, tags, custom attributes, tax categories/rates, price lists, items, variants, identifiers, prices, promotions, customer groups, customers, suppliers, supplier items, item attributes and import batches. Added forced Business RLS, P1 permissions, owner-role backfill, P1 API contracts, catalog service, catalog controller, API client methods and Back Office `/catalog` workspace. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260825204733_p1_master_data/migration.sql`; `packages/database/prisma/migrations/20260825205500_p1_master_data_security/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/catalog.service.ts`; `apps/api/src/controllers/catalog.controller.ts`; `apps/backoffice/src/app/catalog`; `docs/development/04_P1_IMPLEMENTATION_STATUS.md` |
 | Verification | Prisma generation passed; P1 migrations applied locally; contracts, API client, domain service, API and Back Office type checks passed; full `pnpm check` passed; Back Office production build generated `/catalog`; runtime API smoke test created defaults, item, customer and supplier; direct PostgreSQL check as `bizentra_app` returned zero P1 item rows without Business context and one row with the active Business context. |
-| Commit | `d7227e7 feat: add common core P1 master data` |
+| Commit | `3af4410 feat: add common core P1 master data` |
 | Remaining work | Add edit/deactivate screens, promotion rule builder, CSV/XLSX import processing, automated P1 integration tests, and pricing/tax resolution tests before P2 POS sale calculation. |
 
 ## 5. Entry Template
