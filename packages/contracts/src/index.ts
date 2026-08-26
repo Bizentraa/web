@@ -152,6 +152,29 @@ export const fulfillmentStatusSchema = z.enum([
   "CANCELLED",
 ]);
 
+export const customerInvoiceStatusSchema = z.enum(["POSTED", "PARTIALLY_PAID", "PAID", "VOIDED"]);
+
+export const supplierBillStatusSchema = z.enum(["POSTED", "PARTIALLY_PAID", "PAID", "VOIDED"]);
+
+export const expenseStatusSchema = z.enum(["POSTED", "VOIDED"]);
+
+export const bankAccountTypeSchema = z.enum(["CASH", "BANK", "GATEWAY", "WALLET"]);
+
+export const bankTransactionKindSchema = z.enum([
+  "DEPOSIT",
+  "WITHDRAWAL",
+  "TRANSFER_IN",
+  "TRANSFER_OUT",
+  "COLLECTION",
+  "SUPPLIER_PAYMENT",
+  "EXPENSE",
+  "ADJUSTMENT",
+]);
+
+export const loyaltyEntryKindSchema = z.enum(["EARN", "REDEEM", "ADJUST", "EXPIRE"]);
+
+export const accountingEventStatusSchema = z.enum(["PENDING", "EXPORTED", "FAILED"]);
+
 export const featureKindSchema = z.enum(["CORE", "BUSINESS_PACK", "OPTIONAL"]);
 
 export type RecordStatus = z.infer<typeof recordStatusSchema>;
@@ -180,6 +203,13 @@ export type StockMovementStatus = z.infer<typeof stockMovementStatusSchema>;
 export type PurchaseRequestStatus = z.infer<typeof purchaseRequestStatusSchema>;
 export type PurchaseOrderStatus = z.infer<typeof purchaseOrderStatusSchema>;
 export type FulfillmentStatus = z.infer<typeof fulfillmentStatusSchema>;
+export type CustomerInvoiceStatus = z.infer<typeof customerInvoiceStatusSchema>;
+export type SupplierBillStatus = z.infer<typeof supplierBillStatusSchema>;
+export type ExpenseStatus = z.infer<typeof expenseStatusSchema>;
+export type BankAccountType = z.infer<typeof bankAccountTypeSchema>;
+export type BankTransactionKind = z.infer<typeof bankTransactionKindSchema>;
+export type LoyaltyEntryKind = z.infer<typeof loyaltyEntryKindSchema>;
+export type AccountingEventStatus = z.infer<typeof accountingEventStatusSchema>;
 export type FeatureKind = z.infer<typeof featureKindSchema>;
 
 /* -------------------------------------------------------------------------- */
@@ -1006,6 +1036,112 @@ export const updateFulfillmentStatusSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/* P4 - Finance, customer credit and loyalty                                  */
+/* -------------------------------------------------------------------------- */
+
+const financeLineSchema = z.object({
+  itemId: z.uuid().optional(),
+  description: z.string().trim().min(2).max(240),
+  quantity: positiveQuantitySchema,
+  unitAmount: nonNegativeMoneySchema,
+  taxAmount: nonNegativeMoneySchema.default(0),
+});
+
+const allocationSchema = z.object({
+  documentId: z.uuid(),
+  amount: positiveQuantitySchema,
+});
+
+export const createCustomerInvoiceSchema = z.object({
+  branchId: z.uuid().optional(),
+  customerId: z.uuid(),
+  currencyCode: currencyCodeSchema,
+  dueDate: z.iso.date().optional(),
+  notes: z.string().trim().max(500).optional(),
+  lines: z.array(financeLineSchema).min(1).max(100),
+});
+
+export const collectCustomerPaymentSchema = z.object({
+  branchId: z.uuid().optional(),
+  customerId: z.uuid(),
+  amount: positiveQuantitySchema,
+  currencyCode: currencyCodeSchema,
+  method: z.string().trim().min(2).max(60),
+  reference: z.string().trim().max(120).optional(),
+  collectedAt: z.iso.datetime().optional(),
+  allocations: z.array(allocationSchema).max(100).default([]),
+});
+
+export const createSupplierBillSchema = z.object({
+  branchId: z.uuid().optional(),
+  supplierId: z.uuid(),
+  purchaseOrderId: z.uuid().optional(),
+  supplierDocument: z.string().trim().max(120).optional(),
+  currencyCode: currencyCodeSchema,
+  dueDate: z.iso.date().optional(),
+  notes: z.string().trim().max(500).optional(),
+  lines: z.array(financeLineSchema).min(1).max(100),
+});
+
+export const paySupplierBillSchema = z.object({
+  branchId: z.uuid().optional(),
+  supplierId: z.uuid(),
+  amount: positiveQuantitySchema,
+  currencyCode: currencyCodeSchema,
+  method: z.string().trim().min(2).max(60),
+  reference: z.string().trim().max(120).optional(),
+  paidAt: z.iso.datetime().optional(),
+  allocations: z.array(allocationSchema).max(100).default([]),
+});
+
+export const createExpenseCategorySchema = z.object({
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(120),
+});
+
+export const createExpenseSchema = z.object({
+  branchId: z.uuid().optional(),
+  categoryId: z.uuid(),
+  amount: positiveQuantitySchema,
+  taxAmount: nonNegativeMoneySchema.default(0),
+  currencyCode: currencyCodeSchema,
+  paymentMethod: z.string().trim().min(2).max(60),
+  spentAt: z.iso.datetime().optional(),
+  supplierName: z.string().trim().max(180).optional(),
+  description: z.string().trim().min(2).max(240),
+  attachmentUrl: z.url().max(500).optional(),
+});
+
+export const createBankAccountSchema = z.object({
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(120),
+  type: bankAccountTypeSchema,
+  currencyCode: currencyCodeSchema,
+  openingBalance: nonNegativeMoneySchema.default(0),
+});
+
+export const postBankTransactionSchema = z.object({
+  branchId: z.uuid().optional(),
+  accountId: z.uuid(),
+  kind: bankTransactionKindSchema,
+  amount: positiveQuantitySchema,
+  currencyCode: currencyCodeSchema,
+  reference: z.string().trim().max(120).optional(),
+  description: z.string().trim().min(2).max(240),
+  occurredAt: z.iso.datetime().optional(),
+});
+
+export const adjustLoyaltySchema = z.object({
+  customerId: z.uuid(),
+  kind: loyaltyEntryKindSchema,
+  points: positiveQuantitySchema,
+  tier: z.string().trim().min(2).max(80).optional(),
+  reference: z.string().trim().max(120).optional(),
+  reason: z.string().trim().min(2).max(240),
+  expiresAt: z.iso.datetime().optional(),
+});
+
+/* -------------------------------------------------------------------------- */
 /* Input types                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -1089,6 +1225,15 @@ export type CreatePurchaseOrderInput = z.output<typeof createPurchaseOrderSchema
 export type ReceivePurchaseOrderInput = z.output<typeof receivePurchaseOrderSchema>;
 export type CreateFulfillmentOrderInput = z.output<typeof createFulfillmentOrderSchema>;
 export type UpdateFulfillmentStatusInput = z.output<typeof updateFulfillmentStatusSchema>;
+export type CreateCustomerInvoiceInput = z.output<typeof createCustomerInvoiceSchema>;
+export type CollectCustomerPaymentInput = z.output<typeof collectCustomerPaymentSchema>;
+export type CreateSupplierBillInput = z.output<typeof createSupplierBillSchema>;
+export type PaySupplierBillInput = z.output<typeof paySupplierBillSchema>;
+export type CreateExpenseCategoryInput = z.output<typeof createExpenseCategorySchema>;
+export type CreateExpenseInput = z.output<typeof createExpenseSchema>;
+export type CreateBankAccountInput = z.output<typeof createBankAccountSchema>;
+export type PostBankTransactionInput = z.output<typeof postBankTransactionSchema>;
+export type AdjustLoyaltyInput = z.output<typeof adjustLoyaltySchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Response contracts                                                          */
@@ -1701,6 +1846,156 @@ export interface InventoryOverview {
   fulfillmentOrders: FulfillmentOrderRow[];
 }
 
+export interface CustomerInvoiceRow {
+  id: string;
+  number: string;
+  branchName: string | null;
+  customerId: string;
+  customerName: string;
+  status: CustomerInvoiceStatus;
+  currencyCode: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  dueDate: string | null;
+  lineCount: number;
+  createdBy: string;
+  postedAt: string;
+}
+
+export interface CustomerCollectionRow {
+  id: string;
+  branchName: string | null;
+  customerName: string;
+  amount: number;
+  unallocatedAmount: number;
+  currencyCode: string;
+  method: string;
+  reference: string | null;
+  allocationCount: number;
+  createdBy: string;
+  collectedAt: string;
+}
+
+export interface SupplierBillRow {
+  id: string;
+  number: string;
+  branchName: string | null;
+  supplierId: string;
+  supplierName: string;
+  status: SupplierBillStatus;
+  currencyCode: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  dueDate: string | null;
+  lineCount: number;
+  createdBy: string;
+  postedAt: string;
+}
+
+export interface SupplierPaymentRow {
+  id: string;
+  branchName: string | null;
+  supplierName: string;
+  amount: number;
+  unallocatedAmount: number;
+  currencyCode: string;
+  method: string;
+  reference: string | null;
+  allocationCount: number;
+  createdBy: string;
+  paidAt: string;
+}
+
+export interface ExpenseRow {
+  id: string;
+  branchName: string | null;
+  categoryId: string;
+  categoryName: string;
+  status: ExpenseStatus;
+  amount: number;
+  taxAmount: number;
+  currencyCode: string;
+  paymentMethod: string;
+  supplierName: string | null;
+  description: string;
+  createdBy: string;
+  spentAt: string;
+}
+
+export interface ExpenseCategoryRow {
+  id: string;
+  code: string;
+  name: string;
+  status: RecordStatus;
+}
+
+export interface BankAccountRow {
+  id: string;
+  code: string;
+  name: string;
+  type: BankAccountType;
+  currencyCode: string;
+  openingBalance: number;
+  currentBalance: number;
+  status: RecordStatus;
+}
+
+export interface BankTransactionRow {
+  id: string;
+  accountName: string;
+  branchName: string | null;
+  kind: BankTransactionKind;
+  amount: number;
+  currencyCode: string;
+  reference: string | null;
+  description: string;
+  createdBy: string;
+  occurredAt: string;
+}
+
+export interface LoyaltyAccountRow {
+  id: string;
+  customerId: string;
+  customerName: string;
+  pointsBalance: number;
+  tier: string;
+  lastActivityAt: string;
+}
+
+export interface AccountingEventRow {
+  id: string;
+  sourceType: string;
+  sourceId: string;
+  eventType: string;
+  amount: number | null;
+  currencyCode: string | null;
+  status: AccountingEventStatus;
+  createdAt: string;
+}
+
+export interface FinanceOverview {
+  totals: {
+    receivables: number;
+    payables: number;
+    expenses: number;
+    cashAndBank: number;
+    loyaltyPoints: number;
+    pendingAccountingEvents: number;
+  };
+  customerInvoices: CustomerInvoiceRow[];
+  customerCollections: CustomerCollectionRow[];
+  supplierBills: SupplierBillRow[];
+  supplierPayments: SupplierPaymentRow[];
+  expenseCategories: ExpenseCategoryRow[];
+  expenses: ExpenseRow[];
+  bankAccounts: BankAccountRow[];
+  bankTransactions: BankTransactionRow[];
+  loyaltyAccounts: LoyaltyAccountRow[];
+  accountingEvents: AccountingEventRow[];
+}
+
 export interface BusinessFoundationCreated {
   businessId: string;
   branchId: string;
@@ -1779,7 +2074,7 @@ export interface PermissionCatalogEntry {
   code: string;
   name: string;
   area: string;
-  phase: "P0" | "P1" | "P2" | "P3";
+  phase: "P0" | "P1" | "P2" | "P3" | "P4";
   sensitive: boolean;
 }
 

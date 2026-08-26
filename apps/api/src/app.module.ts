@@ -6,6 +6,7 @@ import {
   businessAccessProvider,
   catalogProvider,
   databaseProvider,
+  financeProvider,
   importProvider,
   inventoryProvider,
   posProvider,
@@ -13,6 +14,7 @@ import {
 } from "./composition/providers.js";
 import { BusinessFoundationController } from "./controllers/business-foundation.controller.js";
 import { CatalogController } from "./controllers/catalog.controller.js";
+import { FinanceController } from "./controllers/finance.controller.js";
 import { ImportController, PosController } from "./controllers/pos.controller.js";
 import { InventoryController } from "./controllers/inventory.controller.js";
 import { HealthController } from "./health/health.controller.js";
@@ -29,6 +31,7 @@ import { HealthController } from "./health/health.controller.js";
     BusinessFoundationController,
     CatalogController,
     ImportController,
+    FinanceController,
     InventoryController,
     PosController,
   ],
@@ -36,6 +39,7 @@ import { HealthController } from "./health/health.controller.js";
     databaseProvider,
     businessAccessProvider,
     catalogProvider,
+    financeProvider,
     importProvider,
     inventoryProvider,
     pricingProvider,

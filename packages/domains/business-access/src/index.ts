@@ -1,4 +1,5 @@
 export { CatalogService } from "./application/catalog.service.js";
+export { FinanceService } from "./application/finance.service.js";
 export { InventoryService } from "./application/inventory.service.js";
 export { ImportService, type TemplateColumn } from "./application/import.service.js";
 export { BusinessAccessService } from "./application/business-access.service.js";
@@ -12,6 +13,7 @@ export {
   P1_PERMISSIONS,
   P2_PERMISSIONS,
   P3_PERMISSIONS,
+  P4_PERMISSIONS,
   PLATFORM_PERMISSIONS,
   ROLE_TEMPLATES,
   type ApprovableActionCode,
@@ -20,6 +22,7 @@ export {
   type P1PermissionCode,
   type P2PermissionCode,
   type P3PermissionCode,
+  type P4PermissionCode,
   type PermissionDefinition,
   type PlatformPermissionCode,
   type RoleTemplateCode,

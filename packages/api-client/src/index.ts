@@ -1,6 +1,7 @@
 import type {
   AccessOverview,
   AddPaymentInput,
+  AdjustLoyaltyInput,
   ApiErrorBody,
   ApprovalOverview,
   AuditEventRow,
@@ -14,14 +15,19 @@ import type {
   CatalogSearchQuery,
   CatalogSummary,
   CloseShiftInput,
+  CollectCustomerPaymentInput,
   CreateApprovalRequestInput,
   CreateAttributeDefinitionInput,
+  CreateBankAccountInput,
   CreateBranchInput,
   CreateBrandInput,
   CreateBusinessFoundationInput,
   CreateCategoryInput,
   CreateCustomerGroupInput,
+  CreateCustomerInvoiceInput,
   CreateCustomerInput,
+  CreateExpenseCategoryInput,
+  CreateExpenseInput,
   CreateExchangeInput,
   CreateFulfillmentOrderInput,
   CreateImportBatchInput,
@@ -37,6 +43,7 @@ import type {
   CreateReturnInput,
   CreateRoleInput,
   CreateSaleInput,
+  CreateSupplierBillInput,
   CreateSupplierInput,
   CreateTaxCategoryInput,
   CreateTaxRateInput,
@@ -49,6 +56,7 @@ import type {
   DocumentSequenceRow,
   ExchangeResult,
   FeatureRow,
+  FinanceOverview,
   HealthResponse,
   ImportApplied,
   ImportBatchSummary,
@@ -64,7 +72,9 @@ import type {
   OpenShiftInput,
   P1DefaultsCreated,
   Paginated,
+  PaySupplierBillInput,
   PosCatalogEntry,
+  PostBankTransactionInput,
   PromotionRow,
   QuoteSaleInput,
   ReceiptDocument,
@@ -423,6 +433,28 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
         `/businesses/${businessId}/inventory/fulfillment-orders/${fulfillmentOrderId}/status`,
         input,
       ),
+
+    /* ------------------------------------------- P4 finance foundation */
+    getFinanceOverview: (businessId: string) =>
+      request<FinanceOverview>(`/businesses/${businessId}/finance/overview`),
+    createCustomerInvoice: (businessId: string, input: CreateCustomerInvoiceInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/customer-invoices`, input),
+    collectCustomerPayment: (businessId: string, input: CollectCustomerPaymentInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/customer-collections`, input),
+    createSupplierBill: (businessId: string, input: CreateSupplierBillInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/supplier-bills`, input),
+    paySupplierBill: (businessId: string, input: PaySupplierBillInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/supplier-payments`, input),
+    createExpenseCategory: (businessId: string, input: CreateExpenseCategoryInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/expense-categories`, input),
+    createExpense: (businessId: string, input: CreateExpenseInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/expenses`, input),
+    createBankAccount: (businessId: string, input: CreateBankAccountInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/bank-accounts`, input),
+    postBankTransaction: (businessId: string, input: PostBankTransactionInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/bank-transactions`, input),
+    adjustLoyalty: (businessId: string, input: AdjustLoyaltyInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/loyalty-adjustments`, input),
 
     /* ------------------------------------------------------------- P2 POS */
     openShift: (businessId: string, input: OpenShiftInput) =>

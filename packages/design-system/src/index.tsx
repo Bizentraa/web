@@ -182,6 +182,14 @@ const DEFAULT_NAVIGATION: ShellNavigationItem[] = [
     status: "ready",
   },
   {
+    href: "/finance",
+    label: "Finance",
+    description: "money and balances",
+    phase: "P4",
+    group: "Manage",
+    status: "ready",
+  },
+  {
     href: "/customers",
     label: "Customers",
     description: "people who buy",

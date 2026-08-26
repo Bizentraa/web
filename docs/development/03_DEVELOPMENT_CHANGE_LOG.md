@@ -64,6 +64,12 @@ Each change entry should include:
 | 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
 | 2026-08-26 | Implemented for P3 access sync | `CC-P0-006`, `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `7107343` | Synced P3 permissions into the permission catalogue and existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles so existing owners can open inventory screens after phase delivery. |
 
+### Common Core P4 Finance, Customer Controls and Management
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-27 | Implemented for current P4 finance foundation scope | `CC-P4-001` to `CC-P4-010`, `CC-P4-012`, `CC-US-010`, `CC-US-011` | Uncommitted | Added receivables, collections, payables, supplier payments, expenses, cash/bank accounts, bank transactions, loyalty balances, accounting events, P4 permissions/role sync, API/client contracts, Back Office `/finance` workspace and live smoke coverage. |
+
 ### Common UI/UX System
 
 | Date | Status | SRS mapping | Commit | Summary |
@@ -231,6 +237,19 @@ Each change entry should include:
 | Commit | `7107343 fix: sync phase permissions for existing business roles` |
 | Remaining work | Continue using the same additive sync pattern whenever later phases add permissions, feature packs or default role responsibilities. Production identity/session integration remains separate. |
 
+### 2026-08-27 - Common Core P4 Finance Foundation
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P4 finance, customer controls and management foundation |
+| Status | Implemented for current P4 finance foundation scope |
+| SRS mapping | `CC-P4-001` Customer Invoice; `CC-P4-002` Customer Credit; `CC-P4-003` Collections; `CC-P4-004` Supplier Bill; `CC-P4-005` Supplier Payment; `CC-P4-006` Expenses; `CC-P4-007` Cash/Bank; `CC-P4-008` Reconciliation foundation; `CC-P4-009` Loyalty; `CC-P4-010` Store Credit visibility; `CC-P4-012` Accounting Events; `CC-US-010`; `CC-US-011` |
+| What changed | Added P4 database models for customer invoices/lines, collections/allocations, supplier bills/lines, supplier payments/allocations, expense categories, expenses, bank accounts, bank transactions, loyalty accounts/entries and accounting events. Added P4 permission catalogue entries, Finance User role template, Owner/Admin/Branch Manager/Auditor role grants and additive migration backfill. Added Finance service rules for invoice/bill totals, payment allocation, over-allocation refusal, cash/bank balance update, loyalty non-negative balance, audit records and accounting events. Added API routes, API-client methods, Back Office `/finance` workspace and live smoke coverage. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826200839_p4_finance_foundation/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/finance.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/finance.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/finance/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/10_P4_IMPLEMENTATION_STATUS.md` |
+| Verification | `pnpm check` passed; `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm db:migrate:deploy` applied migration `20260826200839_p4_finance_foundation`; `node scripts/smoke-common-core.mjs` passed 111 live API checks against `http://localhost:4010/api/v1`, including P4 permission catalogue/role checks, invoice/collection, supplier bill/payment, expense, bank account/transaction, loyalty and audit evidence. |
+| Commit | Uncommitted |
+| Remaining work | P4 still needs customer credit limits, ageing, statements, formal reconciliation sessions, purchase order/goods receipt/supplier bill matching, sales-cost-gross-margin reporting, accounting export/retry/failure integration and richer finance-safe reversal/void workflows with approval hooks. |
+
 ## 5. Consolidated Remaining Work Register
 
 This section lists remaining work that must be considered before a phase or UI/UX capability is treated as complete. It combines gaps from the SRS, UI/UX plan and the detailed change entries above.
@@ -292,11 +311,11 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| Receivables/payables | Customer invoice posting, credit limits, collections allocation, supplier bills and supplier payments. |
-| Cash/bank/expenses | Expense entry, cash/bank accounts, deposits, transfers and reconciliation. |
-| Loyalty/store credit | Loyalty earn/redeem/expiry; store-credit issue/redemption history. |
-| Margins/accounting | Sales/cost/gross margin reporting; accounting event emission for posted financial/stock valuation changes. |
-| UI/UX | AR/AP screens, cash dashboard, customer 360, statements, approvals, `MoneySummary` and finance-safe reversal workflows. |
+| Receivables/payables | Implemented for current scope: customer invoice posting, collection allocation, supplier bill posting and supplier payment allocation. Remaining: credit limits, ageing, statements, formal customer credit holds and purchase order/goods receipt/supplier bill matching. |
+| Cash/bank/expenses | Implemented for current scope: expense categories, expense posting, cash/bank accounts, deposits/withdrawal-style transactions and balance updates. Remaining: account-to-account transfers, formal reconciliation sessions, statement import and cash-up variance approval. |
+| Loyalty/store credit | Implemented for current scope: loyalty earn/redeem/adjust/expire entries and non-negative point balance; store-credit issue/redemption remains implemented from P2 and visible in customer detail. Remaining: automated loyalty rules, scheduled expiry and store-credit liability reporting. |
+| Margins/accounting | Implemented for current scope: accounting events emitted for posted P4 financial actions. Remaining: sales/cost/gross margin reporting, stock valuation accounting, accounting export/retry/failure state and external accounting integration. |
+| UI/UX | Implemented for current scope: Back Office `/finance` workspace with KPI cards, receivables/payables/expenses/cash/loyalty/accounting-event tabs, quick-create forms, responsive tables and shared state handling. Remaining: customer 360 finance panel, statements, reconciliation UI, `MoneySummary` refinements and finance-safe reversal workflows. |
 
 ### P5 - Reusable Business Engines
 

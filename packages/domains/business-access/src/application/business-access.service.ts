@@ -56,6 +56,7 @@ import {
   P1_PERMISSIONS,
   P2_PERMISSIONS,
   P3_PERMISSIONS,
+  P4_PERMISSIONS,
   PLATFORM_PERMISSIONS,
   ROLE_TEMPLATES,
 } from "../domain/permissions.js";
@@ -66,6 +67,7 @@ const PERMISSION_CATALOG: PermissionCatalogEntry[] = [
   ...P1_PERMISSIONS.map((permission) => ({ ...permission, phase: "P1" as const })),
   ...P2_PERMISSIONS.map((permission) => ({ ...permission, phase: "P2" as const })),
   ...P3_PERMISSIONS.map((permission) => ({ ...permission, phase: "P3" as const })),
+  ...P4_PERMISSIONS.map((permission) => ({ ...permission, phase: "P4" as const })),
 ].map((permission) => ({
   code: permission.code,
   name: permission.name,

@@ -54,6 +54,14 @@ export const NAVIGATION: ShellNavigationItem[] = [
     status: "ready",
   },
   {
+    href: "/finance",
+    label: "Finance",
+    description: "money and balances",
+    phase: "P4",
+    group: "Manage",
+    status: "ready",
+  },
+  {
     href: "/customers",
     label: "Customers",
     description: "contacts and credit",

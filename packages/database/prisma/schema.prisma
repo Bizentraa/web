@@ -262,6 +262,56 @@ enum FulfillmentStatus {
   CANCELLED
 }
 
+enum CustomerInvoiceStatus {
+  POSTED
+  PARTIALLY_PAID
+  PAID
+  VOIDED
+}
+
+enum SupplierBillStatus {
+  POSTED
+  PARTIALLY_PAID
+  PAID
+  VOIDED
+}
+
+enum ExpenseStatus {
+  POSTED
+  VOIDED
+}
+
+enum BankAccountType {
+  CASH
+  BANK
+  GATEWAY
+  WALLET
+}
+
+enum BankTransactionKind {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER_IN
+  TRANSFER_OUT
+  COLLECTION
+  SUPPLIER_PAYMENT
+  EXPENSE
+  ADJUSTMENT
+}
+
+enum LoyaltyEntryKind {
+  EARN
+  REDEEM
+  ADJUST
+  EXPIRE
+}
+
+enum AccountingEventStatus {
+  PENDING
+  EXPORTED
+  FAILED
+}
+
 model Business {
   id              String       @id @default(uuid()) @db.Uuid
   slug            String       @unique @db.VarChar(80)
@@ -276,41 +326,52 @@ model Business {
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
 
-  branches          Branch[]
-  locations         Location[]
-  memberships       BusinessMembership[]
-  roles             Role[]
-  approvalPolicies  ApprovalPolicy[]
-  features          BusinessFeature[]
-  auditEvents       AuditEvent[]
-  documentSequences DocumentSequence[]
-  outboxEvents      OutboxEvent[]
-  theme             BusinessTheme?
-  units             Unit[]
-  itemCategories    ItemCategory[]
-  brands            Brand[]
-  itemTags          ItemTag[]
-  attributes        CustomAttributeDefinition[]
-  taxCategories     TaxCategory[]
-  priceLists        PriceList[]
-  items             Item[]
-  promotions        Promotion[]
-  customerGroups    CustomerGroup[]
-  customers         Customer[]
-  suppliers         Supplier[]
-  importBatches     ImportBatch[]
-  approvalRequests  ApprovalRequest[]
-  shifts            PosShift[]
-  sales             Sale[]
-  saleReturns       SaleReturn[]
-  storeCredits      StoreCreditAccount[]
-  stockBalances     StockBalance[]
-  stockMovements    StockMovement[]
-  reorderSettings   ReorderSetting[]
-  purchaseRequests  PurchaseRequest[]
-  purchaseOrders    PurchaseOrder[]
-  goodsReceipts     GoodsReceipt[]
-  fulfillmentOrders FulfillmentOrder[]
+  branches            Branch[]
+  locations           Location[]
+  memberships         BusinessMembership[]
+  roles               Role[]
+  approvalPolicies    ApprovalPolicy[]
+  features            BusinessFeature[]
+  auditEvents         AuditEvent[]
+  documentSequences   DocumentSequence[]
+  outboxEvents        OutboxEvent[]
+  theme               BusinessTheme?
+  units               Unit[]
+  itemCategories      ItemCategory[]
+  brands              Brand[]
+  itemTags            ItemTag[]
+  attributes          CustomAttributeDefinition[]
+  taxCategories       TaxCategory[]
+  priceLists          PriceList[]
+  items               Item[]
+  promotions          Promotion[]
+  customerGroups      CustomerGroup[]
+  customers           Customer[]
+  suppliers           Supplier[]
+  importBatches       ImportBatch[]
+  approvalRequests    ApprovalRequest[]
+  shifts              PosShift[]
+  sales               Sale[]
+  saleReturns         SaleReturn[]
+  storeCredits        StoreCreditAccount[]
+  stockBalances       StockBalance[]
+  stockMovements      StockMovement[]
+  reorderSettings     ReorderSetting[]
+  purchaseRequests    PurchaseRequest[]
+  purchaseOrders      PurchaseOrder[]
+  goodsReceipts       GoodsReceipt[]
+  fulfillmentOrders   FulfillmentOrder[]
+  customerInvoices    CustomerInvoice[]
+  customerCollections CustomerCollection[]
+  supplierBills       SupplierBill[]
+  supplierPayments    SupplierPayment[]
+  expenseCategories   ExpenseCategory[]
+  expenses            Expense[]
+  bankAccounts        BankAccount[]
+  bankTransactions    BankTransaction[]
+  loyaltyAccounts     LoyaltyAccount[]
+  loyaltyEntries      LoyaltyEntry[]
+  accountingEvents    AccountingEvent[]
 
   @@map("businesses")
 }
@@ -544,6 +605,8 @@ model Item {
   purchaseOrderLines   PurchaseOrderLine[]
   goodsReceiptLines    GoodsReceiptLine[]
   fulfillmentLines     FulfillmentLine[]
+  customerInvoiceLines CustomerInvoiceLine[]
+  supplierBillLines    SupplierBillLine[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -681,10 +744,14 @@ model Customer {
   createdAt      DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
 
-  business    Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  group       CustomerGroup?      @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
-  sales       Sale[]
-  storeCredit StoreCreditAccount?
+  business       Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  group          CustomerGroup?       @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
+  sales          Sale[]
+  storeCredit    StoreCreditAccount?
+  invoices       CustomerInvoice[]
+  collections    CustomerCollection[]
+  loyalty        LoyaltyAccount?
+  loyaltyEntries LoyaltyEntry[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -708,9 +775,11 @@ model Supplier {
   createdAt    DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
 
-  business       Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  business       Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
   supplierItems  SupplierItem[]
   purchaseOrders PurchaseOrder[]
+  bills          SupplierBill[]
+  payments       SupplierPayment[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -805,21 +874,27 @@ model Branch {
   createdAt  DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
 
-  business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  locations         Location[]
-  userAssignments   BranchAssignment[]
-  auditEvents       AuditEvent[]
-  documentSequences DocumentSequence[]
-  itemPrices        ItemPrice[]
-  approvalRequests  ApprovalRequest[]
-  shifts            PosShift[]
-  sales             Sale[]
-  saleReturns       SaleReturn[]
-  stockMovements    StockMovement[]
-  purchaseRequests  PurchaseRequest[]
-  purchaseOrders    PurchaseOrder[]
-  goodsReceipts     GoodsReceipt[]
-  fulfillmentOrders FulfillmentOrder[]
+  business            Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  locations           Location[]
+  userAssignments     BranchAssignment[]
+  auditEvents         AuditEvent[]
+  documentSequences   DocumentSequence[]
+  itemPrices          ItemPrice[]
+  approvalRequests    ApprovalRequest[]
+  shifts              PosShift[]
+  sales               Sale[]
+  saleReturns         SaleReturn[]
+  stockMovements      StockMovement[]
+  purchaseRequests    PurchaseRequest[]
+  purchaseOrders      PurchaseOrder[]
+  goodsReceipts       GoodsReceipt[]
+  fulfillmentOrders   FulfillmentOrder[]
+  customerInvoices    CustomerInvoice[]
+  customerCollections CustomerCollection[]
+  supplierBills       SupplierBill[]
+  supplierPayments    SupplierPayment[]
+  expenses            Expense[]
+  bankTransactions    BankTransaction[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -874,25 +949,32 @@ model BusinessMembership {
   createdAt  DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime         @updatedAt @db.Timestamptz(3)
 
-  business           Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  user               User               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  branchAssignments  BranchAssignment[]
-  roleAssignments    MembershipRole[]
-  auditEvents        AuditEvent[]       @relation("AuditActor")
-  approvalRequests   ApprovalRequest[]  @relation("ApprovalRequestedBy")
-  approvalDecisions  ApprovalRequest[]  @relation("ApprovalDecidedBy")
-  openedShifts       PosShift[]         @relation("ShiftOpenedBy")
-  closedShifts       PosShift[]         @relation("ShiftClosedBy")
-  cashMovements      CashMovement[]     @relation("CashMovementCreatedBy")
-  sales              Sale[]             @relation("SaleCreatedBy")
-  salePayments       SalePayment[]      @relation("PaymentCreatedBy")
-  saleReturns        SaleReturn[]       @relation("ReturnCreatedBy")
-  storeCreditEntries StoreCreditEntry[] @relation("StoreCreditCreatedBy")
-  stockMovements     StockMovement[]    @relation("StockMovementCreatedBy")
-  purchaseRequests   PurchaseRequest[]  @relation("PurchaseRequestCreatedBy")
-  purchaseOrders     PurchaseOrder[]    @relation("PurchaseOrderCreatedBy")
-  goodsReceipts      GoodsReceipt[]     @relation("GoodsReceiptCreatedBy")
-  fulfillmentOrders  FulfillmentOrder[] @relation("FulfillmentCreatedBy")
+  business            Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  branchAssignments   BranchAssignment[]
+  roleAssignments     MembershipRole[]
+  auditEvents         AuditEvent[]         @relation("AuditActor")
+  approvalRequests    ApprovalRequest[]    @relation("ApprovalRequestedBy")
+  approvalDecisions   ApprovalRequest[]    @relation("ApprovalDecidedBy")
+  openedShifts        PosShift[]           @relation("ShiftOpenedBy")
+  closedShifts        PosShift[]           @relation("ShiftClosedBy")
+  cashMovements       CashMovement[]       @relation("CashMovementCreatedBy")
+  sales               Sale[]               @relation("SaleCreatedBy")
+  salePayments        SalePayment[]        @relation("PaymentCreatedBy")
+  saleReturns         SaleReturn[]         @relation("ReturnCreatedBy")
+  storeCreditEntries  StoreCreditEntry[]   @relation("StoreCreditCreatedBy")
+  stockMovements      StockMovement[]      @relation("StockMovementCreatedBy")
+  purchaseRequests    PurchaseRequest[]    @relation("PurchaseRequestCreatedBy")
+  purchaseOrders      PurchaseOrder[]      @relation("PurchaseOrderCreatedBy")
+  goodsReceipts       GoodsReceipt[]       @relation("GoodsReceiptCreatedBy")
+  fulfillmentOrders   FulfillmentOrder[]   @relation("FulfillmentCreatedBy")
+  customerInvoices    CustomerInvoice[]    @relation("CustomerInvoiceCreatedBy")
+  customerCollections CustomerCollection[] @relation("CustomerCollectionCreatedBy")
+  supplierBills       SupplierBill[]       @relation("SupplierBillCreatedBy")
+  supplierPayments    SupplierPayment[]    @relation("SupplierPaymentCreatedBy")
+  expenses            Expense[]            @relation("ExpenseCreatedBy")
+  bankTransactions    BankTransaction[]    @relation("BankTransactionCreatedBy")
+  loyaltyEntries      LoyaltyEntry[]       @relation("LoyaltyEntryCreatedBy")
 
   @@unique([businessId, userId])
   @@unique([id, businessId])
@@ -1541,13 +1623,14 @@ model PurchaseOrder {
   updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
   approvedAt            DateTime?           @db.Timestamptz(3)
 
-  business  Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  branch    Branch              @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
-  supplier  Supplier            @relation(fields: [supplierId, businessId], references: [id, businessId], onDelete: Restrict)
-  request   PurchaseRequest?    @relation(fields: [purchaseRequestId, businessId], references: [id, businessId], onDelete: Restrict)
-  createdBy BusinessMembership  @relation("PurchaseOrderCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
-  lines     PurchaseOrderLine[]
-  receipts  GoodsReceipt[]
+  business      Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch        Branch              @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  supplier      Supplier            @relation(fields: [supplierId, businessId], references: [id, businessId], onDelete: Restrict)
+  request       PurchaseRequest?    @relation(fields: [purchaseRequestId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy     BusinessMembership  @relation("PurchaseOrderCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  lines         PurchaseOrderLine[]
+  receipts      GoodsReceipt[]
+  supplierBills SupplierBill[]
 
   @@unique([businessId, number])
   @@unique([id, businessId])
@@ -1663,4 +1746,346 @@ model FulfillmentLine {
 
   @@index([businessId, itemId])
   @@map("fulfillment_lines")
+}
+
+/// CC-P4-001: posted customer invoices create receivables until collected.
+model CustomerInvoice {
+  id                    String                @id @default(uuid()) @db.Uuid
+  businessId            String                @db.Uuid
+  branchId              String?               @db.Uuid
+  customerId            String                @db.Uuid
+  number                String                @db.VarChar(60)
+  status                CustomerInvoiceStatus @default(POSTED)
+  currencyCode          String                @db.Char(3)
+  totalAmount           Decimal               @db.Decimal(19, 4)
+  paidAmount            Decimal               @default(0) @db.Decimal(19, 4)
+  balanceAmount         Decimal               @db.Decimal(19, 4)
+  dueDate               DateTime?             @db.Date
+  notes                 String?               @db.VarChar(500)
+  createdByMembershipId String                @db.Uuid
+  postedAt              DateTime              @default(now()) @db.Timestamptz(3)
+  createdAt             DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime              @updatedAt @db.Timestamptz(3)
+
+  business    Business                       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch      Branch?                        @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  customer    Customer                       @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy   BusinessMembership             @relation("CustomerInvoiceCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  lines       CustomerInvoiceLine[]
+  allocations CustomerCollectionAllocation[]
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, customerId, status])
+  @@index([businessId, dueDate])
+  @@map("customer_invoices")
+}
+
+model CustomerInvoiceLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  businessId  String  @db.Uuid
+  invoiceId   String  @db.Uuid
+  itemId      String? @db.Uuid
+  description String  @db.VarChar(240)
+  quantity    Decimal @db.Decimal(19, 4)
+  unitPrice   Decimal @db.Decimal(19, 4)
+  taxAmount   Decimal @default(0) @db.Decimal(19, 4)
+  lineTotal   Decimal @db.Decimal(19, 4)
+
+  invoice CustomerInvoice @relation(fields: [invoiceId, businessId], references: [id, businessId], onDelete: Cascade)
+  item    Item?           @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, itemId])
+  @@map("customer_invoice_lines")
+}
+
+/// CC-P4-003: collections are allocated explicitly so customer balances are explainable.
+model CustomerCollection {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @db.Uuid
+  branchId              String?  @db.Uuid
+  customerId            String   @db.Uuid
+  amount                Decimal  @db.Decimal(19, 4)
+  unallocatedAmount     Decimal  @default(0) @db.Decimal(19, 4)
+  currencyCode          String   @db.Char(3)
+  method                String   @db.VarChar(60)
+  reference             String?  @db.VarChar(120)
+  collectedAt           DateTime @default(now()) @db.Timestamptz(3)
+  createdByMembershipId String   @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+
+  business    Business                       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch      Branch?                        @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  customer    Customer                       @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy   BusinessMembership             @relation("CustomerCollectionCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  allocations CustomerCollectionAllocation[]
+
+  @@unique([id, businessId])
+  @@index([businessId, customerId, collectedAt])
+  @@map("customer_collections")
+}
+
+model CustomerCollectionAllocation {
+  id           String  @id @default(uuid()) @db.Uuid
+  businessId   String  @db.Uuid
+  collectionId String  @db.Uuid
+  invoiceId    String  @db.Uuid
+  amount       Decimal @db.Decimal(19, 4)
+
+  collection CustomerCollection @relation(fields: [collectionId, businessId], references: [id, businessId], onDelete: Cascade)
+  invoice    CustomerInvoice    @relation(fields: [invoiceId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, collectionId, invoiceId])
+  @@index([businessId, invoiceId])
+  @@map("customer_collection_allocations")
+}
+
+/// CC-P4-004: posted supplier bills create payable balances until paid.
+model SupplierBill {
+  id                    String             @id @default(uuid()) @db.Uuid
+  businessId            String             @db.Uuid
+  branchId              String?            @db.Uuid
+  supplierId            String             @db.Uuid
+  purchaseOrderId       String?            @db.Uuid
+  number                String             @db.VarChar(60)
+  supplierDocument      String?            @db.VarChar(120)
+  status                SupplierBillStatus @default(POSTED)
+  currencyCode          String             @db.Char(3)
+  totalAmount           Decimal            @db.Decimal(19, 4)
+  paidAmount            Decimal            @default(0) @db.Decimal(19, 4)
+  balanceAmount         Decimal            @db.Decimal(19, 4)
+  dueDate               DateTime?          @db.Date
+  notes                 String?            @db.VarChar(500)
+  createdByMembershipId String             @db.Uuid
+  postedAt              DateTime           @default(now()) @db.Timestamptz(3)
+  createdAt             DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime           @updatedAt @db.Timestamptz(3)
+
+  business      Business                    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch        Branch?                     @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  supplier      Supplier                    @relation(fields: [supplierId, businessId], references: [id, businessId], onDelete: Restrict)
+  purchaseOrder PurchaseOrder?              @relation(fields: [purchaseOrderId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy     BusinessMembership          @relation("SupplierBillCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  lines         SupplierBillLine[]
+  allocations   SupplierPaymentAllocation[]
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, supplierId, status])
+  @@index([businessId, dueDate])
+  @@map("supplier_bills")
+}
+
+model SupplierBillLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  businessId  String  @db.Uuid
+  billId      String  @db.Uuid
+  itemId      String? @db.Uuid
+  description String  @db.VarChar(240)
+  quantity    Decimal @db.Decimal(19, 4)
+  unitCost    Decimal @db.Decimal(19, 4)
+  taxAmount   Decimal @default(0) @db.Decimal(19, 4)
+  lineTotal   Decimal @db.Decimal(19, 4)
+
+  bill SupplierBill @relation(fields: [billId, businessId], references: [id, businessId], onDelete: Cascade)
+  item Item?        @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, itemId])
+  @@map("supplier_bill_lines")
+}
+
+/// CC-P4-005: supplier payments reduce payable balances through explicit allocations.
+model SupplierPayment {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @db.Uuid
+  branchId              String?  @db.Uuid
+  supplierId            String   @db.Uuid
+  amount                Decimal  @db.Decimal(19, 4)
+  unallocatedAmount     Decimal  @default(0) @db.Decimal(19, 4)
+  currencyCode          String   @db.Char(3)
+  method                String   @db.VarChar(60)
+  reference             String?  @db.VarChar(120)
+  paidAt                DateTime @default(now()) @db.Timestamptz(3)
+  createdByMembershipId String   @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+
+  business    Business                    @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch      Branch?                     @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  supplier    Supplier                    @relation(fields: [supplierId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy   BusinessMembership          @relation("SupplierPaymentCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  allocations SupplierPaymentAllocation[]
+
+  @@unique([id, businessId])
+  @@index([businessId, supplierId, paidAt])
+  @@map("supplier_payments")
+}
+
+model SupplierPaymentAllocation {
+  id         String  @id @default(uuid()) @db.Uuid
+  businessId String  @db.Uuid
+  paymentId  String  @db.Uuid
+  billId     String  @db.Uuid
+  amount     Decimal @db.Decimal(19, 4)
+
+  payment SupplierPayment @relation(fields: [paymentId, businessId], references: [id, businessId], onDelete: Cascade)
+  bill    SupplierBill    @relation(fields: [billId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, paymentId, billId])
+  @@index([businessId, billId])
+  @@map("supplier_payment_allocations")
+}
+
+model ExpenseCategory {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(50)
+  name       String       @db.VarChar(120)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  expenses Expense[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id                    String        @id @default(uuid()) @db.Uuid
+  businessId            String        @db.Uuid
+  branchId              String?       @db.Uuid
+  categoryId            String        @db.Uuid
+  status                ExpenseStatus @default(POSTED)
+  amount                Decimal       @db.Decimal(19, 4)
+  taxAmount             Decimal       @default(0) @db.Decimal(19, 4)
+  currencyCode          String        @db.Char(3)
+  paymentMethod         String        @db.VarChar(60)
+  spentAt               DateTime      @default(now()) @db.Timestamptz(3)
+  supplierName          String?       @db.VarChar(180)
+  description           String        @db.VarChar(240)
+  attachmentUrl         String?       @db.VarChar(500)
+  createdByMembershipId String        @db.Uuid
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch?            @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  category  ExpenseCategory    @relation(fields: [categoryId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("ExpenseCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, categoryId, spentAt])
+  @@map("expenses")
+}
+
+model BankAccount {
+  id             String          @id @default(uuid()) @db.Uuid
+  businessId     String          @db.Uuid
+  code           String          @db.VarChar(50)
+  name           String          @db.VarChar(120)
+  type           BankAccountType
+  currencyCode   String          @db.Char(3)
+  openingBalance Decimal         @default(0) @db.Decimal(19, 4)
+  currentBalance Decimal         @default(0) @db.Decimal(19, 4)
+  status         RecordStatus    @default(ACTIVE)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  transactions BankTransaction[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("bank_accounts")
+}
+
+model BankTransaction {
+  id                    String              @id @default(uuid()) @db.Uuid
+  businessId            String              @db.Uuid
+  branchId              String?             @db.Uuid
+  accountId             String              @db.Uuid
+  kind                  BankTransactionKind
+  amount                Decimal             @db.Decimal(19, 4)
+  currencyCode          String              @db.Char(3)
+  reference             String?             @db.VarChar(120)
+  description           String              @db.VarChar(240)
+  occurredAt            DateTime            @default(now()) @db.Timestamptz(3)
+  createdByMembershipId String              @db.Uuid
+  createdAt             DateTime            @default(now()) @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch?            @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  account   BankAccount        @relation(fields: [accountId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("BankTransactionCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, accountId, occurredAt])
+  @@map("bank_transactions")
+}
+
+model LoyaltyAccount {
+  id             String   @id @default(uuid()) @db.Uuid
+  businessId     String   @db.Uuid
+  customerId     String   @db.Uuid
+  pointsBalance  Decimal  @default(0) @db.Decimal(19, 4)
+  tier           String   @default("STANDARD") @db.VarChar(80)
+  lastActivityAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer Customer       @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  entries  LoyaltyEntry[]
+
+  @@unique([customerId, businessId])
+  @@unique([id, businessId])
+  @@index([businessId, tier])
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyEntry {
+  id                    String           @id @default(uuid()) @db.Uuid
+  businessId            String           @db.Uuid
+  accountId             String           @db.Uuid
+  customerId            String           @db.Uuid
+  kind                  LoyaltyEntryKind
+  points                Decimal          @db.Decimal(19, 4)
+  resultingBalance      Decimal          @db.Decimal(19, 4)
+  reference             String?          @db.VarChar(120)
+  reason                String           @db.VarChar(240)
+  expiresAt             DateTime?        @db.Timestamptz(3)
+  createdByMembershipId String           @db.Uuid
+  createdAt             DateTime         @default(now()) @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  account   LoyaltyAccount     @relation(fields: [accountId, businessId], references: [id, businessId], onDelete: Cascade)
+  customer  Customer           @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("LoyaltyEntryCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, customerId, createdAt])
+  @@map("loyalty_entries")
+}
+
+/// CC-P4-012: posted finance actions emit accounting events for optional accounting integration.
+model AccountingEvent {
+  id           String                @id @default(uuid()) @db.Uuid
+  businessId   String                @db.Uuid
+  sourceType   String                @db.VarChar(80)
+  sourceId     String                @db.VarChar(80)
+  eventType    String                @db.VarChar(120)
+  amount       Decimal?              @db.Decimal(19, 4)
+  currencyCode String?               @db.Char(3)
+  payload      Json
+  status       AccountingEventStatus @default(PENDING)
+  createdAt    DateTime              @default(now()) @db.Timestamptz(3)
+  exportedAt   DateTime?             @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, sourceType, sourceId, eventType])
+  @@index([businessId, status, createdAt])
+  @@map("accounting_events")
 }

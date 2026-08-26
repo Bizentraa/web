@@ -104,17 +104,42 @@ export const P3_PERMISSIONS = [
   { code: "FULFILLMENT_MANAGE", name: "Pick, pack and dispatch orders", area: "Fulfillment" },
 ] as const satisfies readonly PermissionDefinition[];
 
+export const P4_PERMISSIONS = [
+  { code: "AR_VIEW", name: "View customer invoices and collections", area: "Finance" },
+  { code: "AR_MANAGE", name: "Create invoices and collect customer payments", area: "Finance" },
+  { code: "AP_VIEW", name: "View supplier bills and payments", area: "Finance" },
+  {
+    code: "AP_MANAGE",
+    name: "Create supplier bills and record supplier payments",
+    area: "Finance",
+  },
+  { code: "EXPENSE_VIEW", name: "View expenses", area: "Finance" },
+  { code: "EXPENSE_MANAGE", name: "Create expense categories and expenses", area: "Finance" },
+  { code: "BANK_VIEW", name: "View cash and bank accounts", area: "Finance" },
+  {
+    code: "BANK_MANAGE",
+    name: "Post cash and bank transactions",
+    area: "Finance",
+    sensitive: true,
+  },
+  { code: "LOYALTY_VIEW", name: "View loyalty balances", area: "Loyalty" },
+  { code: "LOYALTY_MANAGE", name: "Adjust loyalty balances", area: "Loyalty", sensitive: true },
+  { code: "ACCOUNTING_EVENT_VIEW", name: "View accounting event queue", area: "Finance" },
+] as const satisfies readonly PermissionDefinition[];
+
 export const PLATFORM_PERMISSIONS = [
   ...P0_PERMISSIONS,
   ...P1_PERMISSIONS,
   ...P2_PERMISSIONS,
   ...P3_PERMISSIONS,
+  ...P4_PERMISSIONS,
 ] as const;
 
 export type P0PermissionCode = (typeof P0_PERMISSIONS)[number]["code"];
 export type P1PermissionCode = (typeof P1_PERMISSIONS)[number]["code"];
 export type P2PermissionCode = (typeof P2_PERMISSIONS)[number]["code"];
 export type P3PermissionCode = (typeof P3_PERMISSIONS)[number]["code"];
+export type P4PermissionCode = (typeof P4_PERMISSIONS)[number]["code"];
 export type PlatformPermissionCode = (typeof PLATFORM_PERMISSIONS)[number]["code"];
 
 const PERMISSION_CODES = new Set<string>(
@@ -213,6 +238,17 @@ export const ROLE_TEMPLATES = [
       "PURCHASE_RECEIVE",
       "FULFILLMENT_VIEW",
       "FULFILLMENT_MANAGE",
+      "AR_VIEW",
+      "AR_MANAGE",
+      "AP_VIEW",
+      "AP_MANAGE",
+      "EXPENSE_VIEW",
+      "EXPENSE_MANAGE",
+      "BANK_VIEW",
+      "BANK_MANAGE",
+      "LOYALTY_VIEW",
+      "LOYALTY_MANAGE",
+      "ACCOUNTING_EVENT_VIEW",
     ],
   },
   {
@@ -299,6 +335,33 @@ export const ROLE_TEMPLATES = [
     ],
   },
   {
+    code: "FINANCE_USER",
+    name: "Finance User",
+    description: "Manages customer invoices, supplier bills, expenses, cash and finance reviews.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "CUSTOMER_VIEW",
+      "SUPPLIER_VIEW",
+      "SALE_VIEW",
+      "STORE_CREDIT_VIEW",
+      "FINANCE_VIEW",
+      "AR_VIEW",
+      "AR_MANAGE",
+      "AP_VIEW",
+      "AP_MANAGE",
+      "EXPENSE_VIEW",
+      "EXPENSE_MANAGE",
+      "BANK_VIEW",
+      "BANK_MANAGE",
+      "LOYALTY_VIEW",
+      "LOYALTY_MANAGE",
+      "ACCOUNTING_EVENT_VIEW",
+      "AUDIT_VIEW",
+      "NUMBERING_VIEW",
+    ],
+  },
+  {
     code: "AUDITOR",
     name: "Auditor / Read-only User",
     description: "Reviews records and audit history without changing business data.",
@@ -326,6 +389,12 @@ export const ROLE_TEMPLATES = [
       "INVENTORY_VIEW",
       "PURCHASE_VIEW",
       "FULFILLMENT_VIEW",
+      "AR_VIEW",
+      "AP_VIEW",
+      "EXPENSE_VIEW",
+      "BANK_VIEW",
+      "LOYALTY_VIEW",
+      "ACCOUNTING_EVENT_VIEW",
     ],
   },
 ] as const satisfies readonly {

@@ -130,15 +130,18 @@ async function main() {
   const cashierRole = access.roles.find((role) => role.code === "CASHIER");
   const adminRole = access.roles.find((role) => role.code === "ADMINISTRATOR");
   const managerRole = access.roles.find((role) => role.code === "BRANCH_MANAGER");
+  const financeRole = access.roles.find((role) => role.code === "FINANCE_USER");
   check("Role templates were created with the Business", Boolean(cashierRole && adminRole));
   check(
     "Cashier Role cannot manage Roles",
     Boolean(cashierRole) && !cashierRole.permissions.includes("ROLE_MANAGE"),
   );
   check(
-    "Permission catalogue covers P0, P1, P2 and P3",
+    "Permission catalogue covers P0, P1, P2, P3 and P4",
     access.permissionCatalog.some((permission) => permission.code === "INVENTORY_VIEW") &&
-      access.permissionCatalog.some((permission) => permission.phase === "P3"),
+      access.permissionCatalog.some((permission) => permission.phase === "P3") &&
+      access.permissionCatalog.some((permission) => permission.code === "AR_MANAGE") &&
+      access.permissionCatalog.some((permission) => permission.phase === "P4"),
   );
   check(
     "Business Administrator Role receives P3 permissions",
@@ -147,6 +150,17 @@ async function main() {
   check(
     "Branch Manager Role receives P3 operations permissions",
     Boolean(managerRole) && managerRole.permissions.includes("INVENTORY_VIEW"),
+  );
+  check(
+    "Business Administrator Role receives P4 permissions",
+    Boolean(adminRole) && adminRole.permissions.includes("AR_MANAGE"),
+  );
+  check(
+    "Finance User Role receives P4 operations permissions",
+    Boolean(financeRole) &&
+      financeRole.permissions.includes("AR_MANAGE") &&
+      financeRole.permissions.includes("AP_MANAGE") &&
+      financeRole.permissions.includes("BANK_MANAGE"),
   );
 
   const manager = await call(`/businesses/${owner.businessId}/users`, {
@@ -612,6 +626,217 @@ async function main() {
   );
   check("Rolled back items are gone", afterRollback.total === 0);
 
+  /* ------------------------------------------------------------ P4 finance */
+  console.log("\nP4 finance, credit and loyalty");
+  const initialFinance = await call(`/businesses/${owner.businessId}/finance/overview`, {
+    identity: owner,
+  });
+  check("Finance overview loads for Business Owner", Boolean(initialFinance.totals));
+
+  const expenseCategory = await call(`/businesses/${owner.businessId}/finance/expense-categories`, {
+    method: "POST",
+    identity: owner,
+    body: { code: `EXP${stamp.slice(-6)}`, name: "Smoke expenses" },
+  });
+  check("Expense category can be created", Boolean(expenseCategory.id));
+
+  const bankAccount = await call(`/businesses/${owner.businessId}/finance/bank-accounts`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      code: `CASH${stamp.slice(-5)}`,
+      name: "Smoke cash account",
+      type: "CASH",
+      currencyCode: "LKR",
+      openingBalance: 1000,
+    },
+  });
+  check("Cash or bank account can be created", Boolean(bankAccount.id));
+
+  const bankTransaction = await call(`/businesses/${owner.businessId}/finance/bank-transactions`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      accountId: bankAccount.id,
+      kind: "DEPOSIT",
+      amount: 250,
+      currencyCode: "LKR",
+      description: "Owner cash deposit",
+    },
+  });
+  check("Cash or bank transaction updates account balance", Boolean(bankTransaction.id));
+
+  const customerInvoice = await call(`/businesses/${owner.businessId}/finance/customer-invoices`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      customerId: customer.id,
+      currencyCode: "LKR",
+      dueDate: "2026-09-10",
+      lines: [
+        {
+          itemId: item.id,
+          description: "Wholesale milk invoice",
+          quantity: 2,
+          unitAmount: 450,
+          taxAmount: 135,
+        },
+      ],
+    },
+  });
+  check("Customer invoice creates a receivable", Boolean(customerInvoice.id));
+
+  const partialCollection = await call(
+    `/businesses/${owner.businessId}/finance/customer-collections`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        branchId: mainBranchId,
+        customerId: customer.id,
+        amount: 500,
+        currencyCode: "LKR",
+        method: "Cash",
+        allocations: [{ documentId: customerInvoice.id, amount: 500 }],
+      },
+    },
+  );
+  check("Customer collection can be allocated to an invoice", Boolean(partialCollection.id));
+
+  const overCollection = await call(
+    `/businesses/${owner.businessId}/finance/customer-collections`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        customerId: customer.id,
+        amount: 99999,
+        currencyCode: "LKR",
+        method: "Cash",
+        allocations: [{ documentId: customerInvoice.id, amount: 99999 }],
+      },
+      expect: 400,
+    },
+  );
+  check(
+    "Customer collection cannot over-allocate an invoice",
+    overCollection.code === "INVALID_INPUT",
+  );
+
+  const supplierBill = await call(`/businesses/${owner.businessId}/finance/supplier-bills`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      supplierId: supplier.id,
+      currencyCode: "LKR",
+      supplierDocument: "SUP-BILL-001",
+      lines: [
+        {
+          itemId: item.id,
+          description: "Supplier milk bill",
+          quantity: 3,
+          unitAmount: 370,
+          taxAmount: 0,
+        },
+      ],
+    },
+  });
+  check("Supplier bill creates a payable", Boolean(supplierBill.id));
+
+  const supplierPayment = await call(`/businesses/${owner.businessId}/finance/supplier-payments`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      supplierId: supplier.id,
+      amount: 500,
+      currencyCode: "LKR",
+      method: "Cash",
+      allocations: [{ documentId: supplierBill.id, amount: 500 }],
+    },
+  });
+  check("Supplier payment can be allocated to a bill", Boolean(supplierPayment.id));
+
+  const expense = await call(`/businesses/${owner.businessId}/finance/expenses`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      categoryId: expenseCategory.id,
+      amount: 150,
+      taxAmount: 0,
+      currencyCode: "LKR",
+      paymentMethod: "Cash",
+      description: "Counter cleaning expense",
+    },
+  });
+  check("Expense can be posted", Boolean(expense.id));
+
+  const loyaltyEarn = await call(`/businesses/${owner.businessId}/finance/loyalty-adjustments`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      customerId: customer.id,
+      kind: "EARN",
+      points: 25,
+      tier: "STANDARD",
+      reason: "Opening loyalty balance",
+    },
+  });
+  check("Loyalty points can be earned", Boolean(loyaltyEarn.id));
+
+  const loyaltyRedeem = await call(`/businesses/${owner.businessId}/finance/loyalty-adjustments`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      customerId: customer.id,
+      kind: "REDEEM",
+      points: 10,
+      reason: "Manual test redemption",
+    },
+  });
+  check("Loyalty points can be redeemed", Boolean(loyaltyRedeem.id));
+
+  const loyaltyOverRedeem = await call(
+    `/businesses/${owner.businessId}/finance/loyalty-adjustments`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        customerId: customer.id,
+        kind: "REDEEM",
+        points: 9999,
+        reason: "Try to over redeem",
+      },
+      expect: 400,
+    },
+  );
+  check("Loyalty balance cannot go below zero", loyaltyOverRedeem.code === "INVALID_INPUT");
+
+  const financeOverview = await call(`/businesses/${owner.businessId}/finance/overview`, {
+    identity: owner,
+  });
+  const invoiceRow = financeOverview.customerInvoices.find((row) => row.id === customerInvoice.id);
+  const billRow = financeOverview.supplierBills.find((row) => row.id === supplierBill.id);
+  const accountRow = financeOverview.bankAccounts.find((row) => row.id === bankAccount.id);
+  check(
+    "Finance overview reports partial customer invoice balance",
+    invoiceRow?.status === "PARTIALLY_PAID",
+  );
+  check(
+    "Finance overview reports partial supplier bill balance",
+    billRow?.status === "PARTIALLY_PAID",
+  );
+  check("Finance overview reports updated cash balance", accountRow?.currentBalance === 1250);
+  check(
+    "Finance accounting events are queued",
+    financeOverview.accountingEvents.some((event) => event.sourceType === "CustomerInvoice") &&
+      financeOverview.accountingEvents.some((event) => event.sourceType === "SupplierBill"),
+  );
+
   /* ------------------------------------------------------------ P2 selling */
   console.log("\nP2 shift, sale, payment and receipt");
   const shift = await call(`/businesses/${owner.businessId}/pos/shifts`, {
@@ -991,6 +1216,14 @@ async function main() {
   check(
     "Audit records cover inventory and purchasing",
     actions.has("StockMovement") && actions.has("PurchaseOrder") && actions.has("GoodsReceipt"),
+  );
+  check(
+    "Audit records cover finance",
+    actions.has("CustomerInvoice") &&
+      actions.has("SupplierBill") &&
+      actions.has("Expense") &&
+      actions.has("BankTransaction") &&
+      actions.has("LoyaltyAccount"),
   );
 
   const sequences = await call(`/businesses/${owner.businessId}/document-numbers`, {

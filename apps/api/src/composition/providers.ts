@@ -3,6 +3,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import {
   BusinessAccessService,
   CatalogService,
+  FinanceService,
   ImportService,
   InventoryService,
 } from "@bizentra/domain-business-access";
@@ -32,6 +33,12 @@ export const importProvider: Provider = {
   provide: ImportService,
   inject: [DATABASE],
   useFactory: (database: DatabaseClient) => new ImportService(database),
+};
+
+export const financeProvider: Provider = {
+  provide: FinanceService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new FinanceService(database),
 };
 
 export const inventoryProvider: Provider = {
