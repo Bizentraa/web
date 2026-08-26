@@ -1,90 +1,94 @@
 # UI Component System
 
 **Date:** 2026-08-26  
-**Scope:** Back Office and future POS shared UI primitives
+**Scope:** the shared component system used by Back Office and POS  
+**Specification:** [`../ui-ux/01_COMMON_UIUX_DESIGN_SYSTEM.md`](../ui-ux/01_COMMON_UIUX_DESIGN_SYSTEM.md)
 
 ## Decision
 
-Bizentra will use the shadcn/ui approach of owned, modular, reusable components, but will not add the full shadcn CLI/Tailwind setup in this slice.
+Bizentra uses the shadcn/ui idea of owned, modular, reusable components, but does not add the
+shadcn CLI or Tailwind. The platform already has a Business-selectable theme engine built on CSS
+variables; adding Tailwind would mean migrating that engine and every existing screen first. Owning
+the components directly keeps the saved Business theme authoritative and keeps the bundle small.
 
-Reason: the current platform already has a Business-selectable theme engine based on CSS variables. Installing standard shadcn/ui directly would require introducing Tailwind CSS first and then migrating existing screens. That is a larger design-system migration and should be done deliberately, not as a small P1 catalog refactor.
+If Tailwind is adopted later, the migration is mechanical: the component API stays, and the CSS
+variables in `styles.css` map onto Tailwind theme tokens.
 
-## Current Implementation
+## Where things live
 
-Reusable UI primitives now live in:
+| File | What it holds | Imported by |
+|---|---|---|
+| `packages/design-system/styles.css` | Every shared `ui-*` style: base, shell, layout, surfaces, controls, data, overlays, POS, states and responsive rules | Both application layouts |
+| `packages/design-system/src/index.tsx` | Server-safe components and formatters | Any component |
+| `packages/design-system/src/client.tsx` | `"use client"` components and hooks | Client components only |
+| `packages/design-system/src/theme.tsx` | Business theme provider and cache | Both application layouts |
+| `apps/*/src/app/globals.css` | Only the Business theme variables and that application's own screens | Its own application |
 
-- `packages/design-system/src/index.tsx`
+Before this slice each application carried its own copy of the shared styles. They are now defined
+once, so a table, chip or dialog cannot drift between Back Office and POS.
 
-The first primitives are:
+## Server-safe components
 
 | Component | Purpose |
 |---|---|
-| `Card` | Shared surface wrapper; can render as `section` or `form` |
-| `CardHeader` | Standard title/action header layout |
-| `CardContent` | Standard content spacing |
-| `CardTitle` | Shared section title |
-| `CardDescription` | Shared helper copy |
-| `Kicker` | Small uppercase phase/context label |
-| `Button` | Primary, secondary and ghost actions |
-| `Badge` | Status and category pills |
-| `Progress` | Accessible progress indicator |
-| `Field` | Label, input and hint wrapper |
+| `AppShell` | Sidebar, sticky topbar with Business/Branch context, mobile bottom navigation |
 | `PageHeader` | Page title, description, visible status and actions |
-| `KpiCard` | Role dashboard and status dashboard metrics |
-| `StatusChip` | Text + semantic state indicator |
-| `OfflineBanner` | Online/offline/sync/review visibility |
-| `EmptyState` | Empty or unavailable workflow explanation with next action |
+| `Card`, `FormCard`, `CardHeader`, `CardContent`, `CardTitle`, `CardDescription` | Shared surfaces; `FormCard` is a card that is also the form |
+| `Kicker` | Small uppercase phase or context label |
+| `KpiCard` | Dashboard metric with trend and comparison |
+| `StatusCard` | Ready / planned / attention summary |
+| `EntityHeader` | Identity, status, context and main actions on a detail page |
+| `DescriptionList` | Label and value pairs on detail pages |
+| `Stack`, `Row`, `Grid`, `Split`, `Toolbar` | Layout helpers so screens do not invent their own spacing |
+| `Button` | Primary, secondary, ghost and danger, in quiet, normal and large sizes |
+| `Badge`, `StatusChip` | State shown as text plus a semantic colour, never colour alone |
+| `Progress` | Accessible progress indicator |
+| `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text |
+| `FilterBar` | Search, extra controls, actions and clearable active-filter chips |
+| `DataTable` | Sticky header, aligned numeric columns, row click, footer, and task cards below 768px |
+| `Timeline` | Business history on a record |
+| `MoneySummary` | Subtotal, discount, tax, paid and due in one aligned block |
+| `StockBadge` | On-hand quantity with a semantic tone |
+| `IntegrationState` | Connected, pending, failed or disabled external posting |
+| `OfflineBanner` | Online, offline, syncing or needs-review with a pending count |
+| `EmptyState`, `StatePanel` | Empty, loading, error, permission, offline and needs-review states |
+| `Skeleton`, `SkeletonRows` | Loading placeholders |
+| `ReceiptView` | Printable receipt with lines, totals, tax lines and tenders |
+| `ApprovalDrawer`, `DangerConfirmation`, `PaymentSheet` | Presentational operational patterns |
+| `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard`, `WorkTicketPanel` | Placeholders reserved for P5 engines |
+| `formatMoney`, `formatQuantity`, `formatDateTime`, `cn` | Shared formatting so money and dates look the same everywhere |
 
-Shared styles live in:
+## Client components and hooks
 
-- `apps/backoffice/src/app/globals.css`
+| Export | Purpose |
+|---|---|
+| `Dialog` | Modal with header, body and footer; Escape closes it |
+| `Drawer` | Right-hand panel for record detail |
+| `Sheet` | Bottom sheet used by the POS payment flow |
+| `ConfirmDialog` | Destructive or financial confirmation that states the consequence and can require a reason |
+| `Tabs` | Section navigation inside a screen |
+| `ToastProvider`, `useToasts` | Non-blocking result messages |
+| `NumberPad` | Touch numeric entry |
+| `useScanFocus` | Keeps the POS scan input focused, as section 6 requires |
+| `useOnlineState` | Connectivity for the offline banner |
+| `useDebouncedValue` | Search and live cart pricing without a request per keystroke |
+| `createIdempotencyKey` | One stable key per POS action so a retry never posts twice |
 
-The styles use existing theme tokens such as:
+Every overlay traps initial focus, closes on Escape, blocks background scrolling and becomes a
+bottom sheet on phones.
 
-- `--color-surface`
-- `--color-border`
-- `--color-primary`
-- `--color-success`
-- `--color-warning`
-- `--color-danger`
-- `--color-text-primary`
-- `--color-text-secondary`
+## Rules for new components
 
-## Applied Screen
+1. A component belongs in the design system when a second screen would otherwise copy it.
+2. Colours come from the Business theme variables, never from a literal value.
+3. State is shown with text and shape, not colour alone.
+4. Anything that uses a hook goes in `client.tsx`, so a server component can still import the rest.
+5. Money and quantities use tabular numbers and the shared formatters.
+6. A component ships with its empty, loading, error and permission behaviour, not only its happy path.
 
-The Back Office P1 catalog workspace composes reusable primitives instead of keeping all UI markup local to the page:
+## Remaining work
 
-- `apps/backoffice/src/app/catalog/catalog-workspace.tsx`
-
-The Back Office home page and POS home page also use the common UI primitives to show P0/P1/P2 state clearly:
-
-- `apps/backoffice/src/app/page.tsx`
-- `apps/pos/src/app/page.tsx`
-
-This keeps the common screens aligned with the future component-level approach while preserving the current Business theme system.
-
-Detailed UI/UX implementation status is tracked in:
-
-- `docs/development/07_UIUX_IMPLEMENTATION_STATUS.md`
-
-## Future Tailwind/shadcn Migration Rule
-
-If the project later adopts full shadcn/ui CLI components:
-
-1. Add Tailwind CSS to the monorepo intentionally.
-2. Map Bizentra Business theme variables to Tailwind/shadcn CSS variables.
-3. Add shadcn components into an owned source folder, not as a black-box dependency.
-4. Migrate screens one component group at a time.
-5. Keep accessibility, keyboard support, responsive behavior and SRS traceability as release gates.
-
-## Current Boundary
-
-This slice intentionally does not add:
-
-- Tailwind CSS
-- Radix UI primitives
-- `class-variance-authority`
-- `tailwind-merge`
-- `lucide-react`
-
-Those dependencies are useful for a full shadcn rollout, but adding them now would increase migration scope without completing more P1 business capability.
+- Component examples (Storybook or equivalent) and visual-regression snapshots.
+- Automated accessibility assertions on the overlay and table patterns.
+- Saved views, a column selector and a density switch for back-office lists.
+- Real implementations for the P5 placeholders when those engines are built.

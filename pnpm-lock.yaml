@@ -62,6 +62,9 @@ importers:
       '@bizentra/domain-business-access':
         specifier: workspace:*
         version: link:../../packages/domains/business-access
+      '@bizentra/domain-commerce':
+        specifier: workspace:*
+        version: link:../../packages/domains/commerce
       '@bizentra/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -268,6 +271,36 @@ importers:
         version: 19.2.8
 
   packages/domains/business-access:
+    dependencies:
+      '@bizentra/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@bizentra/database':
+        specifier: workspace:*
+        version: link:../../database
+      '@bizentra/domain-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@bizentra/ids':
+        specifier: workspace:*
+        version: link:../../ids
+
+  packages/domains/commerce:
+    dependencies:
+      '@bizentra/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+      '@bizentra/database':
+        specifier: workspace:*
+        version: link:../../database
+      '@bizentra/domain-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@bizentra/ids':
+        specifier: workspace:*
+        version: link:../../ids
+
+  packages/domains/shared:
     dependencies:
       '@bizentra/contracts':
         specifier: workspace:*

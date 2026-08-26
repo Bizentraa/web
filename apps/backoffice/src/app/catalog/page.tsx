@@ -1,20 +1,1283 @@
-import { AppShell } from "@bizentra/design-system";
-import Link from "next/link";
+"use client";
 
-import { CatalogWorkspace } from "./catalog-workspace";
+import type {
+  CatalogReferenceData,
+  CatalogSummary,
+  ItemListRow,
+  Paginated,
+  PromotionRow,
+  SaleQuote,
+} from "@bizentra/contracts";
+import {
+  Badge,
+  Button,
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  DataTable,
+  Field,
+  FilterBar,
+  formatMoney,
+  FormFooter,
+  FormGrid,
+  Grid,
+  Kicker,
+  KpiCard,
+  MoneySummary,
+  PageHeader,
+  SelectField,
+  Stack,
+  StatePanel,
+  StatusChip,
+} from "@bizentra/design-system";
+import { Dialog, Tabs, useDebouncedValue, useToasts } from "@bizentra/design-system/client";
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
+
+import { readOptionalNumber, readText } from "../lib/forms";
+import { errorMessage, ResourceState, useApi, useResource, Workspace } from "../lib/workspace";
+
+interface CatalogData {
+  summary: CatalogSummary;
+  reference: CatalogReferenceData;
+  items: Paginated<ItemListRow>;
+  promotions: PromotionRow[];
+}
 
 export default function CatalogPage() {
+  const { api, identity } = useApi();
+  const toasts = useToasts();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+
+  const { data, state, error, reload } = useResource<CatalogData>(
+    async (client, businessId) => {
+      const [summary, reference, items, promotions] = await Promise.all([
+        client.getCatalogSummary(businessId),
+        client.getCatalogReference(businessId),
+        client.listItems(businessId, {
+          pageSize: 25,
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          ...(statusFilter ? { status: statusFilter as "ACTIVE" | "INACTIVE" } : {}),
+        }),
+        client.listPromotions(businessId),
+      ]);
+      return { summary, reference, items, promotions };
+    },
+    [debouncedSearch, statusFilter],
+  );
+
+  const [tab, setTab] = useState("items");
+  const [busy, setBusy] = useState(false);
+  const [dialog, setDialog] = useState<
+    | "item"
+    | "unit"
+    | "category"
+    | "brand"
+    | "tag"
+    | "attribute"
+    | "conversion"
+    | "priceList"
+    | "taxCategory"
+    | "taxRate"
+    | "promotion"
+    | null
+  >(null);
+  const [preview, setPreview] = useState<SaleQuote | null>(null);
+
+  const run = async (message: string, work: () => Promise<unknown>) => {
+    setBusy(true);
+    try {
+      await work();
+      await reload();
+      toasts.push({ title: message, tone: "success" });
+      return true;
+    } catch (cause) {
+      toasts.push({
+        title: "That change was not saved",
+        description: errorMessage(cause),
+        tone: "danger",
+      });
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submit =
+    (handler: (form: FormData) => Promise<unknown>, message: string) =>
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const form = new FormData(event.currentTarget);
+      const ok = await run(message, () => handler(form));
+      if (ok) setDialog(null);
+    };
+
+  const reference = data?.reference;
+  const readiness = data
+    ? Math.round(
+        ([
+          data.summary.counts.units > 0,
+          data.summary.counts.taxCategories > 0,
+          data.summary.counts.priceLists > 0,
+          data.summary.counts.items > 0,
+          data.summary.counts.customers > 0,
+          data.summary.counts.suppliers > 0,
+        ].filter(Boolean).length /
+          6) *
+          100,
+      )
+    : 0;
+
+  const runPreview = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!api || !identity) return;
+    const form = new FormData(event.currentTarget);
+    const itemId = readText(form, "itemId");
+    const branchId = readText(form, "branchId");
+    if (!itemId || !branchId) return;
+    try {
+      setPreview(
+        await api.quoteSale(identity.businessId, {
+          branchId,
+          lines: [{ itemId, quantity: readOptionalNumber(form, "quantity") ?? 1 }],
+        }),
+      );
+    } catch (cause) {
+      toasts.push({ title: "Preview failed", description: errorMessage(cause), tone: "danger" });
+    }
+  };
+
   return (
-    <AppShell
+    <Workspace
       activeHref="/catalog"
-      eyebrow="Common Core · Phase P1"
-      title="Master data"
-      description="Create the first reusable items, prices, tax setup, customers and suppliers that later POS and purchasing phases will consume."
+      description="Items, units, categories, prices, promotions and tax. These records are definitions; they never move stock or money by themselves."
+      eyebrow="Common Core · P1"
+      title="Catalog and pricing"
+      headerActions={
+        <>
+          <Button
+            disabled={busy || !api}
+            onClick={() =>
+              api && identity
+                ? void run("Catalog defaults are ready.", () =>
+                    api.ensureP1Defaults(identity.businessId),
+                  )
+                : undefined
+            }
+            variant="secondary"
+          >
+            Repair defaults
+          </Button>
+          <Button onClick={() => setDialog("item")}>New item</Button>
+        </>
+      }
     >
-      <p className="theme-back-link">
-        <Link href="/">Back to Common Core</Link>
-      </p>
-      <CatalogWorkspace />
-    </AppShell>
+      <Stack>
+        <PageHeader
+          eyebrow="CC-P1-001 to CC-P1-011"
+          title="Master data"
+          description="Everything the POS, purchasing and reporting phases reuse. One item model covers products, services, ingredients, parts, bundles, fees and rental items."
+          status={
+            <StatusChip tone={readiness >= 80 ? "success" : "warning"}>
+              Setup {readiness}%
+            </StatusChip>
+          }
+        />
+
+        <ResourceState error={error} onRetry={reload} state={state} title="Catalog">
+          {data && reference ? (
+            <Stack>
+              <Grid>
+                <KpiCard
+                  label="Items"
+                  value={String(data.summary.counts.items)}
+                  trend={`${data.items.total} matching`}
+                  tone="information"
+                />
+                <KpiCard
+                  label="Price lists"
+                  value={String(data.summary.counts.priceLists)}
+                  trend={`${data.summary.counts.promotions} promotion(s)`}
+                  tone="information"
+                />
+                <KpiCard
+                  label="Tax categories"
+                  value={String(data.summary.counts.taxCategories)}
+                  trend={`${reference.taxCategories.reduce((sum, category) => sum + category.rates.length, 0)} rate(s)`}
+                  tone="information"
+                />
+                <KpiCard
+                  label="Units"
+                  value={String(data.summary.counts.units)}
+                  trend={`${reference.unitConversions.length} conversion(s)`}
+                  tone="information"
+                />
+              </Grid>
+
+              <Tabs
+                onChange={setTab}
+                value={tab}
+                tabs={[
+                  { value: "items", label: "Items", badge: String(data.items.total) },
+                  { value: "organization", label: "Organization" },
+                  { value: "pricing", label: "Prices and promotions" },
+                  { value: "tax", label: "Tax and preview" },
+                ]}
+              />
+
+              {tab === "items" ? (
+                <Stack>
+                  <FilterBar
+                    onSearchChange={setSearch}
+                    searchPlaceholder="Search by name, code or barcode"
+                    value={search}
+                    actions={
+                      <Button onClick={() => setDialog("item")} size="quiet">
+                        New item
+                      </Button>
+                    }
+                    chips={
+                      statusFilter
+                        ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
+                        : []
+                    }
+                  >
+                    <SelectField
+                      label="Status"
+                      onChange={(event) => setStatusFilter(event.target.value)}
+                      value={statusFilter}
+                    >
+                      <option value="">Every status</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                    </SelectField>
+                  </FilterBar>
+
+                  <Card flush>
+                    <DataTable
+                      caption={`${data.items.total} item(s). Click a row to open the item.`}
+                      getRowKey={(item) => item.id}
+                      rows={data.items.rows}
+                      empty="No items match this search. Create an item or import a CSV file."
+                      footer={
+                        <>
+                          <span>
+                            Showing {data.items.rows.length} of {data.items.total}
+                          </span>
+                          <Link className="ui-button ui-button--quiet" href="/import">
+                            Import items
+                          </Link>
+                        </>
+                      }
+                      columns={[
+                        {
+                          header: "Item",
+                          render: (item) => (
+                            <Link href={`/catalog/${item.id}`}>
+                              <strong>{item.name}</strong>
+                            </Link>
+                          ),
+                        },
+                        { header: "Code", render: (item) => item.code },
+                        { header: "Kind", hideOnMobile: true, render: (item) => item.kind },
+                        {
+                          header: "Category",
+                          hideOnMobile: true,
+                          render: (item) => item.categoryName ?? "-",
+                        },
+                        { header: "Unit", render: (item) => item.unitCode },
+                        {
+                          header: "Price",
+                          align: "right",
+                          render: (item) =>
+                            item.price === null ? "No price" : formatMoney(item.price),
+                        },
+                        {
+                          header: "Status",
+                          render: (item) => (
+                            <Badge tone={item.status === "ACTIVE" ? "success" : "neutral"}>
+                              {item.status}
+                            </Badge>
+                          ),
+                        },
+                      ]}
+                    />
+                  </Card>
+                </Stack>
+              ) : null}
+
+              {tab === "organization" ? (
+                <Grid wide>
+                  <ReferenceCard
+                    action={() => setDialog("unit")}
+                    caption="Units of measure"
+                    kicker="CC-P1-004"
+                    rows={reference.units.map((unit) => ({
+                      id: unit.id,
+                      primary: unit.code,
+                      secondary: unit.name,
+                      meta: `${unit.precision} decimal(s)`,
+                      status: unit.status,
+                    }))}
+                    title="Units"
+                  />
+                  <ReferenceCard
+                    action={() => setDialog("conversion")}
+                    caption="How one unit converts into another"
+                    kicker="CC-P1-004"
+                    rows={reference.unitConversions.map((conversion) => {
+                      const from = reference.units.find(
+                        (unit) => unit.id === conversion.fromUnitId,
+                      );
+                      const to = reference.units.find((unit) => unit.id === conversion.toUnitId);
+                      return {
+                        id: conversion.id,
+                        primary: `${from?.code ?? "?"} to ${to?.code ?? "?"}`,
+                        secondary: `1 ${from?.code ?? "?"} = ${conversion.factor} ${to?.code ?? "?"}`,
+                        meta: "",
+                        status: "ACTIVE" as const,
+                      };
+                    })}
+                    title="Unit conversions"
+                  />
+                  <ReferenceCard
+                    action={() => setDialog("category")}
+                    caption="Item categories"
+                    kicker="CC-P1-002"
+                    rows={reference.categories.map((category) => ({
+                      id: category.id,
+                      primary: category.code,
+                      secondary: category.name,
+                      meta: category.parentId ? "Sub-category" : "Top level",
+                      status: category.status,
+                    }))}
+                    title="Categories"
+                  />
+                  <ReferenceCard
+                    action={() => setDialog("brand")}
+                    caption="Brands"
+                    kicker="CC-P1-002"
+                    rows={reference.brands.map((brand) => ({
+                      id: brand.id,
+                      primary: brand.code,
+                      secondary: brand.name,
+                      meta: "",
+                      status: brand.status,
+                    }))}
+                    title="Brands"
+                  />
+                  <ReferenceCard
+                    action={() => setDialog("tag")}
+                    caption="Tags used to group items across categories"
+                    kicker="CC-P1-002"
+                    rows={reference.tags.map((tag) => ({
+                      id: tag.id,
+                      primary: tag.code,
+                      secondary: tag.name,
+                      meta: "",
+                      status: tag.status,
+                    }))}
+                    title="Tags"
+                  />
+                  <ReferenceCard
+                    action={() => setDialog("attribute")}
+                    caption="Extra fields this Business needs on its items"
+                    kicker="CC-P1-002"
+                    rows={reference.attributes.map((attribute) => ({
+                      id: attribute.id,
+                      primary: attribute.code,
+                      secondary: attribute.name,
+                      meta: `${attribute.appliesTo} · ${attribute.dataType}`,
+                      status: attribute.status,
+                    }))}
+                    title="Custom attributes"
+                  />
+                </Grid>
+              ) : null}
+
+              {tab === "pricing" ? (
+                <Stack>
+                  <Card>
+                    <CardHeader>
+                      <div>
+                        <Kicker>CC-P1-006</Kicker>
+                        <CardTitle>Price lists</CardTitle>
+                      </div>
+                      <Button onClick={() => setDialog("priceList")} size="quiet">
+                        New price list
+                      </Button>
+                    </CardHeader>
+                    <CardDescription>
+                      A customer group can point at its own price list, and a price can be set for
+                      one Branch or from a quantity break upward.
+                    </CardDescription>
+                    <DataTable
+                      caption="Price lists in this Business."
+                      getRowKey={(priceList) => priceList.id}
+                      rows={reference.priceLists}
+                      columns={[
+                        {
+                          header: "Code",
+                          render: (priceList) => <strong>{priceList.code}</strong>,
+                        },
+                        { header: "Name", render: (priceList) => priceList.name },
+                        { header: "Currency", render: (priceList) => priceList.currencyCode },
+                        {
+                          header: "Default",
+                          render: (priceList) =>
+                            priceList.isDefault ? <Badge tone="success">Default</Badge> : "-",
+                        },
+                        {
+                          header: "Status",
+                          render: (priceList) => (
+                            <Badge tone={priceList.status === "ACTIVE" ? "success" : "neutral"}>
+                              {priceList.status}
+                            </Badge>
+                          ),
+                        },
+                        {
+                          header: "Actions",
+                          align: "right",
+                          render: (priceList) => (
+                            <Button
+                              disabled={busy || priceList.isDefault}
+                              onClick={() =>
+                                api && identity
+                                  ? void run("Default price list changed.", () =>
+                                      api.updatePriceList(identity.businessId, priceList.id, {
+                                        isDefault: true,
+                                      }),
+                                    )
+                                  : undefined
+                              }
+                              size="quiet"
+                              variant="secondary"
+                            >
+                              Make default
+                            </Button>
+                          ),
+                        },
+                      ]}
+                    />
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div>
+                        <Kicker>CC-P1-007</Kicker>
+                        <CardTitle>Promotions</CardTitle>
+                      </div>
+                      <Button onClick={() => setDialog("promotion")} size="quiet">
+                        New promotion
+                      </Button>
+                    </CardHeader>
+                    <CardDescription>
+                      The POS applies the promotion that gives the customer the best price and
+                      explains any promotion it skipped.
+                    </CardDescription>
+                    <DataTable
+                      caption="Promotions and any overlap between them."
+                      getRowKey={(promotion) => promotion.id}
+                      rows={data.promotions}
+                      empty="No promotions yet. Percentage, fixed, coupon and buy-X-get-Y offers are supported."
+                      columns={[
+                        {
+                          header: "Code",
+                          render: (promotion) => <strong>{promotion.code}</strong>,
+                        },
+                        { header: "Name", render: (promotion) => promotion.name },
+                        {
+                          header: "Discount",
+                          align: "right",
+                          render: (promotion) =>
+                            promotion.discountKind === "PERCENTAGE"
+                              ? `${promotion.discountValue}%`
+                              : formatMoney(promotion.discountValue),
+                        },
+                        {
+                          header: "Applies to",
+                          hideOnMobile: true,
+                          render: (promotion) => promotion.conditions?.scope ?? "SALE",
+                        },
+                        {
+                          header: "Overlaps",
+                          render: (promotion) =>
+                            promotion.conflicts.length ? (
+                              <Badge tone="warning">{promotion.conflicts.join(", ")}</Badge>
+                            ) : (
+                              <span className="ui-card-description">None</span>
+                            ),
+                        },
+                        {
+                          header: "Status",
+                          render: (promotion) => (
+                            <Badge tone={promotion.status === "ACTIVE" ? "success" : "neutral"}>
+                              {promotion.status}
+                            </Badge>
+                          ),
+                        },
+                        {
+                          header: "Actions",
+                          align: "right",
+                          render: (promotion) => (
+                            <Button
+                              disabled={busy}
+                              onClick={() =>
+                                api && identity
+                                  ? void run("Promotion updated.", () =>
+                                      api.updatePromotion(identity.businessId, promotion.id, {
+                                        status:
+                                          promotion.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                                      }),
+                                    )
+                                  : undefined
+                              }
+                              size="quiet"
+                              variant="secondary"
+                            >
+                              {promotion.status === "ACTIVE" ? "Stop" : "Start"}
+                            </Button>
+                          ),
+                        },
+                      ]}
+                    />
+                  </Card>
+                </Stack>
+              ) : null}
+
+              {tab === "tax" ? (
+                <Stack>
+                  <Card>
+                    <CardHeader>
+                      <div>
+                        <Kicker>CC-P1-008</Kicker>
+                        <CardTitle>Tax categories and rates</CardTitle>
+                      </div>
+                      <div className="ui-row">
+                        <Button onClick={() => setDialog("taxCategory")} size="quiet">
+                          New category
+                        </Button>
+                        <Button
+                          onClick={() => setDialog("taxRate")}
+                          size="quiet"
+                          variant="secondary"
+                        >
+                          New rate
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <DataTable
+                      caption="Tax rates and the dates they apply from."
+                      getRowKey={(row) => row.id}
+                      rows={reference.taxCategories.flatMap((category) =>
+                        category.rates.map((rate) => ({
+                          ...rate,
+                          categoryName: category.name,
+                          categoryCode: category.code,
+                        })),
+                      )}
+                      empty="Add a tax category and its rate, for example VAT 15%."
+                      columns={[
+                        {
+                          header: "Category",
+                          render: (row) => <strong>{row.categoryName}</strong>,
+                        },
+                        { header: "Rate name", render: (row) => row.name },
+                        {
+                          header: "Rate",
+                          align: "right",
+                          render: (row) => `${(row.rate * 100).toFixed(2)}%`,
+                        },
+                        { header: "Used for", render: (row) => row.kind },
+                        { header: "From", render: (row) => row.effectiveFrom },
+                        {
+                          header: "To",
+                          hideOnMobile: true,
+                          render: (row) => row.effectiveTo ?? "Open",
+                        },
+                      ]}
+                    />
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div>
+                        <Kicker>Preview</Kicker>
+                        <CardTitle>Price and tax preview</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Uses exactly the same calculation the POS uses, so what you see here is what
+                        a cashier will see.
+                      </CardDescription>
+                    </CardHeader>
+                    <form className="ui-stack" onSubmit={(event) => void runPreview(event)}>
+                      <FormGrid>
+                        <SelectField label="Item" name="itemId" required>
+                          {data.items.rows.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name}
+                            </option>
+                          ))}
+                        </SelectField>
+                        <SelectField label="Branch" name="branchId" required>
+                          {reference.branches.map((branch) => (
+                            <option key={branch.id} value={branch.id}>
+                              {branch.name}
+                            </option>
+                          ))}
+                        </SelectField>
+                        <Field
+                          label="Quantity"
+                          name="quantity"
+                          defaultValue="1"
+                          inputMode="decimal"
+                        />
+                      </FormGrid>
+                      <FormFooter>
+                        <span className="ui-card-description">
+                          Promotions, quantity breaks and tax rules are all applied.
+                        </span>
+                        <Button type="submit">Preview price</Button>
+                      </FormFooter>
+                    </form>
+                    {preview ? (
+                      <Stack tight>
+                        <MoneySummary
+                          rows={[
+                            {
+                              label: "Subtotal",
+                              value: formatMoney(preview.subtotal, preview.currencyCode),
+                            },
+                            { label: "Discount", value: formatMoney(-preview.discountTotal) },
+                            { label: "Tax", value: formatMoney(preview.taxTotal) },
+                            {
+                              label: "Total",
+                              value: formatMoney(preview.total, preview.currencyCode),
+                            },
+                          ]}
+                        />
+                        {preview.appliedPromotions.map((promotion) => (
+                          <Badge key={promotion.id} tone="success">
+                            {promotion.code} saved {formatMoney(promotion.amount)}
+                          </Badge>
+                        ))}
+                        {preview.warnings.map((warning) => (
+                          <Badge key={warning} tone="warning">
+                            {warning}
+                          </Badge>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <StatePanel state="empty" title="No preview yet">
+                        Choose an item and a Branch to see the price, discount and tax a customer
+                        would be charged.
+                      </StatePanel>
+                    )}
+                  </Card>
+                </Stack>
+              ) : null}
+            </Stack>
+          ) : null}
+        </ResourceState>
+      </Stack>
+
+      {/* ---------------------------------------------------------- dialogs */}
+
+      <Dialog
+        description="An item can be a product, service, ingredient, part, bundle, fee or rental item."
+        onClose={() => setDialog(null)}
+        open={dialog === "item"}
+        title="New item"
+        wide
+      >
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(
+              (form) =>
+                api && identity
+                  ? api.createItem(identity.businessId, {
+                      code: readText(form, "code"),
+                      name: readText(form, "name"),
+                      kind: readText(form, "kind", "PRODUCT") as "PRODUCT",
+                      baseUnitId: readText(form, "baseUnitId"),
+                      ...(readText(form, "categoryId")
+                        ? { categoryId: readText(form, "categoryId") }
+                        : {}),
+                      ...(readText(form, "brandId") ? { brandId: readText(form, "brandId") } : {}),
+                      ...(readText(form, "taxCategoryId")
+                        ? { taxCategoryId: readText(form, "taxCategoryId") }
+                        : {}),
+                      sellable: form.get("sellable") !== null,
+                      purchasable: form.get("purchasable") !== null,
+                      stockTracked: form.get("stockTracked") !== null,
+                      identifiers: readText(form, "barcode")
+                        ? [{ kind: "BARCODE" as const, value: readText(form, "barcode") }]
+                        : [],
+                      variants: [],
+                      ...(readOptionalNumber(form, "unitPrice") === undefined
+                        ? {}
+                        : {
+                            price: {
+                              unitPrice: readOptionalNumber(form, "unitPrice") ?? 0,
+                              minQuantity: 1,
+                              ...(readOptionalNumber(form, "costPrice") === undefined
+                                ? {}
+                                : { costPrice: readOptionalNumber(form, "costPrice") }),
+                            },
+                          }),
+                    })
+                  : Promise.resolve(),
+              "Item created.",
+            )(event)
+          }
+        >
+          <FormGrid>
+            <Field label="Item code" name="code" placeholder="MILK-1L" required />
+            <Field label="Item name" name="name" placeholder="Fresh Milk 1L" required />
+            <SelectField label="Kind" name="kind" defaultValue="PRODUCT">
+              {["PRODUCT", "SERVICE", "INGREDIENT", "PART", "BUNDLE", "FEE", "RENTAL"].map(
+                (kind) => (
+                  <option key={kind} value={kind}>
+                    {kind}
+                  </option>
+                ),
+              )}
+            </SelectField>
+            <SelectField label="Base unit" name="baseUnitId" required>
+              {(reference?.units ?? []).map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.code} - {unit.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Category" name="categoryId" defaultValue="">
+              <option value="">No category</option>
+              {(reference?.categories ?? []).map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Brand" name="brandId" defaultValue="">
+              <option value="">No brand</option>
+              {(reference?.brands ?? []).map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Tax category" name="taxCategoryId" defaultValue="">
+              <option value="">No tax</option>
+              {(reference?.taxCategories ?? []).map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </SelectField>
+            <Field label="Barcode" name="barcode" hint="Must be unique in this Business" />
+            <Field label="Selling price" name="unitPrice" inputMode="decimal" />
+            <Field
+              label="Cost price"
+              name="costPrice"
+              inputMode="decimal"
+              hint="Used for margin reporting"
+            />
+          </FormGrid>
+          <FormGrid>
+            <label className="ui-check-field">
+              <input defaultChecked name="sellable" type="checkbox" />
+              <span>
+                <strong>Can be sold</strong>
+                <small>Appears in the POS search and grid.</small>
+              </span>
+            </label>
+            <label className="ui-check-field">
+              <input name="purchasable" type="checkbox" />
+              <span>
+                <strong>Can be purchased</strong>
+                <small>Appears in purchasing when P3 is built.</small>
+              </span>
+            </label>
+            <label className="ui-check-field">
+              <input name="stockTracked" type="checkbox" />
+              <span>
+                <strong>Track stock</strong>
+                <small>A sale emits a stock event for this item.</small>
+              </span>
+            </label>
+          </FormGrid>
+          <FormFooter>
+            <Button onClick={() => setDialog(null)} variant="secondary">
+              Cancel
+            </Button>
+            <Button disabled={busy} type="submit">
+              Create item
+            </Button>
+          </FormFooter>
+        </form>
+      </Dialog>
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Unit code", name: "code", placeholder: "BOX" },
+          { label: "Unit name", name: "name", placeholder: "Box of 12" },
+          { label: "Decimals", name: "precision", placeholder: "0" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createUnit(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                  precision: readOptionalNumber(form, "precision") ?? 0,
+                })
+              : Promise.resolve(),
+          "Unit created.",
+        )}
+        open={dialog === "unit"}
+        title="New unit"
+      />
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Category code", name: "code", placeholder: "DAIRY" },
+          { label: "Category name", name: "name", placeholder: "Dairy" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createCategory(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                })
+              : Promise.resolve(),
+          "Category created.",
+        )}
+        open={dialog === "category"}
+        title="New category"
+      />
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Brand code", name: "code", placeholder: "ANCHOR" },
+          { label: "Brand name", name: "name", placeholder: "Anchor" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createBrand(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                })
+              : Promise.resolve(),
+          "Brand created.",
+        )}
+        open={dialog === "brand"}
+        title="New brand"
+      />
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Tag code", name: "code", placeholder: "PROMO" },
+          { label: "Tag name", name: "name", placeholder: "Promoted" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createItemTag(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                })
+              : Promise.resolve(),
+          "Tag created.",
+        )}
+        open={dialog === "tag"}
+        title="New tag"
+      />
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Attribute code", name: "code", placeholder: "SHELF_LIFE" },
+          { label: "Attribute name", name: "name", placeholder: "Shelf life" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createAttribute(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                  appliesTo: "ITEM",
+                  dataType: "TEXT",
+                })
+              : Promise.resolve(),
+          "Attribute created.",
+        )}
+        open={dialog === "attribute"}
+        title="New custom attribute"
+      />
+
+      <Dialog
+        description="For example, one Box equals 12 Each."
+        onClose={() => setDialog(null)}
+        open={dialog === "conversion"}
+        title="New unit conversion"
+      >
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(
+              (form) =>
+                api && identity
+                  ? api.createUnitConversion(identity.businessId, {
+                      fromUnitId: readText(form, "fromUnitId"),
+                      toUnitId: readText(form, "toUnitId"),
+                      factor: readOptionalNumber(form, "factor") ?? 1,
+                    })
+                  : Promise.resolve(),
+              "Unit conversion saved.",
+            )(event)
+          }
+        >
+          <FormGrid>
+            <SelectField label="From unit" name="fromUnitId" required>
+              {(reference?.units ?? []).map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.code}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="To unit" name="toUnitId" required>
+              {(reference?.units ?? []).map((unit) => (
+                <option key={unit.id} value={unit.id}>
+                  {unit.code}
+                </option>
+              ))}
+            </SelectField>
+            <Field label="Factor" name="factor" defaultValue="12" inputMode="decimal" required />
+          </FormGrid>
+          <FormFooter>
+            <Button onClick={() => setDialog(null)} variant="secondary">
+              Cancel
+            </Button>
+            <Button disabled={busy} type="submit">
+              Save conversion
+            </Button>
+          </FormFooter>
+        </form>
+      </Dialog>
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Price list code", name: "code", placeholder: "WHOLESALE" },
+          { label: "Price list name", name: "name", placeholder: "Wholesale" },
+          { label: "Currency", name: "currencyCode", placeholder: "LKR" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createPriceList(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                  currencyCode: readText(form, "currencyCode"),
+                  isDefault: false,
+                })
+              : Promise.resolve(),
+          "Price list created.",
+        )}
+        open={dialog === "priceList"}
+        title="New price list"
+      />
+
+      <SimpleDialog
+        busy={busy}
+        fields={[
+          { label: "Tax category code", name: "code", placeholder: "VAT15" },
+          { label: "Tax category name", name: "name", placeholder: "VAT 15%" },
+        ]}
+        onClose={() => setDialog(null)}
+        onSubmit={submit(
+          (form) =>
+            api && identity
+              ? api.createTaxCategory(identity.businessId, {
+                  code: readText(form, "code"),
+                  name: readText(form, "name"),
+                })
+              : Promise.resolve(),
+          "Tax category created.",
+        )}
+        open={dialog === "taxCategory"}
+        title="New tax category"
+      />
+
+      <Dialog
+        description="A rate applies from its start date. Add a new rate instead of editing history when the law changes."
+        onClose={() => setDialog(null)}
+        open={dialog === "taxRate"}
+        title="New tax rate"
+      >
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(
+              (form) =>
+                api && identity
+                  ? api.createTaxRate(identity.businessId, {
+                      taxCategoryId: readText(form, "taxCategoryId"),
+                      code: readText(form, "code"),
+                      name: readText(form, "name"),
+                      rate: (readOptionalNumber(form, "percent") ?? 0) / 100,
+                      kind: readText(form, "kind", "BOTH") as "BOTH",
+                      effectiveFrom: readText(form, "effectiveFrom"),
+                    })
+                  : Promise.resolve(),
+              "Tax rate created.",
+            )(event)
+          }
+        >
+          <FormGrid>
+            <SelectField label="Tax category" name="taxCategoryId" required>
+              {(reference?.taxCategories ?? []).map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </SelectField>
+            <Field label="Rate code" name="code" placeholder="VAT15_STD" required />
+            <Field label="Rate name" name="name" placeholder="VAT 15% standard" required />
+            <Field label="Percent" name="percent" placeholder="15" inputMode="decimal" required />
+            <SelectField label="Used for" name="kind" defaultValue="BOTH">
+              <option value="BOTH">Sales and purchases</option>
+              <option value="SALES">Sales only</option>
+              <option value="PURCHASE">Purchases only</option>
+            </SelectField>
+            <Field
+              label="Effective from"
+              name="effectiveFrom"
+              type="date"
+              defaultValue={new Date().toISOString().slice(0, 10)}
+              required
+            />
+          </FormGrid>
+          <FormFooter>
+            <Button onClick={() => setDialog(null)} variant="secondary">
+              Cancel
+            </Button>
+            <Button disabled={busy} type="submit">
+              Create rate
+            </Button>
+          </FormFooter>
+        </form>
+      </Dialog>
+
+      <Dialog
+        description="Choose what the promotion applies to and when it runs."
+        onClose={() => setDialog(null)}
+        open={dialog === "promotion"}
+        title="New promotion"
+      >
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(
+              (form) =>
+                api && identity
+                  ? api.createPromotion(identity.businessId, {
+                      code: readText(form, "code"),
+                      name: readText(form, "name"),
+                      discountKind: readText(form, "discountKind", "PERCENTAGE") as "PERCENTAGE",
+                      discountValue: readOptionalNumber(form, "discountValue") ?? 0,
+                      startsAt: new Date(readText(form, "startsAt")).toISOString(),
+                      ...(readText(form, "endsAt")
+                        ? { endsAt: new Date(readText(form, "endsAt")).toISOString() }
+                        : {}),
+                      conditions: {
+                        scope: readText(form, "scope", "SALE") as "SALE",
+                        itemIds: [],
+                        categoryIds: readText(form, "categoryId")
+                          ? [readText(form, "categoryId")]
+                          : [],
+                        minimumQuantity: readOptionalNumber(form, "minimumQuantity") ?? 0,
+                        minimumAmount: readOptionalNumber(form, "minimumAmount") ?? 0,
+                        buyQuantity: readOptionalNumber(form, "buyQuantity") ?? 0,
+                        getQuantity: readOptionalNumber(form, "getQuantity") ?? 0,
+                        priority: 50,
+                        ...(readText(form, "couponCode")
+                          ? { couponCode: readText(form, "couponCode") }
+                          : {}),
+                      },
+                    })
+                  : Promise.resolve(),
+              "Promotion created.",
+            )(event)
+          }
+        >
+          <FormGrid>
+            <Field label="Promotion code" name="code" placeholder="DAIRY10" required />
+            <Field label="Promotion name" name="name" placeholder="10% off dairy" required />
+            <SelectField label="Discount kind" name="discountKind" defaultValue="PERCENTAGE">
+              <option value="PERCENTAGE">Percentage</option>
+              <option value="FIXED_AMOUNT">Fixed amount</option>
+            </SelectField>
+            <Field
+              label="Discount value"
+              name="discountValue"
+              defaultValue="10"
+              inputMode="decimal"
+              required
+            />
+            <SelectField label="Applies to" name="scope" defaultValue="SALE">
+              <option value="SALE">Whole sale</option>
+              <option value="CATEGORY">One category</option>
+            </SelectField>
+            <SelectField label="Category" name="categoryId" defaultValue="">
+              <option value="">Not category specific</option>
+              {(reference?.categories ?? []).map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </SelectField>
+            <Field label="Minimum amount" name="minimumAmount" inputMode="decimal" />
+            <Field
+              label="Coupon code"
+              name="couponCode"
+              hint="Leave empty for an automatic offer"
+            />
+            <Field
+              label="Buy quantity"
+              name="buyQuantity"
+              inputMode="numeric"
+              hint="For buy X get Y"
+            />
+            <Field label="Free quantity" name="getQuantity" inputMode="numeric" />
+            <Field
+              label="Starts"
+              name="startsAt"
+              type="datetime-local"
+              defaultValue={new Date().toISOString().slice(0, 16)}
+              required
+            />
+            <Field label="Ends" name="endsAt" type="datetime-local" />
+          </FormGrid>
+          <FormFooter>
+            <Button onClick={() => setDialog(null)} variant="secondary">
+              Cancel
+            </Button>
+            <Button disabled={busy} type="submit">
+              Create promotion
+            </Button>
+          </FormFooter>
+        </form>
+      </Dialog>
+    </Workspace>
+  );
+}
+
+function ReferenceCard({
+  action,
+  caption,
+  kicker,
+  rows,
+  title,
+}: {
+  action: () => void;
+  caption: string;
+  kicker: string;
+  rows: Array<{
+    id: string;
+    primary: string;
+    secondary: string;
+    meta: string;
+    status: "ACTIVE" | "INACTIVE";
+  }>;
+  title: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div>
+          <Kicker>{kicker}</Kicker>
+          <CardTitle>{title}</CardTitle>
+        </div>
+        <Button onClick={action} size="quiet">
+          Add
+        </Button>
+      </CardHeader>
+      <CardDescription>{caption}</CardDescription>
+      <DataTable
+        caption={caption}
+        getRowKey={(row) => row.id}
+        rows={rows}
+        empty="Nothing here yet."
+        columns={[
+          { header: "Code", render: (row) => <strong>{row.primary}</strong> },
+          { header: "Name", render: (row) => row.secondary },
+          { header: "Detail", hideOnMobile: true, render: (row) => row.meta },
+          {
+            header: "Status",
+            render: (row) => (
+              <Badge tone={row.status === "ACTIVE" ? "success" : "neutral"}>{row.status}</Badge>
+            ),
+          },
+        ]}
+      />
+    </Card>
+  );
+}
+
+function SimpleDialog({
+  busy,
+  fields,
+  onClose,
+  onSubmit,
+  open,
+  title,
+}: {
+  busy: boolean;
+  fields: Array<{ label: string; name: string; placeholder?: string }>;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  open: boolean;
+  title: string;
+}) {
+  return (
+    <Dialog onClose={onClose} open={open} title={title}>
+      <form className="ui-stack" onSubmit={(event) => void onSubmit(event)}>
+        <FormGrid>
+          {fields.map((field) => (
+            <Field
+              key={field.name}
+              label={field.label}
+              name={field.name}
+              placeholder={field.placeholder}
+            />
+          ))}
+        </FormGrid>
+        <FormFooter>
+          <Button onClick={onClose} variant="secondary">
+            Cancel
+          </Button>
+          <Button disabled={busy} type="submit">
+            Save
+          </Button>
+        </FormFooter>
+      </form>
+    </Dialog>
   );
 }

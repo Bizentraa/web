@@ -1,6 +1,6 @@
 # Bizentra Local Development Setup
 
-**Purpose:** run the first Common Core P0 development slice on Windows  
+**Purpose:** run the Common Core P0, P1 and P2 development slices on Windows  
 **Architecture source:** [`07_TECHNICAL_ARCHITECTURE_MERMAID_DIAGRAMS.md`](../technology/07_TECHNICAL_ARCHITECTURE_MERMAID_DIAGRAMS.md)  
 **Requirements source:** [`01_COMMON_CORE_SRS.md`](../01_COMMON_CORE_SRS.md)
 
@@ -227,3 +227,42 @@ apps/worker      -> Worker container
 ```
 
 The packages are compiled into those applications; they are not deployed as separate services. PostgreSQL and Redis are local Docker services during development and managed services in staging/production.
+
+## 9. End-to-End Smoke Run
+
+After the infrastructure, migrations and API are running, one command exercises the whole Common
+Core from Business setup to a returned sale:
+
+```powershell
+node scripts/smoke-common-core.mjs
+```
+
+It creates a throw-away Business each time it runs and checks, among other things, that:
+
+- a cashier is denied a screen they do not have permission for;
+- a large discount is refused until an approval request is granted by a different user;
+- a register cannot open two shifts at once;
+- retrying the same idempotency key returns the same sale instead of creating a second one;
+- a retried payment does not charge twice;
+- a receipt number is allocated only when the sale is fully paid;
+- a partial return refunds the exact proportional share including its tax;
+- store credit issued by a refund can be spent on a later sale;
+- a shift cannot close on a cash difference without a reason;
+- a user from another Business is refused.
+
+The run prints one line per check and exits non-zero if anything fails. Use it before and after any
+change to the domain services.
+
+## 10. Applying the Latest Migration
+
+The `20260826090000_p0_approvals_p1_import_p2_commerce` migration adds approval requests, the import
+apply/rollback lifecycle and every P2 commerce table, with row-level security and the new
+permissions. Apply it the same way as the earlier ones:
+
+```powershell
+pnpm db:migrate:deploy
+pnpm db:generate
+```
+
+Existing Businesses keep working: the migration grants the new permissions to their Owner Role, and
+new feature definitions and Role templates are created the first time each screen is opened.

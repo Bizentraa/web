@@ -30,42 +30,76 @@ The screen now composes owned shadcn-style primitives from the design system (`C
 
 | Requirement | Status | Current evidence | Remaining P1 work |
 |---|---|---|---|
-| CC-P1-001 Item | In progress | Shared `items` table and API create flow support products, services, ingredients, parts, bundles, fees and rental item kinds | Edit/deactivate UI, richer item detail screen and business-specific pack fields |
-| CC-P1-002 Categories | In progress | Category, brand, tag and custom-attribute tables exist; category and brand create APIs exist | Tag/custom-attribute APIs and Back Office management UI |
-| CC-P1-003 Variants | In progress | Item creation can create variant rows with JSON attributes | Matrix editing UI and variant-level price/identifier forms |
-| CC-P1-004 Units | In progress | Unit and unit-conversion tables exist; default `EA` setup and unit create API exist | Unit conversion UI and validation tests for conversion rules |
-| CC-P1-005 Barcodes | In progress | SKU/barcode/QR/supplier-code identifier model exists; item creation can save barcodes | Duplicate-resolution UI and scanner validation in POS P2 |
-| CC-P1-006 Prices | In progress | Price-list and item-price tables exist; default price list and item price save are implemented | Customer/quantity/branch price management UI and pricing resolution engine |
-| CC-P1-007 Promotions | Started | Promotion model and create API support percentage/fixed discounts with conditions JSON | Rule builder UI and promotion application engine in POS P2/P4 |
-| CC-P1-008 Tax | In progress | Tax category and tax rate tables exist; default tax setup and create API exist | Jurisdiction/rule UI and tax calculation tests across sale/return/purchase flows |
-| CC-P1-009 Customers | In progress | Customer group and customer models exist; Back Office can create basic customers | Address/group/balance/history views |
-| CC-P1-010 Suppliers | In progress | Supplier and supplier-item models exist; Back Office can create basic suppliers | Supplier item/cost/lead-time UI and purchasing integration |
-| CC-P1-011 Import | Started | Import-batch table and create API exist for items, customers, suppliers and opening data tracking | CSV/XLSX template parser, row validation, preview, apply and rollback evidence |
+| CC-P1-001 Item | Implemented | One item model for products, services, ingredients, parts, bundles, fees and rental items, with list, search, detail, edit, activate/deactivate and an audit timeline | Item images |
+| CC-P1-002 Categories | Implemented | Categories, brands, tags and custom attributes with create, update and assignment screens | Multi-level category tree editing |
+| CC-P1-003 Variants | Implemented | Variants with attributes, variant-level identifiers and variant prices | Bulk variant matrix generation |
+| CC-P1-004 Units | Implemented | Units with precision, unit conversions and a guard that stops a unit in use being deactivated | - |
+| CC-P1-005 Barcodes | Implemented | SKU, barcode, QR and supplier codes; a duplicate is refused and names the item that already owns it; the POS resolves a scan to the item | Scanner hardware profiles in P6 |
+| CC-P1-006 Prices | Implemented | Price lists with a tax-inclusive flag, Branch prices, quantity breaks, cost price, customer-group price lists and a preview that uses the POS calculation | - |
+| CC-P1-007 Promotions | Implemented | Percentage, fixed, coupon and buy-X-get-Y offers with scope, minimums, dates, priority and overlap detection, applied by the POS with an explanation of what it skipped | Bundle offers across different items |
+| CC-P1-008 Tax | Implemented | Tax categories, date-effective rates, sales/purchase applicability, inclusive and exclusive handling and a preview | Jurisdiction rules beyond the category |
+| CC-P1-009 Customers | Implemented | Contacts, groups, addresses, notes, purchase history and store-credit balance | Credit limit and terms, which belong to P4 |
+| CC-P1-010 Suppliers | Implemented | Contacts, payment terms, lead time and supplier items with their own code and cost | Purchase history, which arrives with P3 |
+| CC-P1-011 Import | Implemented | Template download, validation with a reason per row, stored preview, apply and rollback for items, customers and suppliers | Opening stock, which needs the P3 inventory phase |
 
 ## User Story Status
 
 | Story | Status | Evidence |
 |---|---|---|
-| CC-US-003 Manager configures products, prices and tax | In progress | Back Office `/catalog` can initialize P1 defaults and create a basic item with barcode, tax category and selling price |
+| CC-US-003 Manager configures products, prices and tax | Implemented | The same item, price and tax setup created in `/catalog` is what the POS quote, the sale, the receipt and the return all use |
 
 ## API Surface
 
-All routes are Business-scoped and require the same development identity headers as P0 until OIDC is connected.
+All routes are Business-scoped and require the same development identity headers as P0 until OIDC is
+connected.
 
 ```http
-POST /api/v1/businesses/{businessId}/catalog/defaults
-GET  /api/v1/businesses/{businessId}/catalog/summary
-POST /api/v1/businesses/{businessId}/catalog/units
-POST /api/v1/businesses/{businessId}/catalog/categories
-POST /api/v1/businesses/{businessId}/catalog/brands
-POST /api/v1/businesses/{businessId}/catalog/tax-categories
-POST /api/v1/businesses/{businessId}/catalog/price-lists
-POST /api/v1/businesses/{businessId}/catalog/items
-POST /api/v1/businesses/{businessId}/catalog/promotions
-POST /api/v1/businesses/{businessId}/catalog/customer-groups
-POST /api/v1/businesses/{businessId}/catalog/customers
-POST /api/v1/businesses/{businessId}/catalog/suppliers
-POST /api/v1/businesses/{businessId}/catalog/import-batches
+POST   /api/v1/businesses/{businessId}/catalog/defaults
+GET    /api/v1/businesses/{businessId}/catalog/summary
+GET    /api/v1/businesses/{businessId}/catalog/reference
+POST   /api/v1/businesses/{businessId}/catalog/units
+PATCH  /api/v1/businesses/{businessId}/catalog/units/{unitId}
+POST   /api/v1/businesses/{businessId}/catalog/unit-conversions
+POST   /api/v1/businesses/{businessId}/catalog/categories
+PATCH  /api/v1/businesses/{businessId}/catalog/categories/{categoryId}
+POST   /api/v1/businesses/{businessId}/catalog/brands
+PATCH  /api/v1/businesses/{businessId}/catalog/brands/{brandId}
+POST   /api/v1/businesses/{businessId}/catalog/tags
+POST   /api/v1/businesses/{businessId}/catalog/attributes
+POST   /api/v1/businesses/{businessId}/catalog/tax-categories
+PATCH  /api/v1/businesses/{businessId}/catalog/tax-categories/{taxCategoryId}
+POST   /api/v1/businesses/{businessId}/catalog/tax-rates
+PATCH  /api/v1/businesses/{businessId}/catalog/tax-rates/{taxRateId}
+POST   /api/v1/businesses/{businessId}/catalog/price-lists
+PATCH  /api/v1/businesses/{businessId}/catalog/price-lists/{priceListId}
+GET    /api/v1/businesses/{businessId}/catalog/items
+GET    /api/v1/businesses/{businessId}/catalog/items/{itemId}
+POST   /api/v1/businesses/{businessId}/catalog/items
+PATCH  /api/v1/businesses/{businessId}/catalog/items/{itemId}
+POST   /api/v1/businesses/{businessId}/catalog/items/{itemId}/variants
+POST   /api/v1/businesses/{businessId}/catalog/items/{itemId}/identifiers
+PUT    /api/v1/businesses/{businessId}/catalog/items/{itemId}/prices
+PUT    /api/v1/businesses/{businessId}/catalog/items/{itemId}/tags
+PUT    /api/v1/businesses/{businessId}/catalog/items/{itemId}/attributes
+GET    /api/v1/businesses/{businessId}/catalog/promotions
+POST   /api/v1/businesses/{businessId}/catalog/promotions
+PATCH  /api/v1/businesses/{businessId}/catalog/promotions/{promotionId}
+GET    /api/v1/businesses/{businessId}/catalog/customers
+GET    /api/v1/businesses/{businessId}/catalog/customers/{customerId}
+POST   /api/v1/businesses/{businessId}/catalog/customers
+PATCH  /api/v1/businesses/{businessId}/catalog/customers/{customerId}
+POST   /api/v1/businesses/{businessId}/catalog/customer-groups
+GET    /api/v1/businesses/{businessId}/catalog/suppliers
+GET    /api/v1/businesses/{businessId}/catalog/suppliers/{supplierId}
+POST   /api/v1/businesses/{businessId}/catalog/suppliers
+PATCH  /api/v1/businesses/{businessId}/catalog/suppliers/{supplierId}
+PUT    /api/v1/businesses/{businessId}/catalog/suppliers/{supplierId}/items
+GET    /api/v1/businesses/{businessId}/imports
+GET    /api/v1/businesses/{businessId}/imports/template
+POST   /api/v1/businesses/{businessId}/imports/validate
+GET    /api/v1/businesses/{businessId}/imports/{batchId}
+POST   /api/v1/businesses/{businessId}/imports/{batchId}/apply
+POST   /api/v1/businesses/{businessId}/imports/{batchId}/rollback
 ```
 
 ## Main Implementation Files
@@ -93,8 +127,8 @@ POST /api/v1/businesses/{businessId}/catalog/import-batches
 
 ## Next P1 Slices
 
-1. Add edit/deactivate flows for units, categories, brands, tax categories, price lists, items, customers and suppliers.
-2. Add Back Office category, brand, tax, price-list, promotion and import-management screens.
-3. Add CSV/XLSX import template validation with preview and apply evidence.
-4. Add automated integration tests for P1 permission denial, audit/outbox creation and cross-Business RLS.
-5. Add pricing/tax resolution tests before P2 POS sale calculation starts.
+1. Bulk variant generation and item images.
+2. Multi-level category tree editing and tax jurisdiction rules.
+3. Opening-stock import, once the P3 stock ledger exists.
+4. Automated integration tests in CI for permission denial, RLS, audit/outbox and import validation,
+   replacing the current manual smoke run.

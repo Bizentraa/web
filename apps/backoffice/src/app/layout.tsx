@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
 import type { ThemeIdentity } from "@bizentra/design-system/theme";
+import { ToastProvider } from "@bizentra/design-system/client";
 import { THEME_BOOTSTRAP_SCRIPT } from "@bizentra/themes";
 
 import { AppThemeProvider } from "./app-theme-provider";
 import { GlobalCommandPalette } from "./global-command-palette";
+import "@bizentra/design-system/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Bizentra Back Office",
-  description: "Business setup and management",
+  description: "Business setup, catalog, customers, suppliers and sales management",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -29,8 +31,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           apiBaseUrl={apiBaseUrl}
           initialDevelopmentIdentity={initialDevelopmentIdentity}
         >
-          {children}
-          <GlobalCommandPalette />
+          <ToastProvider>
+            {children}
+            <GlobalCommandPalette />
+          </ToastProvider>
         </AppThemeProvider>
       </body>
     </html>

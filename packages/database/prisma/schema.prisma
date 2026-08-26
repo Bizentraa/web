@@ -136,6 +136,87 @@ enum ImportStatus {
   VALIDATED
   FAILED
   APPLIED
+  ROLLED_BACK
+}
+
+enum ApprovalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementKind {
+  OPENING_FLOAT
+  PAY_IN
+  PAY_OUT
+  SAFE_DROP
+  CLOSING_COUNT
+}
+
+enum SaleStatus {
+  DRAFT
+  HELD
+  CONFIRMED
+  PARTIALLY_RETURNED
+  RETURNED
+  VOIDED
+}
+
+enum SaleChannel {
+  POS
+  BACK_OFFICE
+}
+
+enum PaymentMethodKind {
+  CASH
+  CARD
+  TRANSFER
+  QR_WALLET
+  STORE_CREDIT
+  OTHER
+}
+
+enum PaymentDirection {
+  IN
+  OUT
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  UNKNOWN
+  VOIDED
+}
+
+enum ReturnStatus {
+  DRAFT
+  ACCEPTED
+  CANCELLED
+}
+
+enum RefundMethod {
+  ORIGINAL_METHOD
+  CASH
+  STORE_CREDIT
+}
+
+enum StockDisposition {
+  RESELLABLE
+  DAMAGED
+  QUARANTINE
+}
+
+enum StoreCreditEntryKind {
+  ISSUE
+  REDEEM
+  ADJUST
 }
 
 model Business {
@@ -175,6 +256,11 @@ model Business {
   customers         Customer[]
   suppliers         Supplier[]
   importBatches     ImportBatch[]
+  approvalRequests  ApprovalRequest[]
+  shifts            PosShift[]
+  sales             Sale[]
+  saleReturns       SaleReturn[]
+  storeCredits      StoreCreditAccount[]
 
   @@map("businesses")
 }
@@ -193,6 +279,7 @@ model Unit {
   baseConversions UnitConversion[] @relation("BaseUnit")
   toConversions   UnitConversion[] @relation("ToUnit")
   items           Item[]
+  saleLines       SaleLine[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -339,9 +426,11 @@ model TaxRate {
   createdAt     DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
 
-  category TaxCategory @relation(fields: [taxCategoryId, businessId], references: [id, businessId], onDelete: Cascade)
+  category  TaxCategory @relation(fields: [taxCategoryId, businessId], references: [id, businessId], onDelete: Cascade)
+  saleLines SaleLine[]
 
   @@unique([businessId, code])
+  @@unique([id, businessId])
   @@index([businessId, taxCategoryId, status])
   @@map("tax_rates")
 }
@@ -353,12 +442,14 @@ model PriceList {
   name         String       @db.VarChar(120)
   currencyCode String       @db.Char(3)
   isDefault    Boolean      @default(false)
+  taxInclusive Boolean      @default(false)
   status       RecordStatus @default(ACTIVE)
   createdAt    DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
 
-  business Business    @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  prices   ItemPrice[]
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  prices         ItemPrice[]
+  customerGroups CustomerGroup[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -395,6 +486,7 @@ model Item {
   tagAssignments  ItemTagAssignment[]
   attributeValues ItemAttributeValue[]
   supplierItems   SupplierItem[]
+  saleLines       SaleLine[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -417,6 +509,7 @@ model ItemVariant {
   item        Item             @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Cascade)
   identifiers ItemIdentifier[]
   prices      ItemPrice[]
+  saleLines   SaleLine[]
 
   @@unique([businessId, itemId, code])
   @@unique([id, businessId])
@@ -480,23 +573,27 @@ model Promotion {
   createdAt     DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  business  Business   @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  saleLines SaleLine[]
 
   @@unique([businessId, code])
+  @@unique([id, businessId])
   @@index([businessId, status, startsAt])
   @@map("promotions")
 }
 
 model CustomerGroup {
-  id         String       @id @default(uuid()) @db.Uuid
-  businessId String       @db.Uuid
-  code       String       @db.VarChar(40)
-  name       String       @db.VarChar(120)
-  status     RecordStatus @default(ACTIVE)
-  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+  id          String       @id @default(uuid()) @db.Uuid
+  businessId  String       @db.Uuid
+  code        String       @db.VarChar(40)
+  name        String       @db.VarChar(120)
+  priceListId String?      @db.Uuid
+  status      RecordStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
 
   business  Business   @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  priceList PriceList? @relation(fields: [priceListId, businessId], references: [id, businessId], onDelete: Restrict)
   customers Customer[]
 
   @@unique([businessId, code])
@@ -519,8 +616,10 @@ model Customer {
   createdAt     DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
 
-  business Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  group    CustomerGroup? @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
+  business    Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  group       CustomerGroup?      @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
+  sales       Sale[]
+  storeCredit StoreCreditAccount?
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -594,13 +693,18 @@ model ImportBatch {
   businessId  String           @db.Uuid
   entityKind  ImportEntityKind
   status      ImportStatus     @default(RECEIVED)
-  fileName    String           @db.VarChar(240)
-  totalRows   Int              @default(0)
-  validRows   Int              @default(0)
-  invalidRows Int              @default(0)
-  errors      Json?
-  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime         @updatedAt @db.Timestamptz(3)
+  fileName     String          @db.VarChar(240)
+  totalRows    Int             @default(0)
+  validRows    Int             @default(0)
+  invalidRows  Int             @default(0)
+  appliedRows  Int             @default(0)
+  errors       Json?
+  preview      Json?
+  createdIds   Json?
+  appliedAt    DateTime?       @db.Timestamptz(3)
+  rolledBackAt DateTime?       @db.Timestamptz(3)
+  createdAt    DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @db.Timestamptz(3)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
 
@@ -641,6 +745,10 @@ model Branch {
   auditEvents       AuditEvent[]
   documentSequences DocumentSequence[]
   itemPrices        ItemPrice[]
+  approvalRequests  ApprovalRequest[]
+  shifts            PosShift[]
+  sales             Sale[]
+  saleReturns       SaleReturn[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -693,9 +801,18 @@ model BusinessMembership {
 
   business          Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
   user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
-  branchAssignments BranchAssignment[]
-  roleAssignments   MembershipRole[]
-  auditEvents       AuditEvent[]       @relation("AuditActor")
+  branchAssignments  BranchAssignment[]
+  roleAssignments    MembershipRole[]
+  auditEvents        AuditEvent[]       @relation("AuditActor")
+  approvalRequests   ApprovalRequest[]  @relation("ApprovalRequestedBy")
+  approvalDecisions  ApprovalRequest[]  @relation("ApprovalDecidedBy")
+  openedShifts       PosShift[]         @relation("ShiftOpenedBy")
+  closedShifts       PosShift[]         @relation("ShiftClosedBy")
+  cashMovements      CashMovement[]     @relation("CashMovementCreatedBy")
+  sales              Sale[]             @relation("SaleCreatedBy")
+  salePayments       SalePayment[]      @relation("PaymentCreatedBy")
+  saleReturns        SaleReturn[]       @relation("ReturnCreatedBy")
+  storeCreditEntries StoreCreditEntry[] @relation("StoreCreditCreatedBy")
 
   @@unique([businessId, userId])
   @@unique([id, businessId])
@@ -795,9 +912,11 @@ model ApprovalPolicy {
   createdAt        DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime         @updatedAt @db.Timestamptz(3)
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  requests ApprovalRequest[]
 
   @@unique([businessId, actionCode])
+  @@unique([id, businessId])
   @@index([businessId, enabled])
   @@map("approval_policies")
 }
@@ -891,4 +1010,312 @@ model OutboxEvent {
   @@index([publishedAt, occurredAt])
   @@index([businessId, aggregateType, aggregateId])
   @@map("outbox_events")
+}
+
+/// CC-P0-007: an approval request is the auditable lifecycle record for one sensitive action.
+model ApprovalRequest {
+  id                      String                @id @default(uuid()) @db.Uuid
+  businessId              String                @db.Uuid
+  branchId                String?               @db.Uuid
+  policyId                String?               @db.Uuid
+  actionCode              String                @db.VarChar(80)
+  entityType              String                @db.VarChar(80)
+  entityId                String?               @db.VarChar(80)
+  status                  ApprovalRequestStatus @default(PENDING)
+  amount                  Decimal?              @db.Decimal(19, 4)
+  currencyCode            String?               @db.Char(3)
+  reason                  String                @db.VarChar(500)
+  context                 Json?
+  requestedByMembershipId String                @db.Uuid
+  decidedByMembershipId   String?               @db.Uuid
+  decisionNote            String?               @db.VarChar(500)
+  requestedAt             DateTime              @default(now()) @db.Timestamptz(3)
+  decidedAt               DateTime?             @db.Timestamptz(3)
+  createdAt               DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime              @updatedAt @db.Timestamptz(3)
+
+  business    Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch      Branch?             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  policy      ApprovalPolicy?     @relation(fields: [policyId, businessId], references: [id, businessId], onDelete: Restrict)
+  requestedBy BusinessMembership  @relation("ApprovalRequestedBy", fields: [requestedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  decidedBy   BusinessMembership? @relation("ApprovalDecidedBy", fields: [decidedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  returns     SaleReturn[]
+
+  @@unique([id, businessId])
+  @@index([businessId, status, requestedAt])
+  @@index([businessId, actionCode, status])
+  @@map("approval_requests")
+}
+
+/// CC-P2-001: a POS shift owns opening cash, cash movements and closing reconciliation.
+model PosShift {
+  id                   String      @id @default(uuid()) @db.Uuid
+  businessId           String      @db.Uuid
+  branchId             String      @db.Uuid
+  registerCode         String      @db.VarChar(40)
+  number               String      @db.VarChar(60)
+  status               ShiftStatus @default(OPEN)
+  openingFloat         Decimal     @db.Decimal(19, 4)
+  expectedCash         Decimal?    @db.Decimal(19, 4)
+  countedCash          Decimal?    @db.Decimal(19, 4)
+  cashVariance         Decimal?    @db.Decimal(19, 4)
+  varianceReason       String?     @db.VarChar(500)
+  openedByMembershipId String      @db.Uuid
+  closedByMembershipId String?     @db.Uuid
+  openedAt             DateTime    @default(now()) @db.Timestamptz(3)
+  closedAt             DateTime?   @db.Timestamptz(3)
+  createdAt            DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime    @updatedAt @db.Timestamptz(3)
+
+  business      Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch        Branch              @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  openedBy      BusinessMembership  @relation("ShiftOpenedBy", fields: [openedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  closedBy      BusinessMembership? @relation("ShiftClosedBy", fields: [closedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  cashMovements CashMovement[]
+  sales         Sale[]
+  returns       SaleReturn[]
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, branchId, status])
+  @@map("pos_shifts")
+}
+
+/// CC-P2-001: every cash change inside a shift stays visible for reconciliation.
+model CashMovement {
+  id                    String           @id @default(uuid()) @db.Uuid
+  businessId            String           @db.Uuid
+  shiftId               String           @db.Uuid
+  kind                  CashMovementKind
+  amount                Decimal          @db.Decimal(19, 4)
+  reason                String           @db.VarChar(240)
+  createdByMembershipId String           @db.Uuid
+  createdAt             DateTime         @default(now()) @db.Timestamptz(3)
+
+  shift     PosShift           @relation(fields: [shiftId, businessId], references: [id, businessId], onDelete: Cascade)
+  createdBy BusinessMembership @relation("CashMovementCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, shiftId])
+  @@map("cash_movements")
+}
+
+/// CC-P2-002: one confirmed sale record shared by POS and Back Office.
+model Sale {
+  id                    String      @id @default(uuid()) @db.Uuid
+  businessId            String      @db.Uuid
+  branchId              String      @db.Uuid
+  shiftId               String?     @db.Uuid
+  number                String      @db.VarChar(60)
+  receiptNumber         String?     @db.VarChar(60)
+  status                SaleStatus  @default(DRAFT)
+  channel               SaleChannel @default(POS)
+  customerId            String?     @db.Uuid
+  currencyCode          String      @db.Char(3)
+  subtotal              Decimal     @default(0) @db.Decimal(19, 4)
+  discountTotal         Decimal     @default(0) @db.Decimal(19, 4)
+  taxTotal              Decimal     @default(0) @db.Decimal(19, 4)
+  total                 Decimal     @default(0) @db.Decimal(19, 4)
+  paidTotal             Decimal     @default(0) @db.Decimal(19, 4)
+  changeTotal           Decimal     @default(0) @db.Decimal(19, 4)
+  dueTotal              Decimal     @default(0) @db.Decimal(19, 4)
+  refundedTotal         Decimal     @default(0) @db.Decimal(19, 4)
+  idempotencyKey        String      @db.VarChar(80)
+  offlineRef            String?     @db.VarChar(80)
+  holdName              String?     @db.VarChar(120)
+  note                  String?     @db.VarChar(500)
+  voidReason            String?     @db.VarChar(500)
+  createdByMembershipId String      @db.Uuid
+  confirmedAt           DateTime?   @db.Timestamptz(3)
+  voidedAt              DateTime?   @db.Timestamptz(3)
+  createdAt             DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime    @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  shift     PosShift?          @relation(fields: [shiftId, businessId], references: [id, businessId], onDelete: Restrict)
+  customer  Customer?          @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("SaleCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  lines     SaleLine[]
+  payments  SalePayment[]
+  returns   SaleReturn[]
+  credits   StoreCreditEntry[]
+
+  @@unique([businessId, number])
+  @@unique([businessId, idempotencyKey])
+  @@unique([id, businessId])
+  @@index([businessId, branchId, status, createdAt])
+  @@index([businessId, customerId])
+  @@map("sales")
+}
+
+/// CC-P2-002: sale lines keep the resolved price, discount and tax used at sale time.
+model SaleLine {
+  id               String        @id @default(uuid()) @db.Uuid
+  businessId       String        @db.Uuid
+  saleId           String        @db.Uuid
+  lineNo           Int
+  itemId           String        @db.Uuid
+  variantId        String?       @db.Uuid
+  unitId           String        @db.Uuid
+  description      String        @db.VarChar(240)
+  quantity         Decimal       @db.Decimal(19, 4)
+  unitPrice        Decimal       @db.Decimal(19, 4)
+  discountKind     DiscountKind?
+  discountValue    Decimal       @default(0) @db.Decimal(19, 4)
+  discountAmount   Decimal       @default(0) @db.Decimal(19, 4)
+  promotionId      String?       @db.Uuid
+  taxRateId        String?       @db.Uuid
+  taxRatePercent   Decimal       @default(0) @db.Decimal(9, 6)
+  taxAmount        Decimal       @default(0) @db.Decimal(19, 4)
+  lineSubtotal     Decimal       @default(0) @db.Decimal(19, 4)
+  lineTotal        Decimal       @default(0) @db.Decimal(19, 4)
+  costPrice        Decimal?      @db.Decimal(19, 4)
+  stockTracked     Boolean       @default(false)
+  returnedQuantity Decimal       @default(0) @db.Decimal(19, 4)
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
+
+  sale        Sale             @relation(fields: [saleId, businessId], references: [id, businessId], onDelete: Cascade)
+  item        Item             @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+  variant     ItemVariant?     @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Restrict)
+  unit        Unit             @relation(fields: [unitId, businessId], references: [id, businessId], onDelete: Restrict)
+  promotion   Promotion?       @relation(fields: [promotionId, businessId], references: [id, businessId], onDelete: Restrict)
+  taxRate     TaxRate?         @relation(fields: [taxRateId, businessId], references: [id, businessId], onDelete: Restrict)
+  returnLines SaleReturnLine[]
+
+  @@unique([businessId, saleId, lineNo])
+  @@unique([id, businessId])
+  @@index([businessId, itemId])
+  @@map("sale_lines")
+}
+
+/// CC-P2-005 and CC-P2-007: each tender attempt is idempotent and keeps its own state.
+model SalePayment {
+  id                    String            @id @default(uuid()) @db.Uuid
+  businessId            String            @db.Uuid
+  saleId                String            @db.Uuid
+  returnId              String?           @db.Uuid
+  method                PaymentMethodKind
+  direction             PaymentDirection  @default(IN)
+  status                PaymentStatus     @default(PENDING)
+  amount                Decimal           @db.Decimal(19, 4)
+  tenderedAmount        Decimal?          @db.Decimal(19, 4)
+  changeAmount          Decimal           @default(0) @db.Decimal(19, 4)
+  reference             String?           @db.VarChar(120)
+  failureReason         String?           @db.VarChar(240)
+  idempotencyKey        String            @db.VarChar(80)
+  createdByMembershipId String            @db.Uuid
+  capturedAt            DateTime?         @db.Timestamptz(3)
+  createdAt             DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime          @updatedAt @db.Timestamptz(3)
+
+  sale       Sale               @relation(fields: [saleId, businessId], references: [id, businessId], onDelete: Cascade)
+  saleReturn SaleReturn?        @relation(fields: [returnId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy  BusinessMembership @relation("PaymentCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId, saleId, status])
+  @@map("sale_payments")
+}
+
+/// CC-P2-009 to CC-P2-011: a return always references the original sale.
+model SaleReturn {
+  id                    String       @id @default(uuid()) @db.Uuid
+  businessId            String       @db.Uuid
+  branchId              String       @db.Uuid
+  saleId                String       @db.Uuid
+  shiftId               String?      @db.Uuid
+  exchangeSaleId        String?      @db.Uuid
+  approvalRequestId     String?      @db.Uuid
+  number                String       @db.VarChar(60)
+  status                ReturnStatus @default(DRAFT)
+  reason                String       @db.VarChar(500)
+  refundMethod          RefundMethod @default(ORIGINAL_METHOD)
+  refundTotal           Decimal      @default(0) @db.Decimal(19, 4)
+  storeCreditTotal      Decimal      @default(0) @db.Decimal(19, 4)
+  taxTotal              Decimal      @default(0) @db.Decimal(19, 4)
+  idempotencyKey        String       @db.VarChar(80)
+  createdByMembershipId String       @db.Uuid
+  acceptedAt           DateTime?     @db.Timestamptz(3)
+  createdAt            DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime      @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  sale      Sale               @relation(fields: [saleId, businessId], references: [id, businessId], onDelete: Restrict)
+  shift     PosShift?          @relation(fields: [shiftId, businessId], references: [id, businessId], onDelete: Restrict)
+  approval  ApprovalRequest?   @relation(fields: [approvalRequestId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("ReturnCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  lines     SaleReturnLine[]
+  payments  SalePayment[]
+  credits   StoreCreditEntry[]
+
+  @@unique([businessId, number])
+  @@unique([businessId, idempotencyKey])
+  @@unique([id, businessId])
+  @@index([businessId, saleId])
+  @@map("sale_returns")
+}
+
+/// CC-P2-009: return lines record quantity, money and stock disposition.
+model SaleReturnLine {
+  id           String           @id @default(uuid()) @db.Uuid
+  businessId   String           @db.Uuid
+  returnId     String           @db.Uuid
+  saleLineId   String           @db.Uuid
+  quantity     Decimal          @db.Decimal(19, 4)
+  refundAmount Decimal          @default(0) @db.Decimal(19, 4)
+  taxAmount    Decimal          @default(0) @db.Decimal(19, 4)
+  disposition  StockDisposition @default(RESELLABLE)
+  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
+
+  saleReturn SaleReturn @relation(fields: [returnId, businessId], references: [id, businessId], onDelete: Cascade)
+  saleLine   SaleLine   @relation(fields: [saleLineId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, returnId, saleLineId])
+  @@index([businessId, saleLineId])
+  @@map("sale_return_lines")
+}
+
+/// CC-P2-010 and CC-P4-010: store credit keeps an auditable balance per Customer.
+model StoreCreditAccount {
+  id           String   @id @default(uuid()) @db.Uuid
+  businessId   String   @db.Uuid
+  customerId   String   @db.Uuid
+  currencyCode String   @db.Char(3)
+  balance      Decimal  @default(0) @db.Decimal(19, 4)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  business Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer Customer           @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  entries  StoreCreditEntry[]
+
+  @@unique([customerId, businessId])
+  @@unique([id, businessId])
+  @@index([businessId])
+  @@map("store_credit_accounts")
+}
+
+/// CC-P2-010: every store-credit change keeps its reason and resulting balance.
+model StoreCreditEntry {
+  id                    String               @id @default(uuid()) @db.Uuid
+  businessId            String               @db.Uuid
+  accountId             String               @db.Uuid
+  kind                  StoreCreditEntryKind
+  amount                Decimal              @db.Decimal(19, 4)
+  balanceAfter          Decimal              @db.Decimal(19, 4)
+  reference             String?              @db.VarChar(120)
+  saleId                String?              @db.Uuid
+  returnId              String?              @db.Uuid
+  createdByMembershipId String               @db.Uuid
+  createdAt             DateTime             @default(now()) @db.Timestamptz(3)
+
+  account    StoreCreditAccount @relation(fields: [accountId, businessId], references: [id, businessId], onDelete: Cascade)
+  sale       Sale?              @relation(fields: [saleId, businessId], references: [id, businessId], onDelete: Restrict)
+  saleReturn SaleReturn?        @relation(fields: [returnId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy  BusinessMembership @relation("StoreCreditCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, accountId, createdAt])
+  @@map("store_credit_entries")
 }

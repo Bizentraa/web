@@ -39,3 +39,10 @@
 | development/02_BUSINESS_THEME_SYSTEM.md | Tracked | Business-selectable colour theme architecture and runtime behavior |
 | development/03_DEVELOPMENT_CHANGE_LOG.md | Tracked | Append-only dated development history with SRS mapping and verification evidence |
 | development/04_P1_IMPLEMENTATION_STATUS.md | Tracked | Current P1 master-data implementation status mapped to Common Core SRS |
+| development/05_COMMON_CORE_SRS_TRACEABILITY.md | Tracked | Requirement-by-requirement status for P0, P1 and P2 against the Common Core SRS |
+| development/06_UI_COMPONENT_SYSTEM.md | Tracked | The shared component system, where each layer lives and the rules for adding a component |
+| development/07_UIUX_IMPLEMENTATION_STATUS.md | Tracked | What has been built from the Common UI/UX specification, screen by screen |
+| development/08_P2_IMPLEMENTATION_STATUS.md | Tracked | Current P2 sales, POS, payments and returns implementation status |
+| ui-ux/00_README_UIUX_DEVELOPMENT_ORDER.md | Tracked | UI/UX development order and vertical sequencing |
+| ui-ux/01_COMMON_UIUX_DESIGN_SYSTEM.md | Tracked | Shared UI/UX source of truth for every Business type |
+| ui-ux/02_GROCERY_SUPERMARKET_UIUX.md | Tracked | First vertical UI/UX companion |

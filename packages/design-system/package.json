@@ -16,10 +16,16 @@
       "types": "./dist/theme.d.ts",
       "import": "./dist/theme.js",
       "default": "./dist/theme.js"
-    }
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "default": "./dist/client.js"
+    },
+    "./styles.css": "./styles.css"
   },
   "scripts": {
-    "build": "tsup src/index.tsx src/theme.tsx --format esm --dts --clean --external react",
+    "build": "tsup src/index.tsx src/theme.tsx src/client.tsx --format esm --dts --clean --external react",
     "clean": "rimraf dist",
     "lint": "eslint src --max-warnings=0",
     "test": "vitest run --passWithNoTests",
@@ -35,5 +41,9 @@
   "devDependencies": {
     "@types/react": "^19.2.18",
     "react": "^19.2.8"
-  }
+  },
+  "files": [
+    "dist",
+    "styles.css"
+  ]
 }

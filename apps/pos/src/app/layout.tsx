@@ -4,12 +4,15 @@ import type { ReactNode } from "react";
 import type { ThemeIdentity } from "@bizentra/design-system/theme";
 import { THEME_BOOTSTRAP_SCRIPT } from "@bizentra/themes";
 
+import { ToastProvider } from "@bizentra/design-system/client";
+
 import { AppThemeProvider } from "./app-theme-provider";
+import "@bizentra/design-system/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Bizentra POS",
-  description: "Reliable point of sale",
+  description: "Fast, reliable selling with shifts, tenders, receipts and returns",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -28,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           apiBaseUrl={apiBaseUrl}
           initialDevelopmentIdentity={initialDevelopmentIdentity}
         >
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </AppThemeProvider>
       </body>
     </html>

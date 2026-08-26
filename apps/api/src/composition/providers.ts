@@ -1,6 +1,11 @@
 import type { OnApplicationShutdown, Provider } from "@nestjs/common";
 import { Inject, Injectable } from "@nestjs/common";
-import { BusinessAccessService, CatalogService } from "@bizentra/domain-business-access";
+import {
+  BusinessAccessService,
+  CatalogService,
+  ImportService,
+} from "@bizentra/domain-business-access";
+import { PosService, PricingService } from "@bizentra/domain-commerce";
 import { createDatabaseClient, type DatabaseClient } from "@bizentra/database";
 
 import { DATABASE } from "./tokens.js";
@@ -20,6 +25,24 @@ export const catalogProvider: Provider = {
   provide: CatalogService,
   inject: [DATABASE],
   useFactory: (database: DatabaseClient) => new CatalogService(database),
+};
+
+export const importProvider: Provider = {
+  provide: ImportService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new ImportService(database),
+};
+
+export const pricingProvider: Provider = {
+  provide: PricingService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new PricingService(database),
+};
+
+export const posProvider: Provider = {
+  provide: PosService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new PosService(database),
 };
 
 @Injectable()

@@ -23,23 +23,23 @@ Worker -> Redis/BullMQ
 
 | Requirement | Status | Current evidence | Remaining P0 work |
 |---|---|---|---|
-| CC-P0-001 Business Setup | In progress | Bootstrap contract/API creates Business details and first Branch | Back Office setup form, update flow and validation UX |
-| CC-P0-002 Data Separation | In progress | Scoped tables have `businessId`; the non-superuser API role is protected by forced PostgreSQL RLS; cross-Business API and direct SQL checks were denied | Commit repeatable isolation tests and design the audited platform-support access path |
-| CC-P0-003 Branch | In progress | Create first/additional Branch endpoints and status fields | Edit, activate, deactivate and management screens |
-| CC-P0-004 Locations | In progress | First Location is created under the correct Branch | Location CRUD/status endpoints and screens |
-| CC-P0-005 Users | In progress | Owner User, Business membership and Branch assignment are created | Invite/list/update/suspend users and multi-Branch assignment screens |
-| CC-P0-006 Roles | In progress | Owner Role and 26 fine-grained permission definitions are created | Custom Role CRUD, assignment UI and negative permission integration tests |
-| CC-P0-007 Approvals | Designed | Approval-policy table and sensitive permission codes exist | Policy CRUD, approval request/decision records and workflow enforcement |
-| CC-P0-008 Feature Access | In progress | Feature definitions and Business feature assignment exist; Common Core is enabled | Enable/disable API, dependency validation, Back Office screen and business-pack records |
-| CC-P0-009 Audit | In progress | Business/Branch creation and number generation create audit events; a database trigger rejected an attempted audit update | Audit viewer, more action coverage and retention/archival rules |
-| CC-P0-010 Numbering | In progress | Atomic Business/Branch/type sequence allocation is implemented and produced `COLA2-SALE-000001` in the live check | Configuration UI, formatting policies and automated concurrency tests |
+| CC-P0-001 Business Setup | Implemented | Bootstrap creates the Business, first Branch, Location and owner access; `/setup` edits name, legal name, contact, currency, time zone and country | First-run setup wizard for a brand-new Business |
+| CC-P0-002 Data Separation | Implemented | Every scoped table has `businessId` and forced PostgreSQL RLS; a user from another Business receives `403` in the smoke run | Turn the smoke checks into CI integration tests |
+| CC-P0-003 Branch | Implemented | Create, edit, activate and deactivate with an open-shift guard and a last-active-Branch guard, plus the `/setup` screen | Branch switcher that changes the working context |
+| CC-P0-004 Locations | Implemented | Create, edit and deactivate under a Branch with the seven Location types | Location rules that P3 inventory will need |
+| CC-P0-005 Users | Implemented | Invitation, activation, suspension, Role and Branch assignment through `/access`, with a last-Owner guard | Production sign-in so an invitation becomes a real login |
+| CC-P0-006 Roles | Implemented | Five Role templates, custom Roles, a permission matrix grouped by area and 52 permission definitions across P0, P1 and P2 | Separation-of-duties rules beyond the approver check |
+| CC-P0-007 Approvals | Implemented for `ANY_APPROVER` | Policies with thresholds, the approval request lifecycle, approver identity, reason capture and enforcement on discount, refund, void and shift variance | `ALL_APPROVERS` and `MINIMUM_APPROVERS` strategies |
+| CC-P0-008 Feature Access | Implemented | Seven feature definitions, dependency validation, enable/disable with audit and outbox events, and the `/controls` screen | Per-feature settings and business-pack content |
+| CC-P0-009 Audit | Implemented | Every management and commerce action writes an append-only audit record; `/controls` searches by record, action, actor, Branch and date with before/after detail | Retention, archival and an auditor export |
+| CC-P0-010 Numbering | Implemented | Atomic allocation per Business/Branch/document type, forward-only settings and a next-number preview | Automated concurrency tests |
 
 ## User Story Status
 
 | Story | Status | Evidence |
 |---|---|---|
 | CC-US-001 Business Owner creates Business and first Branch | API slice implemented | One transaction creates Business, Branch, Location, defaults, owner access, audit and outbox event |
-| CC-US-002 Administrator creates users and Roles | Started | Data model, permission catalog and owner assignment exist; administrator workflows remain |
+| CC-US-002 Administrator creates users and Roles | Implemented | A user is invited, activated, given Roles and Branches, and a blocked action is refused with the missing permission named |
 
 ## Deliberate Security Boundary
 
@@ -65,15 +65,23 @@ Worker -> Redis/BullMQ
 - Each browser origin validates and caches its copy. A before-hydration bootstrap applies cached tokens immediately, then the application refreshes them from PostgreSQL.
 - Light, dark, system and allowed per-device modes were verified, including persistence across reloads.
 
+## Verified Management Layer - 2026-08-26
+
+`scripts/smoke-common-core.mjs` runs the whole P0 surface against a live database and API. In the
+recorded run it confirmed that Role templates are created with the Business, a cashier is denied the
+access screen, an unknown permission is refused, the Common Core cannot be disabled, an optional
+feature can be enabled, a cashier cannot approve their own request, a manager can, an approved
+request releases the blocked action, a Branch can be deactivated and activated, and a user from
+another Business is refused. Browser checks confirmed `/setup`, `/access` and `/controls` render
+with no console errors and no horizontal overflow at 1440px or 390px.
+
 ## Next P0 Slices
 
-1. Convert the proven PostgreSQL RLS and cross-Business checks into repeatable integration tests.
-2. Add Back Office Business setup and Branch/Location management forms.
-3. Add user invitation, Branch assignment, custom Roles and permission-denial tests.
-4. Add approval-policy configuration and approval-request execution records.
-5. Add feature-pack management and dependency rules.
-6. Add searchable audit UI and database append-only protection.
-7. Add concurrency tests for document numbering.
-8. Connect OIDC and remove trust in development headers outside local mode.
+1. Connect production OIDC/session identity and remove the development header fallback.
+2. Add the `ALL_APPROVERS` and `MINIMUM_APPROVERS` approval strategies to the enforcement path.
+3. Add a first-run setup wizard and a working Branch switcher.
+4. Convert the smoke checks into automated integration tests that run in CI.
+5. Add document-number concurrency tests and audit retention rules.
 
-P0 reaches its exit gate only when both CC-US-001 and CC-US-002 pass through UI, API, database, permission, audit and isolation tests.
+P0 reaches its exit gate when CC-US-001 and CC-US-002 pass through UI, API, database, permission,
+audit and isolation tests that run automatically, not only through the manual smoke run.

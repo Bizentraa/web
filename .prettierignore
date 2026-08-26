@@ -4,6 +4,7 @@ node_modules/
 dist/
 coverage/
 packages/database/src/generated/
+work/
 
 # Generated and tool-managed files
 pnpm-lock.yaml

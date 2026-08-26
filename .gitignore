@@ -5,6 +5,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+work/
 
 # Local configuration and secrets
 .env
@@ -24,4 +25,3 @@ packages/database/src/generated/
 .vscode/
 .DS_Store
 Thumbs.db
-

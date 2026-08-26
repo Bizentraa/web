@@ -40,6 +40,7 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-26 | In progress | `CC-P0-001` to `CC-P0-010`, `CC-US-001`, `CC-US-002` | `cb07234` | Established the first Common Core P0 foundation with Business, Branch, Location, owner user, roles/permissions, feature access, numbering, audit, outbox, local infrastructure, and app startup. |
 | 2026-08-26 | Implemented for appearance slice | `CC-P0-001`, `CC-P0-002`, `CC-P0-006`, `CC-P0-008`, `CC-P0-009`, `CC-US-001`, `CC-US-018` | `be8cd40` | Added Business-selectable colour themes shared by Back Office and POS, saved in PostgreSQL and cached per browser origin. |
+| 2026-08-26 | Implemented for current P0 management scope | `CC-P0-001` to `CC-P0-010`, `CC-US-001`, `CC-US-002`, `CC-US-018` | `Uncommitted` | Adapted the P0 management layer from `work/bizentra-p0-p1-p2.tgz`: Business/Branch/Location management, user invitation, role permissions, approvals, feature packs, audit search and document-number settings with Back Office screens and API smoke coverage. |
 
 ### Common Core P1 Master Data
 
@@ -48,6 +49,13 @@ Each change entry should include:
 | 2026-08-26 | In progress | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `3af4410` | Added the first P1 master-data foundation with database models, Business isolation, permissions, API routes, API client calls and Back Office `/catalog` screen. |
 | 2026-08-26 | Implemented for Back Office UI slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `ed7fdc4` | Upgraded the Back Office `/catalog` workspace into a responsive operational UI with command center, readiness score, grouped master-data cards, guided item/customer/supplier forms, recent-record panels and mobile-safe layouts. |
 | 2026-08-26 | Implemented for UI architecture slice | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `82eb36e` | Refactored the Back Office `/catalog` workspace to use owned shadcn-style design-system primitives and added SRS traceability/pending-work documentation for Common Core. |
+| 2026-08-26 | Implemented for current P1 management/import/pricing scope | `CC-P1-001` to `CC-P1-011`, `CC-US-003` | `Uncommitted` | Adapted P1 catalog management from `work/bizentra-p0-p1-p2.tgz`: list/search/detail/edit/deactivate flows, unit/category/brand/tax/price maintenance, variants, identifiers, supplier costs, promotions, CSV validation/apply/rollback and pricing/tax resolution. |
+
+### Common Core P2 Sales, POS and Payments
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-26 | Implemented for current P2 commerce scope | `CC-P2-001` to `CC-P2-012`, `CC-US-004`, `CC-US-005`, `CC-US-006` | `Uncommitted` | Adapted the P2 commerce backend and POS workspace from `work/bizentra-p0-p1-p2.tgz`: shifts, cart pricing, idempotent sales, split/partial tenders, receipts, returns, refunds, exchanges, store credit, offline sale sync and Back Office sales review. |
 
 ### Common UI/UX System
 
@@ -55,6 +63,7 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for common P0/P1/P2 readiness slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `ebd977a` | Added the UI/UX source docs to project tracking; expanded shared UI primitives; upgraded Back Office home into a P0/P1/P2 status dashboard; upgraded POS home into a P2 readiness workspace preview; added UI/UX implementation status and remaining-work tracking. |
 | 2026-08-26 | Implemented for shared frontend architecture slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `5d71b01` | Added the first reusable app shell/navigation, global command palette, responsive mobile navigation and shared component primitives from the consolidated UI/UX remaining-work register. |
+| 2026-08-26 | Implemented for shared component-system scope | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012` | `Uncommitted` | Adapted the archive’s shared component system: common stylesheet, server/client entry split, dialogs, drawers, sheets, confirmations, tabs, toasts, scan helpers, controlled filters, responsive tables, form primitives, description lists, skeletons and receipt view. |
 
 ## 4. Detailed Change Entries
 
@@ -149,6 +158,32 @@ Each change entry should include:
 | Commit | `5d71b01 feat: add shared frontend architecture foundation` |
 | Remaining work | Replace development placeholder Business/Branch context with authenticated context from production identity/session; make the command list permission-aware from the real user permissions/feature packs; connect `EntityHeader`, `Timeline`, approval/danger/payment/drawer/sheet patterns to the relevant P0/P1/P2 feature screens; add Storybook/equivalent component examples; add automated accessibility, visual regression and browser route smoke tests. |
 
+### 2026-08-26 - Common Core P0/P1/P2 Archive Adaptation
+
+| Field | Details |
+|---|---|
+| Feature / slice | P0 management, P1 catalog/import/pricing and P2 commerce adaptation from `work/bizentra-p0-p1-p2.tgz` |
+| Status | Implemented for current P0/P1/P2 scope |
+| SRS mapping | `CC-P0-001` to `CC-P0-010`; `CC-P1-001` to `CC-P1-011`; `CC-P2-001` to `CC-P2-012`; `CC-US-001` to `CC-US-006`; `CC-US-018`; partial `CC-P6-005` for offline sale sync |
+| What changed | Extended the Prisma model and migration set for approval requests, import preview/apply/rollback and P2 commerce records. Added shared domain helpers for access, approvals, audit, document numbering, CSV parsing and money. Expanded the Business Access domain with Business/Branch/Location updates, user invitation, membership lifecycle, custom Roles, approval policies/requests, feature management, audit search and document-number settings. Expanded P1 catalog with reference data, item list/detail/edit/deactivate, variants, identifiers, prices, supplier items, tax rates, promotions and import lifecycle. Added `@bizentra/domain-commerce` for pricing/tax/promotion calculation, POS shifts, idempotent sale posting, tenders, receipts, returns, refunds, exchanges, store credit and offline sale queue sync. Added API controllers/contracts/API-client methods and Back Office/POS screens for the implemented flows. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826090000_p0_approvals_p1_import_p2_commerce`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/shared`; `packages/domains/business-access`; `packages/domains/commerce`; `apps/api/src/controllers/business-foundation.controller.ts`; `apps/api/src/controllers/catalog.controller.ts`; `apps/api/src/controllers/pos.controller.ts`; `apps/backoffice/src/app/setup`; `apps/backoffice/src/app/access`; `apps/backoffice/src/app/controls`; `apps/backoffice/src/app/catalog`; `apps/backoffice/src/app/customers`; `apps/backoffice/src/app/suppliers`; `apps/backoffice/src/app/import`; `apps/backoffice/src/app/sales`; `apps/pos/src/app`; `scripts/smoke-common-core.mjs` |
+| Verification | `pnpm install` completed for all 16 workspace projects; `pnpm db:generate` passed; `pnpm db:migrate:deploy` applied migration `20260826090000_p0_approvals_p1_import_p2_commerce`; `pnpm format:check` passed after excluding local `work/` archive extracts; domain shared, business-access and commerce tests passed; API, Back Office and POS typechecks/lints passed; Back Office and POS production builds passed; `node scripts/smoke-common-core.mjs` passed 74 live API checks against local PostgreSQL/Redis/API. |
+| Commit | `Uncommitted` |
+| Remaining work | Production OIDC/session identity remains. P0: multi-approver strategies beyond the currently enforced approval behavior, audit retention/export and repeatable lower-level integration tests for isolation/audit immutability. P1: bulk variant matrix editing, deeper category hierarchy editing, item media/images, opening-stock import in P3 and richer tax jurisdictions. P2: quotation/order workflow, payment-provider integration, provider-side payment idempotency, direct POS exchange/discard held cart actions, offline payments against an already-posted sale and connected thermal/electronic receipt delivery. |
+
+### 2026-08-26 - Shared Component System and Product Stylesheet
+
+| Field | Details |
+|---|---|
+| Feature / slice | Shared component system, common stylesheet and app screens |
+| Status | Implemented for current shared component scope |
+| SRS mapping | `CC-P0-001` to `CC-P0-010`; `CC-P1-001` to `CC-P1-011`; `CC-P2-001` to `CC-P2-012` |
+| What changed | Moved shared component styling into `@bizentra/design-system/styles.css` and imported it in Back Office and POS. Split the design-system package into server-safe and client entries. Added `Dialog`, `Drawer`, `Sheet`, `ConfirmDialog`, `Tabs`, `ToastProvider`, `NumberPad`, `useScanFocus`, `useOnlineState`, `useDebouncedValue` and `createIdempotencyKey`. Rebuilt `DataTable` with alignment, row selection, footer and phone-card fallback; made `FilterBar` controlled with active filter chips; added form layout primitives, description lists, skeletons and receipt rendering. |
+| Main files | `packages/design-system/package.json`; `packages/design-system/src/index.tsx`; `packages/design-system/src/client.tsx`; `packages/design-system/styles.css`; `apps/backoffice/src/app/lib/workspace.tsx`; `apps/backoffice/src/app/globals.css`; `apps/pos/src/app/globals.css`; `apps/pos/src/app/page.tsx` |
+| Verification | `pnpm --filter @bizentra/design-system build` passed; `pnpm --filter @bizentra/design-system typecheck` passed; Back Office and POS typechecks/lints/builds passed as part of the archive adaptation verification. |
+| Commit | `Uncommitted` |
+| Remaining work | Add Storybook or equivalent component examples, automated accessibility assertions, visual-regression snapshots, saved views/column selector for `DataTable` and density options for management lists. |
+
 ## 5. Consolidated Remaining Work Register
 
 This section lists remaining work that must be considered before a phase or UI/UX capability is treated as complete. It combines gaps from the SRS, UI/UX plan and the detailed change entries above.
@@ -157,43 +192,43 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| Business / Branch / Location | Full create/edit/activate/deactivate management UI and APIs; setup wizard; Business/Branch switcher; Location type rules for shop floor, warehouse, kitchen, van and service bay. |
-| Users / Roles / Permissions | User invitation and lifecycle; assign users to Branches; role editor; fine-grained permissions; permission explanations in UI; denied-action tests; separation-of-duties checks where relevant. |
-| Approvals | Approval-rule builder; threshold/rule configuration; approval request lifecycle; approver identity; reason capture; approval drawer UI; return to original task after approval/rejection. |
-| Feature access | Feature-pack management UI/API; enabled/disabled/not-permitted states; business-type pack visibility; audit and outbox evidence for feature changes. |
-| Audit | Audit list/timeline UI; filters by actor/record/action/date; before/after details where relevant; immutable audit tests; auditor read-only workflows. |
-| Numbering | Document-number settings by Business/Branch/document type; concurrency tests; preview of next number; collision handling and operational error messages. |
-| Identity/security | Production OIDC/session integration; optional MFA for privileged users; protected secrets; secure local-development fallback removal plan. |
-| Operations | Repeatable infrastructure setup; seed/reset scripts; health checks; logs/metrics/traces; backup and restore verification; deployment and rollback runbooks. |
+| Business / Branch / Location | Implemented for current scope: edit/activate/deactivate APIs and Back Office setup screen. Remaining: production-grade Business/Branch switcher and broader Location type rules as later vertical packs require. |
+| Users / Roles / Permissions | Implemented for current scope: user invitation, Branch assignment, Role editor, permission catalogue and denied-action behavior. Remaining: production OIDC/session identity and deeper separation-of-duties policy tests. |
+| Approvals | Implemented for current scope: approval policies, request lifecycle, approver identity and self-approval prevention. Remaining: multi-approver strategies beyond the currently enforced behavior and return-to-task UX polish. |
+| Feature access | Implemented for current scope: feature-pack list/update, dependency validation and Core-protection rule. Remaining: business-type pack marketplace/configuration UX. |
+| Audit | Implemented for current scope: audit search/list and audit evidence for P0/P1/P2 actions. Remaining: retention/archive/export rules and lower-level immutable-audit integration tests. |
+| Numbering | Implemented for current scope: document-number settings, next-number preview/allocation and smoke-tested sequences. Remaining: heavier concurrency test suite and operational collision dashboards. |
+| Identity/security | Remaining: production OIDC/session integration, optional MFA for privileged users, protected secrets and secure local-development fallback removal plan. |
+| Operations | Implemented for current local scope: migration deploy, health checks and smoke script. Remaining: deployment/rollback runbooks, backup/restore verification, metrics/traces and production observability dashboards. |
 
 ### P1 - Master Data and Configuration
 
 | Area | Remaining work |
 |---|---|
-| Items | Item detail/edit/deactivate; item type-specific fields for product/service/ingredient/part/bundle/fee/rental; image/media support if required; audit timeline. |
-| Categories / brands / tags / attributes | Management screens and APIs; hierarchy support; custom-attribute definitions; validation and duplicate handling. |
-| Variants / identifiers | Variant matrix UI; variant-level SKU/barcode/QR/supplier code; duplicate identifier resolution; scanner validation readiness. |
-| Units | Unit conversion UI/API; conversion validation; default unit protection where needed. |
-| Prices | Price-list management; Branch/customer/quantity price rules; cost fields; pricing preview and resolution tests. |
-| Promotions | Promotion builder for percentage/fixed/coupon/bundle/buy-X-get-Y; date/time conditions; conflict detection; POS application engine. |
-| Tax | Tax category/rate management; jurisdiction/rule UI; tax preview; sale/return/purchase calculation tests. |
-| Customers | Address, groups, notes, purchase history, balance and credit-readiness views; permission-aware customer access. |
-| Suppliers | Contact, terms, supplier items, lead time, cost and purchase history screens. |
-| Import | CSV/XLSX templates; upload; row validation; preview totals; apply; rollback; reconciliation; import audit evidence. |
-| P1 quality | Permission denial, cross-Business RLS, audit/outbox, uniqueness, import validation, pricing and tax automated tests. |
+| Items | Implemented for current scope: list/search/detail/edit/deactivate, variants, identifiers, prices, attributes, audit timeline and POS search readiness. Remaining: item media/images and bulk variant matrix editing. |
+| Categories / brands / tags / attributes | Implemented for current scope: management APIs/screens, custom attributes and duplicate validation. Remaining: deeper category hierarchy editing. |
+| Variants / identifiers | Implemented for current scope: variant creation, barcode/SKU/supplier identifiers and duplicate-barcode refusal. Remaining: matrix bulk editor for size/colour/style-heavy verticals. |
+| Units | Implemented for current scope: unit management and conversions. Remaining: extra vertical-specific unit rules where required. |
+| Prices | Implemented for current scope: price lists, Branch/customer/quantity price rules, costs and pricing resolution tests. Remaining: advanced price simulation/reporting. |
+| Promotions | Implemented for current scope: promotion builder, percentage/fixed/coupon/buy-X-get-Y, minimums, overlap visibility and POS application engine. Remaining: campaign analytics and richer stacking rules. |
+| Tax | Implemented for current scope: tax categories/rates, tax preview/resolution and sale/return tests. Remaining: richer tax jurisdictions beyond category/date-effective rates. |
+| Customers | Implemented for current scope: customer list/detail/edit, groups, balances, store credit and sale history. Remaining: richer CRM notes/tasks if required. |
+| Suppliers | Implemented for current scope: supplier list/detail/edit, contacts, terms, supplier items, cost and lead time. Remaining: supplier scorecards and purchasing history after P3/P4. |
+| Import | Implemented for current scope: CSV template, validation, preview, apply, rollback and audit evidence. Remaining: opening-stock import after P3 inventory exists. |
+| P1 quality | Implemented for current scope: unit tests and live smoke coverage for duplicates, import lifecycle, pricing/tax and permissions. Remaining: broader automated integration test suite. |
 
 ### P2 - Sales, POS and Payments
 
 | Area | Remaining work |
 |---|---|
-| Shift | Open shift, opening cash, cash movements, close shift, reconciliation, variance reason and manager approval. |
-| Sale/cart | Live scan/search from P1 catalog; favorites/category grid; cart lines; quantity/discount/tax calculation; customer attachment; hold/resume sale. |
-| Idempotent posting | Sale/order confirmation with unique IDs; retry safety; unknown/failure states; no duplicate payment or sale records. |
-| Payments | Payment sheet; cash/card/transfer/QR/wallet/store credit methods; split/partial tenders; failed/unknown payment handling; reconciliation references. |
-| Receipts/invoices | Printable and electronic receipt generation; receipt numbering; tax/discount visibility; reprint permissions. |
-| Returns/refunds/exchanges | Original sale lookup; return policy/approval; stock disposition; credit note; refund/store credit; exchange workflow and reversal trail. |
-| POS UI/UX | Distraction-free POS shell; scan focus; persistent cart/amount due; customer side panel; approval drawer; large tender buttons; keyboard/touch shortcuts. |
-| POS offline | Offline queue, pending count, local save messaging, sync, conflict review and offline payment restrictions. |
+| Shift | Implemented for current scope: open shift, opening cash, cash movements, close shift, reconciliation, variance reason and approval hook. Remaining: cash drawer hardware in P6. |
+| Sale/cart | Implemented for current scope: live scan/search, cart lines, quantity/discount/tax calculation, customer attachment and hold/resume/confirm. Remaining: favourites and department grids. |
+| Idempotent posting | Implemented for current scope: idempotent sales, payments, returns and offline sale sync. Remaining: provider-side idempotency after gateway integration. |
+| Payments | Implemented for current scope: cash/card/transfer/QR/wallet/store credit methods, split/partial tenders, unknown payment resolution and reconciliation references. Remaining: real card/wallet provider integration. |
+| Receipts/invoices | Implemented for current scope: receipt allocation once, printable receipt view, tax/discount/tender visibility and reprint path. Remaining: connected thermal printing and electronic delivery. |
+| Returns/refunds/exchanges | Implemented for current scope: original sale lookup, return/refund/store-credit/exchange flows and reversal trail. Remaining: direct POS exchange UX and provider refunds. |
+| POS UI/UX | Implemented for current scope: POS selling workspace, scan focus, persistent cart, payment sheet, tender buttons and receipt dialog. Remaining: more keyboard/touch shortcuts and customer display. |
+| POS offline | Implemented for current scope: offline sale queue and sync endpoint. Remaining: offline payments against already-posted sales and conflict comparison UI. |
 
 ### P3 - Inventory, Purchasing and Fulfillment
 
@@ -260,12 +295,12 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| App shell/navigation | Desktop sidebar/topbar, compact tablet behavior and mobile bottom navigation are implemented for Back Office; remaining work is real role/feature-aware navigation, real Business/Branch switcher data and unsaved-change guard. |
-| Search/commands | `Ctrl/Cmd+K` command palette is implemented for current Back Office routes/actions; remaining work is permission-aware commands from real user permissions and deeper record search. |
-| Shared components | First primitives are implemented: `DataTable`, `FilterBar`, `EntityHeader`, `Timeline`, `ApprovalDrawer`, `DangerConfirmation`, `PaymentSheet`, `MoneySummary`, `StockBadge`, `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard`, `WorkTicketPanel`, `IntegrationState`, drawer/sheet/card state patterns. Remaining work is connecting all primitives to real feature screens and adding skeleton-loader variants where needed. |
-| State patterns | Empty, loading, error, disabled, permission, offline, sync, integration failure and needs-review states across all important screens. |
-| Accessibility/responsive | Keyboard navigation, visible focus, labels, status text not colour-only, contrast, reduced motion, touch targets and phone/tablet/desktop responsive behavior. |
-| Quality tooling | Component examples/storybook or equivalent, automated UI tests, visual regression, accessibility checks and route-level browser smoke tests. |
+| App shell/navigation | Implemented for current scope: shared Back Office workspace shell, grouped sidebar, topbar context and mobile nav. Remaining: permission-filtered navigation and unsaved-change guard. |
+| Search/commands | Implemented for current scope: command palette foundation. Remaining: permission-aware commands from real feature packs and record-level global search. |
+| Shared components | Implemented for current scope: shared stylesheet, server/client entries, tables, filters, forms, tabs, dialogs, drawers, sheets, confirmations, state panels, skeletons, receipt view, scan helpers and idempotency helpers. Remaining: saved views, column selector and density switch. |
+| State patterns | Implemented for current scope across new screens: loading, empty, error, permission, offline/sync and needs-review states. Remaining: expand to every future vertical screen. |
+| Accessibility/responsive | Implemented for current component scope: labels, visible focus, non-colour-only state labels, mobile table fallback and touch-safe layouts. Remaining: automated accessibility assertions. |
+| Quality tooling | Unit tests, typechecks, lints, builds and live smoke script exist. Remaining: Storybook/equivalent examples, visual regression and route-level browser smoke automation. |
 | Vertical UI/UX | Grocery/Supermarket is documented but not implemented; future vertical files must reuse common components and add only business-specific fields/workflows. |
 
 ## 6. Entry Template

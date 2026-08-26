@@ -24,6 +24,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         FORBIDDEN: HttpStatus.FORBIDDEN,
         CONFLICT: HttpStatus.CONFLICT,
         INVALID_INPUT: HttpStatus.BAD_REQUEST,
+        NOT_ENABLED: HttpStatus.FORBIDDEN,
       } as const;
       void response.status(statusByCode[exception.code]).send({
         code: exception.code,
