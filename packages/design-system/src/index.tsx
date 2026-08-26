@@ -174,6 +174,14 @@ const DEFAULT_NAVIGATION: ShellNavigationItem[] = [
     status: "ready",
   },
   {
+    href: "/inventory",
+    label: "Inventory",
+    description: "stock and purchasing",
+    phase: "P3",
+    group: "Manage",
+    status: "ready",
+  },
+  {
     href: "/customers",
     label: "Customers",
     description: "people who buy",

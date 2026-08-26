@@ -57,6 +57,12 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for current P2 commerce scope | `CC-P2-001` to `CC-P2-012`, `CC-US-004`, `CC-US-005`, `CC-US-006` | `1c8bbce` | Adapted the P2 commerce backend and POS workspace from `work/bizentra-p0-p1-p2.tgz`: shifts, cart pricing, idempotent sales, split/partial tenders, receipts, returns, refunds, exchanges, store credit, offline sale sync and Back Office sales review. |
 
+### Common Core P3 Inventory, Purchasing and Fulfillment
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `Uncommitted` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
+
 ### Common UI/UX System
 
 | Date | Status | SRS mapping | Commit | Summary |
@@ -198,6 +204,19 @@ Each change entry should include:
 | Commit | `58fea2b feat: refine workspace UI density and theme selection` |
 | Remaining work | Add route-level browser screenshots/visual regression once browser automation is available in this session; add Storybook/equivalent component examples; continue applying the same density rules to future vertical screens; add optional guided setup/import wizards where the workflow becomes multi-step and stateful. |
 
+### 2026-08-26 - Common Core P3 Inventory, Purchasing and Fulfillment
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P3 inventory, purchasing, receiving and fulfillment operations |
+| Status | Implemented for current P3 operations scope |
+| SRS mapping | `CC-P3-001` Stock Ledger; `CC-P3-002` One Movement Rule; `CC-P3-003` Availability; `CC-P3-004` Receiving; `CC-P3-005` Transfers; `CC-P3-006` Counts; `CC-P3-007` Adjustments; `CC-P3-008` Reorder; `CC-P3-009` Purchase Request; `CC-P3-010` Purchase Order; `CC-P3-011` Purchase Variance; `CC-P3-012` Picking/Packing; `CC-US-007`; `CC-US-008`; `CC-US-009` |
+| What changed | Added stock balance and stock movement data models; added reorder settings and reorder suggestions; added purchase request, purchase order, goods receipt and fulfillment order records; added P3 permissions and role-template access; added inventory service rules for stock adjustment, transfer, purchase request approval, purchase order creation, receiving and fulfillment status changes; added P3 API contracts, API routes and API-client methods; added Back Office `/inventory` operations workspace with stock ledger, purchasing and fulfillment tabs; extended the common smoke script with P3 live checks. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826090655_p3_inventory_purchasing_fulfillment`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md` |
+| Verification | `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm db:migrate:deploy` applied the P3 migration; `node scripts/smoke-common-core.mjs` passed 89 live API checks including P3 adjustment, transfer, reorder suggestion, purchase request approval, purchase order conversion, goods receipt, over-receive refusal, partial receipt status, fulfillment status flow and audit evidence. |
+| Commit | `Uncommitted` |
+| Remaining work | Stock counts/cycle counts are still not started; serial/batch/expiry dimensions belong with the P5 traceability engine; explicit in-transit transfer receiving, sales-order reservations, supplier returns, bill matching, scanner-led mobile receiving/counting/picking and richer browser/visual regression coverage remain for later slices. |
+
 ## 5. Consolidated Remaining Work Register
 
 This section lists remaining work that must be considered before a phase or UI/UX capability is treated as complete. It combines gaps from the SRS, UI/UX plan and the detailed change entries above.
@@ -248,12 +267,12 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| Stock ledger | Auditable stock ledger by Item/Location/movement; on-hand/reserved/available/incoming quantities; one physical movement equals one event. |
-| Receiving | Purchase order receiving; variance handling; batch/expiry/serial capture; goods receipt increases stock only once. |
-| Transfers/counts/adjustments | Transfer lifecycle with in-transit state; stock count/cycle count; variance posting; adjustment reasons and approvals. |
-| Replenishment/purchasing | Reorder settings and suggestions; purchase requests; purchase orders; supplier variance view. |
-| Fulfillment | Picking, packing and dispatch for orders requiring fulfillment; delivery preparation. |
-| UI/UX | Stock table, receiving workspace, transfer/count screens, purchasing screens, `StockBadge`, dense operational layouts and mobile scan views. |
+| Stock ledger | Implemented for current scope: auditable stock ledger by Item/Location/movement, stock balances and on-hand/reserved/available/incoming visibility. Remaining: serial/batch/expiry ledger dimensions and deeper reversal/correction flows. |
+| Receiving | Implemented for current scope: purchase order receiving, received quantity tracking, over-receive refusal and goods receipt increasing stock only once. Remaining: barcode receiving, supplier returns, bill matching and batch/expiry/serial capture. |
+| Transfers/counts/adjustments | Implemented for current scope: stock adjustments with reasons and location-to-location transfers with source availability checks. Remaining: explicit multi-step in-transit receiving, stock counts/cycle counts and controlled variance posting. |
+| Replenishment/purchasing | Implemented for current scope: reorder settings, reorder suggestions, purchase requests, approval/rejection, purchase orders and ordered-vs-received visibility. Remaining: demand forecasting, supplier comparison, landed cost and multi-approver purchasing policies. |
+| Fulfillment | Implemented for current scope: fulfillment orders and status movement through ready-to-pick, picking, packed and dispatched. Remaining: sales-order reservations, allocation, route/delivery planning and scanner-led picking. |
+| UI/UX | Implemented for current scope: Back Office `/inventory` operations workspace with dense KPI cards, stock ledger, purchasing, fulfillment, modal workflows and responsive shared components. Remaining: mobile scanner views, receiving/counting/picking task queues and visual regression coverage. |
 
 ### P4 - Finance, Customer Controls and Management
 

@@ -87,15 +87,34 @@ export const P2_PERMISSIONS = [
   { code: "STORE_CREDIT_MANAGE", name: "Manage store credit", area: "Returns", sensitive: true },
 ] as const satisfies readonly PermissionDefinition[];
 
+export const P3_PERMISSIONS = [
+  { code: "INVENTORY_VIEW", name: "View inventory", area: "Inventory" },
+  {
+    code: "INVENTORY_MOVE",
+    name: "Receive, transfer and reserve stock",
+    area: "Inventory",
+    sensitive: true,
+  },
+  { code: "INVENTORY_ADJUST", name: "Adjust stock", area: "Inventory", sensitive: true },
+  { code: "REORDER_MANAGE", name: "Manage reorder levels", area: "Inventory" },
+  { code: "PURCHASE_VIEW", name: "View purchasing", area: "Purchasing" },
+  { code: "PURCHASE_MANAGE", name: "Create purchase requests and orders", area: "Purchasing" },
+  { code: "PURCHASE_RECEIVE", name: "Receive purchase orders", area: "Purchasing" },
+  { code: "FULFILLMENT_VIEW", name: "View fulfillment", area: "Fulfillment" },
+  { code: "FULFILLMENT_MANAGE", name: "Pick, pack and dispatch orders", area: "Fulfillment" },
+] as const satisfies readonly PermissionDefinition[];
+
 export const PLATFORM_PERMISSIONS = [
   ...P0_PERMISSIONS,
   ...P1_PERMISSIONS,
   ...P2_PERMISSIONS,
+  ...P3_PERMISSIONS,
 ] as const;
 
 export type P0PermissionCode = (typeof P0_PERMISSIONS)[number]["code"];
 export type P1PermissionCode = (typeof P1_PERMISSIONS)[number]["code"];
 export type P2PermissionCode = (typeof P2_PERMISSIONS)[number]["code"];
+export type P3PermissionCode = (typeof P3_PERMISSIONS)[number]["code"];
 export type PlatformPermissionCode = (typeof PLATFORM_PERMISSIONS)[number]["code"];
 
 const PERMISSION_CODES = new Set<string>(
@@ -151,7 +170,7 @@ export const ROLE_TEMPLATES = [
     code: "ADMINISTRATOR",
     name: "Business Administrator",
     description: "Manages users, Branches, settings and permissions.",
-    permissions: P0_PERMISSIONS.map((permission) => permission.code as string),
+    permissions: PLATFORM_PERMISSIONS.map((permission) => permission.code as string),
   },
   {
     code: "BRANCH_MANAGER",
@@ -167,6 +186,7 @@ export const ROLE_TEMPLATES = [
       "DISCOUNT_APPROVE",
       "REFUND_APPROVE",
       "SALE_VOID",
+      "PURCHASE_APPROVE",
       "AUDIT_VIEW",
       "CATALOG_VIEW",
       "PRICE_VIEW",
@@ -184,6 +204,15 @@ export const ROLE_TEMPLATES = [
       "REFUND_ISSUE",
       "STORE_CREDIT_VIEW",
       "FINANCE_VIEW",
+      "INVENTORY_VIEW",
+      "INVENTORY_MOVE",
+      "INVENTORY_ADJUST",
+      "REORDER_MANAGE",
+      "PURCHASE_VIEW",
+      "PURCHASE_MANAGE",
+      "PURCHASE_RECEIVE",
+      "FULFILLMENT_VIEW",
+      "FULFILLMENT_MANAGE",
     ],
   },
   {
@@ -225,6 +254,48 @@ export const ROLE_TEMPLATES = [
       "SUPPLIER_VIEW",
       "IMPORT_VIEW",
       "IMPORT_MANAGE",
+      "INVENTORY_VIEW",
+      "REORDER_MANAGE",
+      "PURCHASE_VIEW",
+      "PURCHASE_MANAGE",
+    ],
+  },
+  {
+    code: "INVENTORY_USER",
+    name: "Inventory User",
+    description: "Receives, counts, transfers and adjusts stock.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "LOCATION_VIEW",
+      "CATALOG_VIEW",
+      "SUPPLIER_VIEW",
+      "INVENTORY_VIEW",
+      "INVENTORY_MOVE",
+      "INVENTORY_ADJUST",
+      "REORDER_MANAGE",
+      "PURCHASE_VIEW",
+      "PURCHASE_RECEIVE",
+      "FULFILLMENT_VIEW",
+      "FULFILLMENT_MANAGE",
+      "AUDIT_VIEW",
+    ],
+  },
+  {
+    code: "PURCHASING_USER",
+    name: "Purchasing User",
+    description: "Creates purchase requests and purchase orders with supplier costs.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "CATALOG_VIEW",
+      "SUPPLIER_VIEW",
+      "SUPPLIER_MANAGE",
+      "INVENTORY_VIEW",
+      "REORDER_MANAGE",
+      "PURCHASE_VIEW",
+      "PURCHASE_MANAGE",
+      "AUDIT_VIEW",
     ],
   },
   {
@@ -252,6 +323,9 @@ export const ROLE_TEMPLATES = [
       "SALE_VIEW",
       "STORE_CREDIT_VIEW",
       "FINANCE_VIEW",
+      "INVENTORY_VIEW",
+      "PURCHASE_VIEW",
+      "FULFILLMENT_VIEW",
     ],
   },
 ] as const satisfies readonly {
@@ -302,6 +376,13 @@ export const FEATURE_DEFINITIONS = [
     description: "Approved offline selling with a visible sync queue.",
     kind: "OPTIONAL",
     dependsOn: ["POS_SALES"],
+  },
+  {
+    key: "INVENTORY_PURCHASING",
+    name: "Inventory, purchasing and fulfillment",
+    description: "Stock ledger, availability, receiving, transfers, purchasing and fulfillment.",
+    kind: "CORE",
+    dependsOn: ["MASTER_DATA"],
   },
   {
     key: "GROCERY_PACK",

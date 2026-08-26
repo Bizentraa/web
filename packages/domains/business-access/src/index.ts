@@ -1,4 +1,5 @@
 export { CatalogService } from "./application/catalog.service.js";
+export { InventoryService } from "./application/inventory.service.js";
 export { ImportService, type TemplateColumn } from "./application/import.service.js";
 export { BusinessAccessService } from "./application/business-access.service.js";
 export { BusinessAccessError } from "@bizentra/domain-shared";
@@ -10,6 +11,7 @@ export {
   P0_PERMISSIONS,
   P1_PERMISSIONS,
   P2_PERMISSIONS,
+  P3_PERMISSIONS,
   PLATFORM_PERMISSIONS,
   ROLE_TEMPLATES,
   type ApprovableActionCode,
@@ -17,6 +19,7 @@ export {
   type P0PermissionCode,
   type P1PermissionCode,
   type P2PermissionCode,
+  type P3PermissionCode,
   type PermissionDefinition,
   type PlatformPermissionCode,
   type RoleTemplateCode,

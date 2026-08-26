@@ -113,6 +113,45 @@ export const refundMethodSchema = z.enum(["ORIGINAL_METHOD", "CASH", "STORE_CRED
 
 export const stockDispositionSchema = z.enum(["RESELLABLE", "DAMAGED", "QUARANTINE"]);
 
+export const stockMovementKindSchema = z.enum([
+  "OPENING",
+  "ADJUSTMENT",
+  "TRANSFER_OUT",
+  "TRANSFER_IN",
+  "RECEIPT",
+  "PICK",
+  "PACK",
+  "DISPATCH",
+  "RETURN",
+]);
+
+export const stockMovementStatusSchema = z.enum(["POSTED", "IN_TRANSIT", "CANCELLED"]);
+
+export const purchaseRequestStatusSchema = z.enum([
+  "DRAFT",
+  "SUBMITTED",
+  "APPROVED",
+  "REJECTED",
+  "CONVERTED",
+  "CANCELLED",
+]);
+
+export const purchaseOrderStatusSchema = z.enum([
+  "DRAFT",
+  "APPROVED",
+  "PARTIALLY_RECEIVED",
+  "RECEIVED",
+  "CANCELLED",
+]);
+
+export const fulfillmentStatusSchema = z.enum([
+  "READY_TO_PICK",
+  "PICKING",
+  "PACKED",
+  "DISPATCHED",
+  "CANCELLED",
+]);
+
 export const featureKindSchema = z.enum(["CORE", "BUSINESS_PACK", "OPTIONAL"]);
 
 export type RecordStatus = z.infer<typeof recordStatusSchema>;
@@ -136,6 +175,11 @@ export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
 export type ReturnStatus = z.infer<typeof returnStatusSchema>;
 export type RefundMethod = z.infer<typeof refundMethodSchema>;
 export type StockDisposition = z.infer<typeof stockDispositionSchema>;
+export type StockMovementKind = z.infer<typeof stockMovementKindSchema>;
+export type StockMovementStatus = z.infer<typeof stockMovementStatusSchema>;
+export type PurchaseRequestStatus = z.infer<typeof purchaseRequestStatusSchema>;
+export type PurchaseOrderStatus = z.infer<typeof purchaseOrderStatusSchema>;
+export type FulfillmentStatus = z.infer<typeof fulfillmentStatusSchema>;
 export type FeatureKind = z.infer<typeof featureKindSchema>;
 
 /* -------------------------------------------------------------------------- */
@@ -861,6 +905,107 @@ export const syncQueueSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/* P3 - Inventory, purchasing and fulfillment                                  */
+/* -------------------------------------------------------------------------- */
+
+const p3LineSchema = z.object({
+  itemId: z.uuid(),
+  variantId: z.uuid().optional(),
+  quantity: positiveQuantitySchema,
+  unitCost: nonNegativeMoneySchema.optional(),
+  note: z.string().trim().max(240).optional(),
+});
+
+export const stockAdjustmentSchema = z.object({
+  branchId: z.uuid(),
+  locationId: z.uuid(),
+  itemId: z.uuid(),
+  variantId: z.uuid().optional(),
+  quantityChange: z.coerce
+    .number()
+    .finite()
+    .refine((value) => value !== 0, {
+      message: "Quantity change cannot be zero.",
+    }),
+  unitCost: nonNegativeMoneySchema.optional(),
+  reason: reasonSchema,
+  approvalRequestId: z.uuid().optional(),
+});
+
+export const stockTransferSchema = z.object({
+  branchId: z.uuid(),
+  fromLocationId: z.uuid(),
+  toLocationId: z.uuid(),
+  itemId: z.uuid(),
+  variantId: z.uuid().optional(),
+  quantity: positiveQuantitySchema,
+  reason: reasonSchema,
+});
+
+export const reorderSettingSchema = z
+  .object({
+    locationId: z.uuid(),
+    itemId: z.uuid(),
+    variantId: z.uuid().optional(),
+    minimumQuantity: nonNegativeMoneySchema,
+    targetQuantity: positiveQuantitySchema,
+  })
+  .refine((input) => input.targetQuantity >= input.minimumQuantity, {
+    message: "Target quantity must be greater than or equal to minimum quantity.",
+    path: ["targetQuantity"],
+  });
+
+export const createPurchaseRequestSchema = z.object({
+  branchId: z.uuid(),
+  reason: reasonSchema,
+  lines: z.array(p3LineSchema).min(1).max(100),
+});
+
+export const decidePurchaseRequestSchema = z.object({
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const createPurchaseOrderSchema = z.object({
+  branchId: z.uuid(),
+  supplierId: z.uuid(),
+  purchaseRequestId: z.uuid().optional(),
+  expectedDate: z.iso.date().optional(),
+  notes: z.string().trim().max(500).optional(),
+  lines: z
+    .array(p3LineSchema.extend({ unitCost: nonNegativeMoneySchema }))
+    .min(1)
+    .max(100),
+});
+
+export const receivePurchaseOrderSchema = z.object({
+  locationId: z.uuid(),
+  supplierDocument: z.string().trim().max(120).optional(),
+  lines: z
+    .array(
+      z.object({
+        purchaseOrderLineId: z.uuid(),
+        quantity: positiveQuantitySchema,
+        unitCost: nonNegativeMoneySchema.optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+export const createFulfillmentOrderSchema = z.object({
+  branchId: z.uuid(),
+  customerName: z.string().trim().max(180).optional(),
+  sourceType: z.string().trim().min(2).max(80),
+  sourceId: z.string().trim().min(2).max(80),
+  lines: z.array(p3LineSchema).min(1).max(100),
+});
+
+export const updateFulfillmentStatusSchema = z.object({
+  status: fulfillmentStatusSchema,
+});
+
+/* -------------------------------------------------------------------------- */
 /* Input types                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -935,6 +1080,15 @@ export type CreateExchangeInput = z.output<typeof createExchangeSchema>;
 export type SaleQuery = z.output<typeof saleQuerySchema>;
 export type CatalogSearchQuery = z.output<typeof catalogSearchSchema>;
 export type SyncQueueInput = z.output<typeof syncQueueSchema>;
+export type StockAdjustmentInput = z.output<typeof stockAdjustmentSchema>;
+export type StockTransferInput = z.output<typeof stockTransferSchema>;
+export type ReorderSettingInput = z.output<typeof reorderSettingSchema>;
+export type CreatePurchaseRequestInput = z.output<typeof createPurchaseRequestSchema>;
+export type DecidePurchaseRequestInput = z.output<typeof decidePurchaseRequestSchema>;
+export type CreatePurchaseOrderInput = z.output<typeof createPurchaseOrderSchema>;
+export type ReceivePurchaseOrderInput = z.output<typeof receivePurchaseOrderSchema>;
+export type CreateFulfillmentOrderInput = z.output<typeof createFulfillmentOrderSchema>;
+export type UpdateFulfillmentStatusInput = z.output<typeof updateFulfillmentStatusSchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Response contracts                                                          */
@@ -1411,6 +1565,140 @@ export interface SyncResultEntry {
   saleId?: string;
   paymentId?: string;
   message?: string;
+}
+
+export interface StockAvailabilityRow {
+  id: string;
+  locationId: string;
+  locationCode: string;
+  locationName: string;
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  variantId: string | null;
+  variantName: string | null;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  incomingQuantity: number;
+  availableQuantity: number;
+  updatedAt: string;
+}
+
+export interface StockMovementRow {
+  id: string;
+  branchName: string;
+  locationName: string;
+  itemCode: string;
+  itemName: string;
+  variantName: string | null;
+  kind: StockMovementKind;
+  status: StockMovementStatus;
+  quantity: number;
+  unitCost: number | null;
+  reason: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  actor: string;
+  occurredAt: string;
+}
+
+export interface ReorderSuggestionRow {
+  id: string;
+  locationId: string;
+  locationName: string;
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  availableQuantity: number;
+  incomingQuantity: number;
+  minimumQuantity: number;
+  targetQuantity: number;
+  suggestedQuantity: number;
+}
+
+export interface PurchaseRequestRow {
+  id: string;
+  number: string;
+  branchName: string;
+  status: PurchaseRequestStatus;
+  reason: string;
+  lineCount: number;
+  totalQuantity: number;
+  createdBy: string;
+  createdAt: string;
+  approvedAt: string | null;
+}
+
+export interface PurchaseOrderRow {
+  id: string;
+  number: string;
+  branchName: string;
+  supplierName: string;
+  status: PurchaseOrderStatus;
+  expectedDate: string | null;
+  lineCount: number;
+  orderedQuantity: number;
+  receivedQuantity: number;
+  varianceQuantity: number;
+  lines: Array<{
+    id: string;
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    orderedQuantity: number;
+    receivedQuantity: number;
+    unitCost: number;
+  }>;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface GoodsReceiptRow {
+  id: string;
+  number: string;
+  purchaseOrderId: string;
+  purchaseOrderNumber: string;
+  branchName: string;
+  locationName: string;
+  supplierDocument: string | null;
+  lineCount: number;
+  receivedQuantity: number;
+  createdBy: string;
+  receivedAt: string;
+}
+
+export interface FulfillmentOrderRow {
+  id: string;
+  number: string;
+  branchName: string;
+  status: FulfillmentStatus;
+  customerName: string | null;
+  sourceType: string;
+  sourceId: string;
+  lineCount: number;
+  totalQuantity: number;
+  createdBy: string;
+  createdAt: string;
+  dispatchedAt: string | null;
+}
+
+export interface InventoryOverview {
+  counts: {
+    balances: number;
+    movements: number;
+    reorderSuggestions: number;
+    purchaseRequests: number;
+    purchaseOrders: number;
+    receipts: number;
+    fulfillmentOrders: number;
+  };
+  availability: StockAvailabilityRow[];
+  movements: StockMovementRow[];
+  reorderSuggestions: ReorderSuggestionRow[];
+  purchaseRequests: PurchaseRequestRow[];
+  purchaseOrders: PurchaseOrderRow[];
+  receipts: GoodsReceiptRow[];
+  fulfillmentOrders: FulfillmentOrderRow[];
 }
 
 export interface BusinessFoundationCreated {

@@ -23,6 +23,7 @@ import type {
   CreateCustomerGroupInput,
   CreateCustomerInput,
   CreateExchangeInput,
+  CreateFulfillmentOrderInput,
   CreateImportBatchInput,
   CreateItemIdentifierInput,
   CreateItemInput,
@@ -31,6 +32,8 @@ import type {
   CreateLocationInput,
   CreatePriceListInput,
   CreatePromotionInput,
+  CreatePurchaseOrderInput,
+  CreatePurchaseRequestInput,
   CreateReturnInput,
   CreateRoleInput,
   CreateSaleInput,
@@ -42,6 +45,7 @@ import type {
   CustomerDetail,
   CustomerListRow,
   DecideApprovalRequestInput,
+  DecidePurchaseRequestInput,
   DocumentSequenceRow,
   ExchangeResult,
   FeatureRow,
@@ -50,6 +54,7 @@ import type {
   ImportBatchSummary,
   ImportEntityKind,
   ImportPreview,
+  InventoryOverview,
   InviteUserInput,
   ItemCreated,
   ItemDetail,
@@ -63,6 +68,8 @@ import type {
   PromotionRow,
   QuoteSaleInput,
   ReceiptDocument,
+  ReceivePurchaseOrderInput,
+  ReorderSettingInput,
   ResolvePaymentInput,
   ReturnResult,
   SaleDetail,
@@ -72,6 +79,8 @@ import type {
   SetFeatureInput,
   SetItemAttributeValuesInput,
   ShiftSummary,
+  StockAdjustmentInput,
+  StockTransferInput,
   SupplierDetail,
   SupplierListRow,
   SyncQueueInput,
@@ -82,6 +91,7 @@ import type {
   UpdateBusinessThemeInput,
   UpdateCategoryInput,
   UpdateCustomerInput,
+  UpdateFulfillmentStatusInput,
   UpdateHeldSaleInput,
   UpdateItemInput,
   UpdateLocationInput,
@@ -367,6 +377,52 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
       post<ImportApplied>(`/businesses/${businessId}/imports/${batchId}/apply`),
     rollbackImport: (businessId: string, batchId: string) =>
       post<ImportBatchSummary>(`/businesses/${businessId}/imports/${batchId}/rollback`),
+
+    /* ------------------------------------------- P3 inventory/purchasing */
+    getInventoryOverview: (businessId: string) =>
+      request<InventoryOverview>(`/businesses/${businessId}/inventory/overview`),
+    adjustStock: (businessId: string, input: StockAdjustmentInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/inventory/adjustments`, input),
+    transferStock: (businessId: string, input: StockTransferInput) =>
+      post<{ outMovementId: string; inMovementId: string }>(
+        `/businesses/${businessId}/inventory/transfers`,
+        input,
+      ),
+    upsertReorderSetting: (businessId: string, input: ReorderSettingInput) =>
+      put<CatalogRecordCreated>(`/businesses/${businessId}/inventory/reorder-settings`, input),
+    createPurchaseRequest: (businessId: string, input: CreatePurchaseRequestInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/inventory/purchase-requests`, input),
+    decidePurchaseRequest: (
+      businessId: string,
+      requestId: string,
+      input: DecidePurchaseRequestInput,
+    ) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/inventory/purchase-requests/${requestId}/decision`,
+        input,
+      ),
+    createPurchaseOrder: (businessId: string, input: CreatePurchaseOrderInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/inventory/purchase-orders`, input),
+    receivePurchaseOrder: (
+      businessId: string,
+      purchaseOrderId: string,
+      input: ReceivePurchaseOrderInput,
+    ) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/inventory/purchase-orders/${purchaseOrderId}/receipts`,
+        input,
+      ),
+    createFulfillmentOrder: (businessId: string, input: CreateFulfillmentOrderInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/inventory/fulfillment-orders`, input),
+    updateFulfillmentStatus: (
+      businessId: string,
+      fulfillmentOrderId: string,
+      input: UpdateFulfillmentStatusInput,
+    ) =>
+      put<CatalogRecordCreated>(
+        `/businesses/${businessId}/inventory/fulfillment-orders/${fulfillmentOrderId}/status`,
+        input,
+      ),
 
     /* ------------------------------------------------------------- P2 POS */
     openShift: (businessId: string, input: OpenShiftInput) =>

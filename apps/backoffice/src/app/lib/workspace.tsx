@@ -46,6 +46,14 @@ export const NAVIGATION: ShellNavigationItem[] = [
     status: "ready",
   },
   {
+    href: "/inventory",
+    label: "Inventory",
+    description: "stock and purchasing",
+    phase: "P3",
+    group: "Manage",
+    status: "ready",
+  },
+  {
     href: "/customers",
     label: "Customers",
     description: "contacts and credit",

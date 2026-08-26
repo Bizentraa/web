@@ -356,6 +356,200 @@ async function main() {
   );
   check("Supplier items, cost and lead time are stored", supplierDetail.items.length === 1);
 
+  /* --------------------------------------------------------------- P3 stock */
+  console.log("\nP3 inventory, purchasing and fulfillment");
+  const initialInventory = await call(`/businesses/${owner.businessId}/inventory/overview`, {
+    identity: owner,
+  });
+  check("Inventory overview loads", Boolean(initialInventory.counts));
+
+  const openingMovement = await call(`/businesses/${owner.businessId}/inventory/adjustments`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      locationId: foundation.locationId,
+      itemId: item.id,
+      quantityChange: 20,
+      unitCost: 375,
+      reason: "Opening stock before first receiving run",
+    },
+  });
+  check("Opening stock adjustment creates a movement", Boolean(openingMovement.id));
+
+  await call(`/businesses/${owner.businessId}/inventory/reorder-settings`, {
+    method: "PUT",
+    identity: owner,
+    body: {
+      locationId: foundation.locationId,
+      itemId: item.id,
+      minimumQuantity: 25,
+      targetQuantity: 40,
+    },
+  });
+  const reorderOverview = await call(`/businesses/${owner.businessId}/inventory/overview`, {
+    identity: owner,
+  });
+  check(
+    "Reorder suggestion appears when available stock is below minimum",
+    reorderOverview.reorderSuggestions.length === 1,
+  );
+
+  const transfer = await call(`/businesses/${owner.businessId}/inventory/transfers`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      fromLocationId: foundation.locationId,
+      toLocationId: branchTwo.locationId,
+      itemId: item.id,
+      quantity: 3,
+      reason: "Move stock to West Branch store",
+    },
+  });
+  check(
+    "Stock transfer creates paired movement rows",
+    Boolean(transfer.outMovementId && transfer.inMovementId),
+  );
+
+  const overTransfer = await call(`/businesses/${owner.businessId}/inventory/transfers`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      fromLocationId: foundation.locationId,
+      toLocationId: branchTwo.locationId,
+      itemId: item.id,
+      quantity: 99999,
+      reason: "Try to over transfer",
+    },
+    expect: 409,
+  });
+  check("Stock transfer refuses unavailable quantity", overTransfer.code === "CONFLICT");
+
+  const purchaseRequest = await call(
+    `/businesses/${owner.businessId}/inventory/purchase-requests`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        branchId: mainBranchId,
+        reason: "Replenish dairy stock",
+        lines: [{ itemId: item.id, quantity: 12, unitCost: 370 }],
+      },
+    },
+  );
+  check("Purchase request can be created", Boolean(purchaseRequest.id));
+
+  await call(
+    `/businesses/${owner.businessId}/inventory/purchase-requests/${purchaseRequest.id}/decision`,
+    {
+      method: "POST",
+      identity: managerIdentity,
+      body: { decision: "APPROVED", note: "Approved for replenishment" },
+    },
+  );
+  check("Purchase request can be approved", true);
+
+  const purchaseOrder = await call(`/businesses/${owner.businessId}/inventory/purchase-orders`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      supplierId: supplier.id,
+      purchaseRequestId: purchaseRequest.id,
+      expectedDate: "2026-09-01",
+      notes: "P3 smoke order",
+      lines: [{ itemId: item.id, quantity: 12, unitCost: 370 }],
+    },
+  });
+  check("Approved purchase request can become a purchase order", Boolean(purchaseOrder.id));
+
+  const poOverview = await call(`/businesses/${owner.businessId}/inventory/overview`, {
+    identity: owner,
+  });
+  const po = poOverview.purchaseOrders.find((row) => row.id === purchaseOrder.id);
+  check(
+    "Purchase order overview exposes ordered and received quantities",
+    po?.varianceQuantity === 12,
+  );
+
+  const goodsReceipt = await call(
+    `/businesses/${owner.businessId}/inventory/purchase-orders/${purchaseOrder.id}/receipts`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        locationId: foundation.locationId,
+        supplierDocument: "SUP-GRN-001",
+        lines: [{ purchaseOrderLineId: po.lines[0].id, quantity: 5, unitCost: 370 }],
+      },
+    },
+  );
+  check("Goods receipt increases stock only when received", Boolean(goodsReceipt.id));
+
+  const overReceive = await call(
+    `/businesses/${owner.businessId}/inventory/purchase-orders/${purchaseOrder.id}/receipts`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        locationId: foundation.locationId,
+        lines: [{ purchaseOrderLineId: po.lines[0].id, quantity: 99 }],
+      },
+      expect: 409,
+    },
+  );
+  check("Receiving more than ordered is refused", overReceive.code === "CONFLICT");
+
+  const afterReceiptOverview = await call(`/businesses/${owner.businessId}/inventory/overview`, {
+    identity: owner,
+  });
+  const receivedPo = afterReceiptOverview.purchaseOrders.find((row) => row.id === purchaseOrder.id);
+  const mainStock = afterReceiptOverview.availability.find(
+    (row) => row.locationId === foundation.locationId && row.itemId === item.id,
+  );
+  check(
+    "Purchase order remains partially received after partial receipt",
+    receivedPo?.status === "PARTIALLY_RECEIVED",
+  );
+  check(
+    "Availability includes adjusted, transferred and received stock",
+    mainStock?.onHandQuantity === 22,
+  );
+
+  const fulfillment = await call(`/businesses/${owner.businessId}/inventory/fulfillment-orders`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      customerName: "Pickup Customer",
+      sourceType: "MANUAL",
+      sourceId: key("fulfillment"),
+      lines: [{ itemId: item.id, quantity: 2 }],
+    },
+  });
+  await call(
+    `/businesses/${owner.businessId}/inventory/fulfillment-orders/${fulfillment.id}/status`,
+    { method: "PUT", identity: owner, body: { status: "PICKING" } },
+  );
+  await call(
+    `/businesses/${owner.businessId}/inventory/fulfillment-orders/${fulfillment.id}/status`,
+    { method: "PUT", identity: owner, body: { status: "PACKED" } },
+  );
+  await call(
+    `/businesses/${owner.businessId}/inventory/fulfillment-orders/${fulfillment.id}/status`,
+    { method: "PUT", identity: owner, body: { status: "DISPATCHED" } },
+  );
+  const fulfillmentOverview = await call(`/businesses/${owner.businessId}/inventory/overview`, {
+    identity: owner,
+  });
+  check(
+    "Fulfillment order moves through pick, pack and dispatch",
+    fulfillmentOverview.fulfillmentOrders.find((row) => row.id === fulfillment.id)?.status ===
+      "DISPATCHED",
+  );
+
   await call(`/businesses/${owner.businessId}/catalog/promotions`, {
     method: "POST",
     identity: owner,
@@ -782,6 +976,10 @@ async function main() {
   check("Audit records cover the Business setup", actions.has("BusinessFoundation"));
   check("Audit records cover selling", actions.has("Sale") && actions.has("SaleReturn"));
   check("Audit records cover approvals", actions.has("ApprovalRequest"));
+  check(
+    "Audit records cover inventory and purchasing",
+    actions.has("StockMovement") && actions.has("PurchaseOrder") && actions.has("GoodsReceipt"),
+  );
 
   const sequences = await call(`/businesses/${owner.businessId}/document-numbers`, {
     identity: owner,

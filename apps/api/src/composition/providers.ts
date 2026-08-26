@@ -4,6 +4,7 @@ import {
   BusinessAccessService,
   CatalogService,
   ImportService,
+  InventoryService,
 } from "@bizentra/domain-business-access";
 import { PosService, PricingService } from "@bizentra/domain-commerce";
 import { createDatabaseClient, type DatabaseClient } from "@bizentra/database";
@@ -31,6 +32,12 @@ export const importProvider: Provider = {
   provide: ImportService,
   inject: [DATABASE],
   useFactory: (database: DatabaseClient) => new ImportService(database),
+};
+
+export const inventoryProvider: Provider = {
+  provide: InventoryService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new InventoryService(database),
 };
 
 export const pricingProvider: Provider = {
