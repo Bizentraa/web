@@ -64,6 +64,7 @@ Each change entry should include:
 | 2026-08-26 | Implemented for common P0/P1/P2 readiness slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `ebd977a` | Added the UI/UX source docs to project tracking; expanded shared UI primitives; upgraded Back Office home into a P0/P1/P2 status dashboard; upgraded POS home into a P2 readiness workspace preview; added UI/UX implementation status and remaining-work tracking. |
 | 2026-08-26 | Implemented for shared frontend architecture slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `5d71b01` | Added the first reusable app shell/navigation, global command palette, responsive mobile navigation and shared component primitives from the consolidated UI/UX remaining-work register. |
 | 2026-08-26 | Implemented for shared component-system scope | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012` | `1c8bbce` | Adapted the archive’s shared component system: common stylesheet, server/client entry split, dialogs, drawers, sheets, confirmations, tabs, toasts, scan helpers, controlled filters, responsive tables, form primitives, description lists, skeletons and receipt view. |
+| 2026-08-26 | Implemented for workspace density and theme selection scope | `CC-P0-001`, `CC-P0-008`, `CC-P0-009`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` | `Uncommitted` | Reduced unused screen space across shared layouts, made POS/back-office workspaces more single-screen with internal scroll areas, and changed owner-facing theme choices from business-type names to reusable palette names with reset-to-default support. |
 
 ## 4. Detailed Change Entries
 
@@ -183,6 +184,19 @@ Each change entry should include:
 | Verification | `pnpm --filter @bizentra/design-system build` passed; `pnpm --filter @bizentra/design-system typecheck` passed; Back Office and POS typechecks/lints/builds passed as part of the archive adaptation verification. |
 | Commit | `1c8bbce feat: adapt common core P0 P1 P2 implementation` |
 | Remaining work | Add Storybook or equivalent component examples, automated accessibility assertions, visual-regression snapshots, saved views/column selector for `DataTable` and density options for management lists. |
+
+### 2026-08-26 - Workspace Density and Owner Theme Selection Refinement
+
+| Field | Details |
+|---|---|
+| Feature / slice | Shared workspace density, POS single-screen selling layout and owner-facing theme selection |
+| Status | Implemented for current UI refinement scope |
+| SRS mapping | `CC-P0-001`, `CC-P0-008`, `CC-P0-009`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` |
+| What changed | Tightened shared Back Office layout spacing, sidebar/topbar sizing, cards, grids and responsive behavior to reduce empty white space and better use available screen width. Added reusable workspace-density classes for main/side layouts, sticky side panels and internal scroll panels. Refined the POS shell into a full-height selling workspace with product results and cart areas scrolling inside the screen. Reworked the Appearance screen into a denser management workspace with selected-palette preview, sticky controls and a reset-to-default action. Changed owner-visible theme names from business-type labels to neutral palette names while keeping the saved database/cache preset codes stable. |
+| Main files | `packages/themes/src/index.ts`; `packages/design-system/styles.css`; `apps/backoffice/src/app/appearance/appearance-settings.tsx`; `apps/backoffice/src/app/globals.css`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md` |
+| Verification | `pnpm exec prettier --write packages/themes/src/index.ts apps/backoffice/src/app/appearance/appearance-settings.tsx apps/backoffice/src/app/globals.css packages/design-system/styles.css` passed; `pnpm --filter @bizentra/themes typecheck` passed; `pnpm --filter @bizentra/themes lint` passed; `pnpm --filter @bizentra/themes test` passed; `pnpm --filter @bizentra/themes build` passed; `pnpm --filter @bizentra/design-system typecheck` passed; `pnpm --filter @bizentra/design-system lint` passed; `pnpm --filter @bizentra/design-system build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/backoffice lint` passed; `pnpm --filter @bizentra/backoffice build` passed; `pnpm --filter @bizentra/pos typecheck` passed; `pnpm --filter @bizentra/pos lint` passed; `pnpm --filter @bizentra/pos build` passed. |
+| Commit | `Uncommitted` |
+| Remaining work | Add route-level browser screenshots/visual regression once browser automation is available in this session; add Storybook/equivalent component examples; continue applying the same density rules to future vertical screens; add optional guided setup/import wizards where the workflow becomes multi-step and stateful. |
 
 ## 5. Consolidated Remaining Work Register
 

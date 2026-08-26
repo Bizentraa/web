@@ -60,6 +60,43 @@ export interface ThemePresetDefinition {
   defaultMode: ThemeMode;
 }
 
+export const THEME_PALETTE_NAMES: Record<ThemePreset, string> = {
+  GENERAL_RETAIL: "Executive Blue",
+  GROCERY: "Fresh Market Green",
+  FASHION: "Boutique Violet",
+  ELECTRONICS: "Digital Cyan",
+  HARDWARE: "Industrial Orange",
+  BOOKSTORE: "Library Indigo",
+  COSMETICS: "Rose Luxe",
+  FURNITURE: "Natural Amber",
+  JEWELRY: "Violet Gold",
+  AUTO_PARTS: "Graphite Orange",
+  RESTAURANT: "Warm Dining",
+  CAFE: "Coffee Amber",
+  BAKERY: "Golden Crust",
+  FOOD_TRUCK: "Street Orange",
+  BAR: "Night Gold",
+  HOTEL_REVENUE: "Hospitality Navy",
+  SALON: "Magenta Luxe",
+  GARAGE: "Workshop Graphite",
+  COMPUTER_REPAIR: "Service Cyan",
+  LAUNDRY: "Clean Sky",
+  TAILORING: "Craft Violet",
+  FIELD_SERVICES: "Mobile Blue Green",
+  DISTRIBUTION: "Logistics Blue",
+  VAN_SALES: "Route Blue Orange",
+  RENTAL: "Asset Teal",
+  B2B_TRADE: "Trade Navy Green",
+  PHARMACY: "Clinical Emerald",
+  FUEL: "Fast Blue Amber",
+  HOTEL: "Premium Navy Gold",
+  HEALTHCARE: "Calm Teal",
+};
+
+export function getThemePaletteName(code: ThemePreset): string {
+  return THEME_PALETTE_NAMES[code];
+}
+
 export const THEME_PRESETS: readonly ThemePresetDefinition[] = [
   preset(
     "GENERAL_RETAIL",
