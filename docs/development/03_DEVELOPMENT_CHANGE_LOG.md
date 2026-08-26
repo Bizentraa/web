@@ -61,7 +61,7 @@ Each change entry should include:
 
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
-| 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `Uncommitted` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
+| 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
 
 ### Common UI/UX System
 
@@ -214,7 +214,7 @@ Each change entry should include:
 | What changed | Added stock balance and stock movement data models; added reorder settings and reorder suggestions; added purchase request, purchase order, goods receipt and fulfillment order records; added P3 permissions and role-template access; added inventory service rules for stock adjustment, transfer, purchase request approval, purchase order creation, receiving and fulfillment status changes; added P3 API contracts, API routes and API-client methods; added Back Office `/inventory` operations workspace with stock ledger, purchasing and fulfillment tabs; extended the common smoke script with P3 live checks. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826090655_p3_inventory_purchasing_fulfillment`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md` |
 | Verification | `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm db:migrate:deploy` applied the P3 migration; `node scripts/smoke-common-core.mjs` passed 89 live API checks including P3 adjustment, transfer, reorder suggestion, purchase request approval, purchase order conversion, goods receipt, over-receive refusal, partial receipt status, fulfillment status flow and audit evidence. |
-| Commit | `Uncommitted` |
+| Commit | `b77d0e0 feat: add common core P3 inventory purchasing fulfillment` |
 | Remaining work | Stock counts/cycle counts are still not started; serial/batch/expiry dimensions belong with the P5 traceability engine; explicit in-transit transfer receiving, sales-order reservations, supplier returns, bill matching, scanner-led mobile receiving/counting/picking and richer browser/visual regression coverage remain for later slices. |
 
 ## 5. Consolidated Remaining Work Register
