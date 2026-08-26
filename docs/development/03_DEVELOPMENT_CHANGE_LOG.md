@@ -62,6 +62,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
+| 2026-08-26 | Implemented for P3 access sync | `CC-P0-006`, `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `Uncommitted` | Synced P3 permissions into the permission catalogue and existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles so existing owners can open inventory screens after phase delivery. |
 
 ### Common UI/UX System
 
@@ -216,6 +217,19 @@ Each change entry should include:
 | Verification | `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm db:migrate:deploy` applied the P3 migration; `node scripts/smoke-common-core.mjs` passed 89 live API checks including P3 adjustment, transfer, reorder suggestion, purchase request approval, purchase order conversion, goods receipt, over-receive refusal, partial receipt status, fulfillment status flow and audit evidence. |
 | Commit | `b77d0e0 feat: add common core P3 inventory purchasing fulfillment` |
 | Remaining work | Stock counts/cycle counts are still not started; serial/batch/expiry dimensions belong with the P5 traceability engine; explicit in-transit transfer receiving, sales-order reservations, supplier returns, bill matching, scanner-led mobile receiving/counting/picking and richer browser/visual regression coverage remain for later slices. |
+
+### 2026-08-26 - P3 Role and Permission Synchronization
+
+| Field | Details |
+|---|---|
+| Feature / slice | Permission catalogue, role templates and existing Business role backfill for P3 |
+| Status | Implemented |
+| SRS mapping | `CC-P0-006` Roles; `CC-P3-001` to `CC-P3-012`; `CC-US-007`; `CC-US-008`; `CC-US-009` |
+| What changed | Added P3 to the shared permission catalogue contract and Back Office access overview; added additive runtime synchronization so foundation, access and inventory requests align existing Businesses with newly added phase permissions; added a migration that backfills existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles with the relevant P3 permissions; added smoke checks that Business Administrator and Branch Manager receive `INVENTORY_VIEW`. |
+| Main files | `packages/contracts/src/index.ts`; `packages/domains/business-access/src/application/access-sync.ts`; `packages/domains/business-access/src/application/business-access.service.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `packages/database/prisma/migrations/20260826102000_sync_p3_role_permissions/migration.sql`; `scripts/smoke-common-core.mjs` |
+| Verification | `pnpm db:migrate:deploy` applied migration `20260826102000_sync_p3_role_permissions`; `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `node scripts/smoke-common-core.mjs` passed 91 live API checks including explicit P3 permission catalogue and Role checks. |
+| Commit | `Uncommitted` |
+| Remaining work | Continue using the same additive sync pattern whenever later phases add permissions, feature packs or default role responsibilities. Production identity/session integration remains separate. |
 
 ## 5. Consolidated Remaining Work Register
 

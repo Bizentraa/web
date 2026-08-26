@@ -1779,7 +1779,7 @@ export interface PermissionCatalogEntry {
   code: string;
   name: string;
   area: string;
-  phase: "P0" | "P1" | "P2";
+  phase: "P0" | "P1" | "P2" | "P3";
   sensitive: boolean;
 }
 

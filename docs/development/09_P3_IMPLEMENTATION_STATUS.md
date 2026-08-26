@@ -99,11 +99,15 @@ The `/inventory` workspace follows the common operations workspace style from th
 
 - Prisma schema formatted and client generated.
 - Migration `20260826090655_p3_inventory_purchasing_fulfillment` applied locally with deploy mode.
+- Migration `20260826102000_sync_p3_role_permissions` applied locally to backfill P3 permissions for
+  existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User
+  Roles.
 - Domain, API and Back Office targeted type/build checks passed.
-- `scripts/smoke-common-core.mjs` completed 89 live API checks against local PostgreSQL/Redis/API,
+- `scripts/smoke-common-core.mjs` completed 91 live API checks against local PostgreSQL/Redis/API,
   including P3 stock adjustment, reorder suggestion, transfer, purchase request approval, purchase
   order conversion, goods receipt, over-receive refusal, partial receiving, fulfillment status flow
-  and audit evidence.
+  and audit evidence. The smoke run also verifies that the permission catalogue contains P3 and that
+  Business Administrator and Branch Manager Roles receive `INVENTORY_VIEW`.
 
 ## Next P3 Slices
 

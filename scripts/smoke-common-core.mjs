@@ -135,7 +135,19 @@ async function main() {
     "Cashier Role cannot manage Roles",
     Boolean(cashierRole) && !cashierRole.permissions.includes("ROLE_MANAGE"),
   );
-  check("Permission catalogue covers P0, P1 and P2", access.permissionCatalog.length >= 50);
+  check(
+    "Permission catalogue covers P0, P1, P2 and P3",
+    access.permissionCatalog.some((permission) => permission.code === "INVENTORY_VIEW") &&
+      access.permissionCatalog.some((permission) => permission.phase === "P3"),
+  );
+  check(
+    "Business Administrator Role receives P3 permissions",
+    Boolean(adminRole) && adminRole.permissions.includes("INVENTORY_VIEW"),
+  );
+  check(
+    "Branch Manager Role receives P3 operations permissions",
+    Boolean(managerRole) && managerRole.permissions.includes("INVENTORY_VIEW"),
+  );
 
   const manager = await call(`/businesses/${owner.businessId}/users`, {
     method: "POST",

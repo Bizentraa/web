@@ -26,6 +26,7 @@ import {
 import {
   allocateDocumentNumber,
   BusinessAccessError,
+  loadMembershipContext,
   type MembershipContext,
   moneyToDb,
   quantityToDb,
@@ -36,11 +37,15 @@ import {
 } from "@bizentra/domain-shared";
 import { createId } from "@bizentra/ids";
 
+import { ensureAccessCatalogSync } from "./access-sync.js";
+
 export class InventoryService {
   constructor(private readonly database: DatabaseClient) {}
 
   async getOverview(businessId: string, actorUserId: string): Promise<InventoryOverview> {
     return withBusinessContext(this.database, businessId, async (transaction) => {
+      await loadMembershipContext(transaction, businessId, actorUserId);
+      await ensureAccessCatalogSync(transaction, businessId);
       await requirePermission(transaction, businessId, actorUserId, "INVENTORY_VIEW");
       const [
         balances,
@@ -628,6 +633,8 @@ export class InventoryService {
     work: (transaction: DatabaseTransaction, actor: MembershipContext) => Promise<T>,
   ): Promise<T> {
     return withBusinessContext(this.database, businessId, async (transaction) => {
+      await loadMembershipContext(transaction, businessId, actorUserId);
+      await ensureAccessCatalogSync(transaction, businessId);
       const actor = await requirePermission(transaction, businessId, actorUserId, permissionCode);
       return work(transaction, actor);
     });

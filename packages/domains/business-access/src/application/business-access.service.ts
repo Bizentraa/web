@@ -55,14 +55,17 @@ import {
   P0_PERMISSIONS,
   P1_PERMISSIONS,
   P2_PERMISSIONS,
+  P3_PERMISSIONS,
   PLATFORM_PERMISSIONS,
   ROLE_TEMPLATES,
 } from "../domain/permissions.js";
+import { ensureAccessCatalogSync } from "./access-sync.js";
 
 const PERMISSION_CATALOG: PermissionCatalogEntry[] = [
   ...P0_PERMISSIONS.map((permission) => ({ ...permission, phase: "P0" as const })),
   ...P1_PERMISSIONS.map((permission) => ({ ...permission, phase: "P1" as const })),
   ...P2_PERMISSIONS.map((permission) => ({ ...permission, phase: "P2" as const })),
+  ...P3_PERMISSIONS.map((permission) => ({ ...permission, phase: "P3" as const })),
 ].map((permission) => ({
   code: permission.code,
   name: permission.name,
@@ -241,6 +244,7 @@ export class BusinessAccessService {
   ): Promise<BusinessFoundationSummary> {
     return withBusinessContext(this.database, businessId, async (transaction) => {
       await requirePermission(transaction, businessId, actorUserId, "BUSINESS_VIEW");
+      await ensureAccessCatalogSync(transaction, businessId);
 
       const business = await transaction.business.findUnique({
         where: { id: businessId },
@@ -590,6 +594,7 @@ export class BusinessAccessService {
     return withBusinessContext(this.database, businessId, async (transaction) => {
       const membership = await loadMembershipContext(transaction, businessId, actorUserId);
       membership.requireAny(["USER_VIEW", "ROLE_VIEW"]);
+      await ensureAccessCatalogSync(transaction, businessId);
 
       const [memberships, roles] = await Promise.all([
         transaction.businessMembership.findMany({
