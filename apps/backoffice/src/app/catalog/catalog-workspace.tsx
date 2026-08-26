@@ -9,7 +9,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  DataTable,
   Field,
+  FilterBar,
   Kicker,
   Progress,
 } from "@bizentra/design-system";
@@ -255,6 +257,16 @@ export function CatalogWorkspace() {
           {message}
         </p>
       ) : null}
+
+      <FilterBar
+        searchLabel="Catalog search"
+        searchPlaceholder="Search item, barcode, customer or supplier"
+        actions={
+          <Badge tone="information">
+            {state === "loading" ? "Refreshing" : "Permission-aware shell ready"}
+          </Badge>
+        }
+      />
 
       <section className="catalog-score-grid" aria-label="P1 master data readiness">
         <CatalogScoreCard
@@ -548,18 +560,16 @@ function RecentList({
         </div>
       </CardHeader>
       <CardDescription>{description}</CardDescription>
-      {rows.length ? (
-        <ul>
-          {rows.map((row) => (
-            <li key={row.key}>
-              <span>{row.title}</span>
-              <small>{row.meta}</small>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="theme-help">No records yet.</p>
-      )}
+      <DataTable
+        caption={title}
+        columns={[
+          { header: "Name", render: (row) => <strong>{row.title}</strong> },
+          { header: "Code", render: (row) => <small>{row.meta}</small> },
+        ]}
+        empty="No records yet. Save a record or import data when import processing is available."
+        getRowKey={(row) => row.key}
+        rows={rows}
+      />
     </Card>
   );
 }

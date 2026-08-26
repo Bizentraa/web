@@ -5,6 +5,7 @@ import type { ThemeIdentity } from "@bizentra/design-system/theme";
 import { THEME_BOOTSTRAP_SCRIPT } from "@bizentra/themes";
 
 import { AppThemeProvider } from "./app-theme-provider";
+import { GlobalCommandPalette } from "./global-command-palette";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           initialDevelopmentIdentity={initialDevelopmentIdentity}
         >
           {children}
+          <GlobalCommandPalette />
         </AppThemeProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { CatalogWorkspace } from "./catalog-workspace";
 export default function CatalogPage() {
   return (
     <AppShell
+      activeHref="/catalog"
       eyebrow="Common Core · Phase P1"
       title="Master data"
       description="Create the first reusable items, prices, tax setup, customers and suppliers that later POS and purchasing phases will consume."

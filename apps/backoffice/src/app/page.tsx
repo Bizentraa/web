@@ -31,6 +31,7 @@ export default async function Home() {
 
   return (
     <AppShell
+      activeHref="/"
       eyebrow="Common Core · Phase P0"
       title="Bizentra Back Office"
       description="The first working foundation for Businesses, Branches, Locations, access control, audit records and document numbering."

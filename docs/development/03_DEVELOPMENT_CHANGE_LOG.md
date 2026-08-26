@@ -54,6 +54,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for common P0/P1/P2 readiness slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `ebd977a` | Added the UI/UX source docs to project tracking; expanded shared UI primitives; upgraded Back Office home into a P0/P1/P2 status dashboard; upgraded POS home into a P2 readiness workspace preview; added UI/UX implementation status and remaining-work tracking. |
+| 2026-08-26 | Implemented for shared frontend architecture slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `Uncommitted` | Added the first reusable app shell/navigation, global command palette, responsive mobile navigation and shared component primitives from the consolidated UI/UX remaining-work register. |
 
 ## 4. Detailed Change Entries
 
@@ -133,7 +134,20 @@ Each change entry should include:
 | Main files | `docs/ui-ux`; `packages/design-system/src/index.tsx`; `apps/backoffice/src/app/page.tsx`; `apps/backoffice/src/app/globals.css`; `apps/pos/src/app/page.tsx`; `apps/pos/src/app/globals.css`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/07_UIUX_IMPLEMENTATION_STATUS.md` |
 | Verification | `pnpm format:check` passed; design-system typecheck/lint/build passed; Back Office typecheck/lint/build passed; POS typecheck/lint/build passed; browser checks confirmed Back Office home renders 1 page header, 4 KPI cards, 5 status chips, 1 offline banner and 1 empty state with no desktop or 390px mobile overflow; browser checks confirmed POS home renders 1 page header, 3 KPI cards, 6 status chips, 1 offline banner and 1 empty state with no desktop or 390px mobile overflow. |
 | Commit | `ebd977a feat: add common UIUX readiness surfaces` |
-| Remaining work | P0: sidebar/topbar navigation, Business/Branch switcher, command palette, users, roles, approvals, feature-pack management, audit UI and numbering UI. P1: edit/deactivate screens, item detail, category/brand/tax/price management, import workflow, promotion builder and pricing/tax preview. P2: open/close shift, live scan/search, cart state, idempotent sale posting, payment sheet, split tenders, receipts, returns/refunds/exchanges, offline queue and conflict review. Shared UI: DataTable, FilterBar, EntityHeader, Timeline, ApprovalDrawer, DangerConfirmation, PaymentSheet, MoneySummary, StockBadge and IntegrationState. |
+| Remaining work | P0: complete real Business/Branch switcher data, users, roles, approvals, feature-pack management, audit UI and numbering UI. P1: edit/deactivate screens, item detail, category/brand/tax/price management, import workflow, promotion builder and pricing/tax preview. P2: open/close shift, live scan/search, cart state, idempotent sale posting, payment sheet, split tenders, receipts, returns/refunds/exchanges, offline queue and conflict review. Shared UI: connect the new primitives to more feature screens; add Storybook/equivalent examples, visual regression, accessibility tests and route-level browser smoke tests. |
+
+### 2026-08-26 - Shared UI/UX Frontend Architecture Foundation
+
+| Field | Details |
+|---|---|
+| Feature / slice | Shared UI/UX and frontend architecture foundation |
+| Status | Implemented for current shared shell/component slice |
+| SRS mapping | `CC-P0-001` to `CC-P0-010`; `CC-P1-001` to `CC-P1-011`; `CC-P2-001` to `CC-P2-012`; `CC-US-001`; `CC-US-002`; `CC-US-003`; `CC-US-004`; `CC-US-018` |
+| What changed | Reworked the shared `AppShell` into a real Back Office application shell with desktop sidebar, sticky topbar, mobile bottom navigation, active route support, Business/Branch context display and command trigger. Added a client-side global command palette with `Ctrl/Cmd+K`, route/action filtering and mobile floating access. Added shared UI primitives for `FilterBar`, `DataTable`, `EntityHeader`, `Timeline`, `StatePanel`, `MoneySummary`, `StockBadge`, `IntegrationState`, `ApprovalDrawer`, `DangerConfirmation`, `PaymentSheet`, `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard` and `WorkTicketPanel`. Wired the P1 catalog workspace to the shared filter and table primitives. Added responsive component-level styles using saved Business theme CSS variables. |
+| Main files | `packages/design-system/src/index.tsx`; `apps/backoffice/src/app/layout.tsx`; `apps/backoffice/src/app/global-command-palette.tsx`; `apps/backoffice/src/app/page.tsx`; `apps/backoffice/src/app/appearance/page.tsx`; `apps/backoffice/src/app/catalog/page.tsx`; `apps/backoffice/src/app/catalog/catalog-workspace.tsx`; `apps/backoffice/src/app/globals.css`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md` |
+| Verification | `pnpm format:check` passed; `pnpm --filter @bizentra/design-system build` passed; `pnpm --filter @bizentra/design-system typecheck` passed; `pnpm --filter @bizentra/design-system lint` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/backoffice lint` passed; `pnpm --filter @bizentra/backoffice build` passed. |
+| Commit | `Uncommitted` |
+| Remaining work | Replace development placeholder Business/Branch context with authenticated context from production identity/session; make the command list permission-aware from the real user permissions/feature packs; connect `EntityHeader`, `Timeline`, approval/danger/payment/drawer/sheet patterns to the relevant P0/P1/P2 feature screens; add Storybook/equivalent component examples; add automated accessibility, visual regression and browser route smoke tests. |
 
 ## 5. Consolidated Remaining Work Register
 
@@ -246,9 +260,9 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| App shell/navigation | Desktop sidebar/topbar, compact tablet behavior, mobile bottom navigation, role/feature-aware navigation and unsaved-change guard. |
-| Search/commands | Permission-aware global search and `Ctrl/Cmd+K` command palette for navigation and common actions. |
-| Shared components | `DataTable`, `FilterBar`, `EntityHeader`, `Timeline`, `ApprovalDrawer`, `DangerConfirmation`, `PaymentSheet`, `MoneySummary`, `StockBadge`, `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard`, `WorkTicketPanel`, `IntegrationState`, drawers, dialogs, sheets and skeleton loaders. |
+| App shell/navigation | Desktop sidebar/topbar, compact tablet behavior and mobile bottom navigation are implemented for Back Office; remaining work is real role/feature-aware navigation, real Business/Branch switcher data and unsaved-change guard. |
+| Search/commands | `Ctrl/Cmd+K` command palette is implemented for current Back Office routes/actions; remaining work is permission-aware commands from real user permissions and deeper record search. |
+| Shared components | First primitives are implemented: `DataTable`, `FilterBar`, `EntityHeader`, `Timeline`, `ApprovalDrawer`, `DangerConfirmation`, `PaymentSheet`, `MoneySummary`, `StockBadge`, `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard`, `WorkTicketPanel`, `IntegrationState`, drawer/sheet/card state patterns. Remaining work is connecting all primitives to real feature screens and adding skeleton-loader variants where needed. |
 | State patterns | Empty, loading, error, disabled, permission, offline, sync, integration failure and needs-review states across all important screens. |
 | Accessibility/responsive | Keyboard navigation, visible focus, labels, status text not colour-only, contrast, reduced motion, touch targets and phone/tablet/desktop responsive behavior. |
 | Quality tooling | Component examples/storybook or equivalent, automated UI tests, visual regression, accessibility checks and route-level browser smoke tests. |
