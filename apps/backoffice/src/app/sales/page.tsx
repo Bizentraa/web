@@ -22,7 +22,6 @@ import {
   Kicker,
   KpiCard,
   MoneySummary,
-  PageHeader,
   ReceiptView,
   SelectField,
   Stack,
@@ -161,23 +160,17 @@ export default function SalesPage() {
 
   return (
     <Workspace
-      activeHref="/sales"
+      requirements="CC-P2-001 to CC-P2-011"
+      status={
+        <StatusChip tone={openShifts.length ? "success" : "neutral"}>
+          {openShifts.length ? `${openShifts.length} shift open` : "No open shift"}
+        </StatusChip>
+      }
       description="Sales, tenders, receipts, returns and the POS shifts they belong to."
       eyebrow="Common Core · P2"
       title="Sales and shifts"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P2-001 to CC-P2-011"
-          title="Selling activity"
-          description="Selling happens in the POS application. This screen is the management view: what was sold, how it was paid, what was returned and how each shift reconciled."
-          status={
-            <StatusChip tone={openShifts.length ? "success" : "neutral"}>
-              {openShifts.length ? `${openShifts.length} shift open` : "No open shift"}
-            </StatusChip>
-          }
-        />
-
         <Grid>
           <KpiCard
             label="Sales listed"
@@ -293,7 +286,8 @@ export default function SalesPage() {
                     <div>
                       <Kicker>{shift.branchName}</Kicker>
                       <CardTitle>
-                        {shift.number} · Register {shift.registerCode}
+                        <span className="ui-code">{shift.number}</span> · Register{" "}
+                        <span className="ui-code">{shift.registerCode}</span>
                       </CardTitle>
                     </div>
                     <StatusChip tone={shift.status === "OPEN" ? "success" : "neutral"}>

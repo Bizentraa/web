@@ -4,7 +4,6 @@ import type { BusinessFoundationSummary, LocationType } from "@bizentra/contract
 import {
   Badge,
   Button,
-  Card,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -14,7 +13,6 @@ import {
   FormFooter,
   FormGrid,
   Kicker,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -127,7 +125,8 @@ export default function SetupPage() {
 
   return (
     <Workspace
-      activeHref="/setup"
+      requirements="CC-P0-001 to CC-P0-004"
+      status={<StatusChip tone="success">{branches.length} Branch(es)</StatusChip>}
       description="The Business, its Branches and the Locations where stock and work are managed."
       eyebrow="Common Core · P0"
       title="Business setup"
@@ -138,13 +137,6 @@ export default function SetupPage() {
       }
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P0-001 to CC-P0-004"
-          title="Business, Branches and Locations"
-          description="A Branch is a store, outlet or workshop. A Location is where stock or work sits inside it, such as Shop Floor, Warehouse, Kitchen, Van or Service Bay."
-          status={<StatusChip tone="success">{branches.length} Branch(es)</StatusChip>}
-        />
-
         <Tabs
           onChange={setTab}
           value={tab}
@@ -228,138 +220,129 @@ export default function SetupPage() {
               ) : null}
 
               {tab === "branches" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P0-003</Kicker>
-                      <CardTitle>Branches</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Branches"
+                  summary="Stock and work Locations belong to a Branch and are used by inventory and operations later."
+                  kicker="CC-P0-003"
+                  toolbar={
                     <Button onClick={() => setBranchDialog(true)} size="quiet">
                       New Branch
                     </Button>
-                  </CardHeader>
-                  <DataTable
-                    caption="Every store, outlet or workshop in this Business."
-                    getRowKey={(branch) => branch.id}
-                    rows={branches}
-                    empty="Create the first Branch to start trading."
-                    columns={[
-                      { header: "Code", render: (branch) => <strong>{branch.code}</strong> },
-                      { header: "Name", render: (branch) => branch.name },
-                      {
-                        header: "Locations",
-                        align: "right",
-                        render: (branch) => branch.locations.length,
-                      },
-                      {
-                        header: "Status",
-                        render: (branch) => (
-                          <Badge tone={branch.status === "ACTIVE" ? "success" : "neutral"}>
-                            {branch.status}
-                          </Badge>
-                        ),
-                      },
-                      {
-                        header: "Actions",
-                        align: "right",
-                        render: (branch) => (
-                          <div className="ui-row">
+                  }
+                  getRowKey={(branch) => branch.id}
+                  rows={branches}
+                  empty="Create the first Branch to start trading."
+                  columns={[
+                    { header: "Code", render: (branch) => <strong>{branch.code}</strong> },
+                    { header: "Name", render: (branch) => branch.name },
+                    {
+                      header: "Locations",
+                      align: "right",
+                      render: (branch) => branch.locations.length,
+                    },
+                    {
+                      header: "Status",
+                      render: (branch) => (
+                        <Badge tone={branch.status === "ACTIVE" ? "success" : "neutral"}>
+                          {branch.status}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      header: "Actions",
+                      align: "right",
+                      render: (branch) => (
+                        <div className="ui-row">
+                          <Button
+                            onClick={() => setLocationDialog(branch.id)}
+                            size="quiet"
+                            variant="secondary"
+                          >
+                            Add Location
+                          </Button>
+                          {branch.status === "ACTIVE" ? (
                             <Button
-                              onClick={() => setLocationDialog(branch.id)}
+                              onClick={() => setDeactivate({ id: branch.id, name: branch.name })}
+                              size="quiet"
+                              variant="ghost"
+                            >
+                              Deactivate
+                            </Button>
+                          ) : (
+                            <Button
+                              disabled={busy}
+                              onClick={() =>
+                                api && identity
+                                  ? void run("Branch activated.", () =>
+                                      api.updateBranch(identity.businessId, branch.id, {
+                                        status: "ACTIVE",
+                                      }),
+                                    )
+                                  : undefined
+                              }
                               size="quiet"
                               variant="secondary"
                             >
-                              Add Location
+                              Activate
                             </Button>
-                            {branch.status === "ACTIVE" ? (
-                              <Button
-                                onClick={() => setDeactivate({ id: branch.id, name: branch.name })}
-                                size="quiet"
-                                variant="ghost"
-                              >
-                                Deactivate
-                              </Button>
-                            ) : (
-                              <Button
-                                disabled={busy}
-                                onClick={() =>
-                                  api && identity
-                                    ? void run("Branch activated.", () =>
-                                        api.updateBranch(identity.businessId, branch.id, {
-                                          status: "ACTIVE",
-                                        }),
-                                      )
-                                    : undefined
-                                }
-                                size="quiet"
-                                variant="secondary"
-                              >
-                                Activate
-                              </Button>
-                            )}
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                </Card>
+                          )}
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "locations" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P0-004</Kicker>
-                      <CardTitle>Locations</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Locations"
+                  kicker="CC-P0-004"
+                  toolbar={
                     <CardDescription>
                       Stock and work Locations belong to a Branch and are used by inventory and
                       operations later.
                     </CardDescription>
-                  </CardHeader>
-                  <DataTable
-                    caption="Locations across every Branch."
-                    getRowKey={(location) => location.id}
-                    rows={locations}
-                    empty="Add a Location such as Shop Floor or Warehouse."
-                    columns={[
-                      { header: "Code", render: (location) => <strong>{location.code}</strong> },
-                      { header: "Name", render: (location) => location.name },
-                      { header: "Branch", render: (location) => location.branchName },
-                      { header: "Type", render: (location) => readableType(location.type) },
-                      {
-                        header: "Status",
-                        render: (location) => (
-                          <Badge tone={location.status === "ACTIVE" ? "success" : "neutral"}>
-                            {location.status}
-                          </Badge>
-                        ),
-                      },
-                      {
-                        header: "Actions",
-                        align: "right",
-                        render: (location) => (
-                          <Button
-                            disabled={busy}
-                            onClick={() =>
-                              api && identity
-                                ? void run("Location updated.", () =>
-                                    api.updateLocation(identity.businessId, location.id, {
-                                      status: location.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                                    }),
-                                  )
-                                : undefined
-                            }
-                            size="quiet"
-                            variant="secondary"
-                          >
-                            {location.status === "ACTIVE" ? "Deactivate" : "Activate"}
-                          </Button>
-                        ),
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(location) => location.id}
+                  rows={locations}
+                  empty="Add a Location such as Shop Floor or Warehouse."
+                  columns={[
+                    { header: "Code", render: (location) => <strong>{location.code}</strong> },
+                    { header: "Name", render: (location) => location.name },
+                    { header: "Branch", render: (location) => location.branchName },
+                    { header: "Type", render: (location) => readableType(location.type) },
+                    {
+                      header: "Status",
+                      render: (location) => (
+                        <Badge tone={location.status === "ACTIVE" ? "success" : "neutral"}>
+                          {location.status}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      header: "Actions",
+                      align: "right",
+                      render: (location) => (
+                        <Button
+                          disabled={busy}
+                          onClick={() =>
+                            api && identity
+                              ? void run("Location updated.", () =>
+                                  api.updateLocation(identity.businessId, location.id, {
+                                    status: location.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                                  }),
+                                )
+                              : undefined
+                          }
+                          size="quiet"
+                          variant="secondary"
+                        >
+                          {location.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                        </Button>
+                      ),
+                    },
+                  ]}
+                />
               ) : null}
             </>
           ) : null}

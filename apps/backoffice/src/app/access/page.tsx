@@ -6,24 +6,24 @@ import {
   Button,
   Card,
   CardDescription,
-  CardHeader,
   CardTitle,
   DataTable,
+  DescriptionList,
   Field,
   FormFooter,
   FormGrid,
-  Kicker,
-  PageHeader,
   SelectField,
   Stack,
   StatePanel,
   StatusChip,
 } from "@bizentra/design-system";
-import { Dialog, Drawer, Tabs, useToasts } from "@bizentra/design-system/client";
+import { Dialog, Drawer, Tabs, useToasts, VerticalTabs } from "@bizentra/design-system/client";
 import { useState, type FormEvent } from "react";
 
 import { readText } from "../lib/forms";
 import { errorMessage, ResourceState, useApi, useResource, Workspace } from "../lib/workspace";
+
+type PermissionRow = AccessOverview["permissionCatalog"][number];
 
 interface AccessData {
   access: AccessOverview;
@@ -47,6 +47,8 @@ export default function AccessPage() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [newRoleOpen, setNewRoleOpen] = useState(false);
+  const [permissionArea, setPermissionArea] = useState<string | null>(null);
+  const [permission, setPermission] = useState<PermissionRow | null>(null);
 
   const run = async (message: string, work: () => Promise<unknown>) => {
     setBusy(true);
@@ -142,12 +144,16 @@ export default function AccessPage() {
   const branches = data?.foundation.branches ?? [];
   const catalog = data?.access.permissionCatalog ?? [];
   const areas = [...new Set(catalog.map((permission) => permission.area))];
+  /* Falls back to the first area rather than storing a default that a reload could invalidate. */
+  const activeArea =
+    permissionArea && areas.includes(permissionArea) ? permissionArea : (areas[0] ?? "");
   const activeUser = memberships.find((member) => member.membershipId === editingUser);
   const activeRole = roles.find((role) => role.id === editingRole);
 
   return (
     <Workspace
-      activeHref="/access"
+      requirements="CC-P0-005 and CC-P0-006"
+      status={<StatusChip tone="success">{memberships.length} user(s)</StatusChip>}
       description="Users, Roles and the fine-grained permissions that decide who can do what."
       eyebrow="Common Core · P0"
       title="Users and roles"
@@ -158,13 +164,6 @@ export default function AccessPage() {
       }
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P0-005 and CC-P0-006"
-          title="Access control"
-          description="A user sees only the actions their Role allows. Denied actions explain the missing permission instead of failing silently."
-          status={<StatusChip tone="success">{memberships.length} user(s)</StatusChip>}
-        />
-
         <Tabs
           onChange={setTab}
           value={tab}
@@ -179,190 +178,187 @@ export default function AccessPage() {
           {data ? (
             <>
               {tab === "users" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P0-005</Kicker>
-                      <CardTitle>People with access</CardTitle>
-                    </div>
+                <DataTable
+                  caption="People with access"
+                  summary="The Owner Role always keeps full access. Every other Role can be edited, and a Role in use cannot lose the Business its last Owner."
+                  kicker="CC-P0-005"
+                  toolbar={
                     <Button onClick={() => setInviteOpen(true)} size="quiet">
                       Invite user
                     </Button>
-                  </CardHeader>
-                  <DataTable
-                    caption="Every person who can sign in to this Business."
-                    getRowKey={(member) => member.membershipId}
-                    rows={memberships}
-                    empty="Invite the people who will use the system."
-                    columns={[
-                      { header: "Name", render: (member) => <strong>{member.displayName}</strong> },
-                      { header: "Email", render: (member) => member.email },
-                      {
-                        header: "Roles",
-                        render: (member) =>
-                          member.roles.length
-                            ? member.roles.map((role) => role.name).join(", ")
-                            : "No Role yet",
-                      },
-                      {
-                        header: "Branches",
-                        hideOnMobile: true,
-                        render: (member) =>
-                          member.branches.length
-                            ? member.branches.map((branch) => branch.code).join(", ")
-                            : "All",
-                      },
-                      {
-                        header: "Status",
-                        render: (member) => (
-                          <Badge
-                            tone={
-                              member.status === "ACTIVE"
-                                ? "success"
-                                : member.status === "INVITED"
-                                  ? "warning"
-                                  : "neutral"
-                            }
-                          >
-                            {member.status}
-                          </Badge>
-                        ),
-                      },
-                      {
-                        header: "Actions",
-                        align: "right",
-                        render: (member) => (
-                          <div className="ui-row">
-                            {member.status === "INVITED" ? (
-                              <Button
-                                disabled={busy}
-                                onClick={() =>
-                                  api && identity
-                                    ? void run("User activated.", () =>
-                                        api.updateMembership(
-                                          identity.businessId,
-                                          member.membershipId,
-                                          { status: "ACTIVE" },
-                                        ),
-                                      )
-                                    : undefined
-                                }
-                                size="quiet"
-                              >
-                                Activate
-                              </Button>
-                            ) : null}
+                  }
+                  getRowKey={(member) => member.membershipId}
+                  rows={memberships}
+                  empty="Invite the people who will use the system."
+                  columns={[
+                    { header: "Name", render: (member) => <strong>{member.displayName}</strong> },
+                    { header: "Email", render: (member) => member.email },
+                    {
+                      header: "Roles",
+                      render: (member) =>
+                        member.roles.length
+                          ? member.roles.map((role) => role.name).join(", ")
+                          : "No Role yet",
+                    },
+                    {
+                      header: "Branches",
+                      hideOnMobile: true,
+                      render: (member) =>
+                        member.branches.length
+                          ? member.branches.map((branch) => branch.code).join(", ")
+                          : "All",
+                    },
+                    {
+                      header: "Status",
+                      render: (member) => (
+                        <Badge
+                          tone={
+                            member.status === "ACTIVE"
+                              ? "success"
+                              : member.status === "INVITED"
+                                ? "warning"
+                                : "neutral"
+                          }
+                        >
+                          {member.status}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      header: "Actions",
+                      align: "right",
+                      render: (member) => (
+                        <div className="ui-row">
+                          {member.status === "INVITED" ? (
                             <Button
-                              onClick={() => setEditingUser(member.membershipId)}
+                              disabled={busy}
+                              onClick={() =>
+                                api && identity
+                                  ? void run("User activated.", () =>
+                                      api.updateMembership(
+                                        identity.businessId,
+                                        member.membershipId,
+                                        { status: "ACTIVE" },
+                                      ),
+                                    )
+                                  : undefined
+                              }
                               size="quiet"
-                              variant="secondary"
                             >
-                              Manage
+                              Activate
                             </Button>
-                          </div>
-                        ),
-                      },
-                    ]}
-                  />
-                </Card>
-              ) : null}
-
-              {tab === "roles" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P0-006</Kicker>
-                      <CardTitle>Roles</CardTitle>
-                    </div>
-                    <Button onClick={() => setNewRoleOpen(true)} size="quiet">
-                      New Role
-                    </Button>
-                  </CardHeader>
-                  <CardDescription>
-                    The Owner Role always keeps full access. Every other Role can be edited, and a
-                    Role in use cannot lose the Business its last Owner.
-                  </CardDescription>
-                  <DataTable
-                    caption="Roles and how many people use them."
-                    getRowKey={(role) => role.id}
-                    rows={roles}
-                    empty="Create a Role such as Cashier or Store Keeper."
-                    columns={[
-                      { header: "Code", render: (role) => <strong>{role.code}</strong> },
-                      { header: "Name", render: (role) => role.name },
-                      { header: "People", align: "right", render: (role) => role.memberCount },
-                      {
-                        header: "Permissions",
-                        align: "right",
-                        render: (role) => role.permissions.length,
-                      },
-                      {
-                        header: "Type",
-                        render: (role) => (
-                          <Badge tone={role.isSystem ? "information" : "neutral"}>
-                            {role.isSystem ? "System" : "Custom"}
-                          </Badge>
-                        ),
-                      },
-                      {
-                        header: "Actions",
-                        align: "right",
-                        render: (role) => (
+                          ) : null}
                           <Button
-                            disabled={role.isSystem}
-                            onClick={() => setEditingRole(role.id)}
+                            onClick={() => setEditingUser(member.membershipId)}
                             size="quiet"
                             variant="secondary"
                           >
-                            {role.isSystem ? "Locked" : "Edit permissions"}
+                            Manage
                           </Button>
-                        ),
-                      },
-                    ]}
-                  />
-                </Card>
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              ) : null}
+
+              {tab === "roles" ? (
+                <DataTable
+                  caption="Roles"
+                  kicker="CC-P0-006"
+                  toolbar={
+                    <Button onClick={() => setNewRoleOpen(true)} size="quiet">
+                      New Role
+                    </Button>
+                  }
+                  getRowKey={(role) => role.id}
+                  rows={roles}
+                  empty="Create a Role such as Cashier or Store Keeper."
+                  columns={[
+                    { header: "Code", render: (role) => <strong>{role.code}</strong> },
+                    { header: "Name", render: (role) => role.name },
+                    { header: "People", align: "right", render: (role) => role.memberCount },
+                    {
+                      header: "Permissions",
+                      align: "right",
+                      render: (role) => role.permissions.length,
+                    },
+                    {
+                      header: "Type",
+                      render: (role) => (
+                        <Badge tone={role.isSystem ? "information" : "neutral"}>
+                          {role.isSystem ? "System" : "Custom"}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      header: "Actions",
+                      align: "right",
+                      render: (role) => (
+                        <Button
+                          disabled={role.isSystem}
+                          onClick={() => setEditingRole(role.id)}
+                          size="quiet"
+                          variant="secondary"
+                        >
+                          {role.isSystem ? "Locked" : "Edit permissions"}
+                        </Button>
+                      ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "permissions" ? (
-                <Stack>
-                  {areas.map((area) => (
-                    <Card key={area}>
-                      <CardHeader>
-                        <CardTitle>{area}</CardTitle>
-                        <Badge tone="neutral">
-                          {catalog.filter((permission) => permission.area === area).length}
-                        </Badge>
-                      </CardHeader>
-                      <DataTable
-                        caption={`Permissions in the ${area} area.`}
-                        getRowKey={(permission) => permission.code}
-                        rows={catalog.filter((permission) => permission.area === area)}
-                        columns={[
-                          {
-                            header: "Code",
-                            render: (permission) => <code>{permission.code}</code>,
-                          },
-                          { header: "What it allows", render: (permission) => permission.name },
-                          { header: "Phase", render: (permission) => permission.phase },
-                          {
-                            header: "Sensitive",
-                            render: (permission) =>
-                              permission.sensitive ? (
-                                <Badge tone="warning">Needs care</Badge>
-                              ) : (
-                                <span className="ui-card-description">Normal</span>
-                              ),
-                          },
-                        ]}
-                      />
-                    </Card>
-                  ))}
-                  {!areas.length ? (
-                    <StatePanel state="empty" title="No permissions loaded">
-                      The permission catalogue is created with the Business foundation.
-                    </StatePanel>
-                  ) : null}
-                </Stack>
+                areas.length ? (
+                  <VerticalTabs
+                    onChange={setPermissionArea}
+                    value={activeArea}
+                    tabs={areas.map((area) => ({
+                      value: area,
+                      label: area,
+                      badge: String(
+                        catalog.filter((permission) => permission.area === area).length,
+                      ),
+                    }))}
+                  >
+                    <DataTable
+                      caption={activeArea}
+                      kicker="Permission area"
+                      getRowKey={(permission) => permission.code}
+                      rows={catalog.filter((permission) => permission.area === activeArea)}
+                      onRowSelect={setPermission}
+                      summary="Select a permission to see what it allows and which Roles carry it."
+                      columns={[
+                        {
+                          header: "Code",
+                          render: (permission) => (
+                            <span className="ui-code">{permission.code}</span>
+                          ),
+                        },
+                        { header: "What it allows", render: (permission) => permission.name },
+                        {
+                          header: "Phase",
+                          hideOnMobile: true,
+                          render: (permission) => permission.phase,
+                        },
+                        {
+                          header: "Sensitive",
+                          render: (permission) =>
+                            permission.sensitive ? (
+                              <Badge tone="warning">Needs care</Badge>
+                            ) : (
+                              <span className="ui-card-description">Normal</span>
+                            ),
+                        },
+                      ]}
+                    />
+                  </VerticalTabs>
+                ) : (
+                  <StatePanel state="empty" title="No permissions loaded">
+                    The permission catalogue is created with the Business foundation.
+                  </StatePanel>
+                )
               ) : null}
             </>
           ) : null}
@@ -548,6 +544,38 @@ export default function AccessPage() {
           </form>
         ) : null}
       </Dialog>
+
+      <Drawer
+        eyebrow="Permission"
+        onClose={() => setPermission(null)}
+        open={Boolean(permission)}
+        title={permission?.name ?? ""}
+      >
+        {permission ? (
+          <Stack>
+            <DescriptionList
+              items={[
+                { label: "Code", value: <span className="ui-code">{permission.code}</span> },
+                { label: "Area", value: permission.area },
+                { label: "Phase", value: permission.phase },
+                {
+                  label: "Handling",
+                  value: permission.sensitive ? (
+                    <Badge tone="warning">Needs care</Badge>
+                  ) : (
+                    <Badge tone="neutral">Normal</Badge>
+                  ),
+                },
+              ]}
+            />
+            <CardDescription>
+              {permission.sensitive
+                ? "A Role carrying this permission can take an action that is hard to reverse. Grant it deliberately and expect it in the approval history."
+                : "A Role carrying this permission can use this action anywhere it appears in the Back Office."}
+            </CardDescription>
+          </Stack>
+        ) : null}
+      </Drawer>
     </Workspace>
   );
 }

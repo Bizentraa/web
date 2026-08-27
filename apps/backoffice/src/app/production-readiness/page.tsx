@@ -3,18 +3,13 @@
 import type { ProductionReadinessOverview } from "@bizentra/contracts";
 import {
   Button,
-  Card,
-  CardHeader,
-  CardTitle,
   DataTable,
   Field,
   FormCard,
   FormFooter,
   FormGrid,
   Grid,
-  Kicker,
   KpiCard,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -137,19 +132,13 @@ export default function ProductionReadinessPage() {
 
   return (
     <Workspace
-      activeHref="/production-readiness"
+      requirements="CC-P8-001 to CC-P8-010"
+      status={<StatusChip tone="information">Readiness foundation active</StatusChip>}
       description="Security events, backups, readiness checks, privacy requests and release controls."
       eyebrow="Common Core · P8"
       title="Production readiness"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P8-001 to CC-P8-010"
-          title="Track the evidence needed before production go-live"
-          description="P8 records security, backup, disaster recovery, observability, performance, privacy and release-readiness evidence without changing operational source records."
-          status={<StatusChip tone="information">Readiness foundation active</StatusChip>}
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Production readiness">
           {data ? (
             <Stack>
@@ -195,30 +184,24 @@ export default function ProductionReadinessPage() {
               {tab === "security" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Security events</Kicker>
-                          <CardTitle>Sensitive activity and control evidence</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Security events."
-                        empty="No security event has been recorded yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.securityEvents}
-                        columns={[
-                          { header: "Event", render: (row) => row.eventType },
-                          { header: "Severity", render: (row) => row.severity },
-                          { header: "Detail", render: (row) => row.detail },
-                          {
-                            header: "Time",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.occurredAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Sensitive activity and control evidence"
+                      kicker="Security events"
+                      className="ui-scroll-panel"
+                      empty="No security event has been recorded yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.securityEvents}
+                      columns={[
+                        { header: "Event", render: (row) => row.eventType },
+                        { header: "Severity", render: (row) => row.severity },
+                        { header: "Detail", render: (row) => row.detail },
+                        {
+                          header: "Time",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.occurredAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Record security event" onSubmit={recordSecurityEvent}>
@@ -256,31 +239,25 @@ export default function ProductionReadinessPage() {
               {tab === "backup" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Backup and DR</Kicker>
-                          <CardTitle>Backup runs and restore-test evidence</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Backup runs."
-                        empty="No backup evidence exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.backupRuns}
-                        columns={[
-                          { header: "Scope", render: (row) => row.scope },
-                          { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
-                          { header: "RPO", render: (row) => row.recoveryPointObjective ?? "—" },
-                          { header: "RTO", render: (row) => row.recoveryTimeObjective ?? "—" },
-                          {
-                            header: "Started",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.startedAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Backup runs and restore-test evidence"
+                      kicker="Backup and DR"
+                      className="ui-scroll-panel"
+                      empty="No backup evidence exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.backupRuns}
+                      columns={[
+                        { header: "Scope", render: (row) => row.scope },
+                        { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        { header: "RPO", render: (row) => row.recoveryPointObjective ?? "—" },
+                        { header: "RTO", render: (row) => row.recoveryTimeObjective ?? "—" },
+                        {
+                          header: "Started",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.startedAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Record backup" onSubmit={recordBackup}>
@@ -322,26 +299,20 @@ export default function ProductionReadinessPage() {
               {tab === "checks" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Readiness checks</Kicker>
-                          <CardTitle>Observability, performance and release gates</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Readiness checks."
-                        empty="No readiness check has been recorded yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.readinessChecks}
-                        columns={[
-                          { header: "Area", render: (row) => row.area },
-                          { header: "Name", render: (row) => row.name },
-                          { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
-                          { header: "Measured", render: (row) => row.measuredValue ?? "—" },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Observability, performance and release gates"
+                      kicker="Readiness checks"
+                      className="ui-scroll-panel"
+                      empty="No readiness check has been recorded yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.readinessChecks}
+                      columns={[
+                        { header: "Area", render: (row) => row.area },
+                        { header: "Name", render: (row) => row.name },
+                        { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        { header: "Measured", render: (row) => row.measuredValue ?? "—" },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Save readiness check" onSubmit={upsertReadiness}>
@@ -376,26 +347,20 @@ export default function ProductionReadinessPage() {
               {tab === "privacy" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Privacy requests</Kicker>
-                          <CardTitle>Customer-data request tracking</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Privacy requests."
-                        empty="No privacy request exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.privacyRequests}
-                        columns={[
-                          { header: "Type", render: (row) => row.requestType },
-                          { header: "Requester", render: (row) => row.requester },
-                          { header: "Status", render: (row) => row.status },
-                          { header: "Due", render: (row) => row.dueDate ?? "—" },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Customer-data request tracking"
+                      kicker="Privacy requests"
+                      className="ui-scroll-panel"
+                      empty="No privacy request exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.privacyRequests}
+                      columns={[
+                        { header: "Type", render: (row) => row.requestType },
+                        { header: "Requester", render: (row) => row.requester },
+                        { header: "Status", render: (row) => row.status },
+                        { header: "Due", render: (row) => row.dueDate ?? "—" },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Open privacy request" onSubmit={createPrivacy}>
@@ -427,30 +392,24 @@ export default function ProductionReadinessPage() {
               {tab === "release" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Release readiness</Kicker>
-                          <CardTitle>Go-live checklist and rollback evidence</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Release readiness."
-                        empty="No release-readiness record exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.releases}
-                        columns={[
-                          { header: "Version", render: (row) => row.version },
-                          { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
-                          { header: "Rollback", render: (row) => row.rollbackPlan },
-                          {
-                            header: "Created",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.createdAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Go-live checklist and rollback evidence"
+                      kicker="Release readiness"
+                      className="ui-scroll-panel"
+                      empty="No release-readiness record exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.releases}
+                      columns={[
+                        { header: "Version", render: (row) => row.version },
+                        { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        { header: "Rollback", render: (row) => row.rollbackPlan },
+                        {
+                          header: "Created",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.createdAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Save release readiness" onSubmit={createRelease}>

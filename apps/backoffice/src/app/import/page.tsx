@@ -15,7 +15,6 @@ import {
   Grid,
   Kicker,
   KpiCard,
-  PageHeader,
   SelectField,
   Stack,
   StatePanel,
@@ -149,19 +148,13 @@ export default function ImportPage() {
 
   return (
     <Workspace
-      activeHref="/import"
+      requirements="CC-P1-011"
+      status={<StatusChip tone="success">{batches.length} import(s)</StatusChip>}
       description="Bring existing items, customers and suppliers in from a CSV or spreadsheet export, safely."
       eyebrow="Common Core · P1"
       title="Import"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P1-011"
-          title="Validate, preview, apply, roll back"
-          description="Nothing is written while a file is being validated. The preview shows exactly which rows will be created and why the rest were refused."
-          status={<StatusChip tone="success">{batches.length} import(s)</StatusChip>}
-        />
-
         <Grid>
           <KpiCard
             label="Imports run"
@@ -245,76 +238,54 @@ export default function ImportPage() {
         </Card>
 
         {preview ? (
-          <Card>
-            <CardHeader>
-              <div>
-                <Kicker>Step 2</Kicker>
-                <CardTitle>Preview</CardTitle>
-              </div>
+          <DataTable
+            caption="Preview"
+            kicker="Step 2"
+            toolbar={
               <div className="ui-row">
                 <Badge tone="success">{preview.validRows} ready</Badge>
                 {preview.invalidRows ? (
                   <Badge tone="danger">{preview.invalidRows} refused</Badge>
                 ) : null}
                 <Badge tone="neutral">{preview.status}</Badge>
-              </div>
-            </CardHeader>
-            <DataTable
-              caption={`${preview.fileName}: every row and what will happen to it.`}
-              getRowKey={(row) => String(row.rowNumber)}
-              rows={preview.rows.slice(0, 100)}
-              empty="No rows were found in this file."
-              columns={[
-                { header: "Row", align: "right", render: (row) => row.rowNumber },
-                {
-                  header: "Result",
-                  render: (row) =>
-                    row.valid ? (
-                      <Badge tone="success">Will be created</Badge>
-                    ) : (
-                      <Badge tone="danger">Refused</Badge>
-                    ),
-                },
-                {
-                  header: "Values",
-                  render: (row) =>
-                    Object.entries(row.values)
-                      .filter(([, value]) => value)
-                      .slice(0, 4)
-                      .map(([key, value]) => `${key}: ${value}`)
-                      .join(" · "),
-                },
-                {
-                  header: "Why refused",
-                  render: (row) => (row.errors.length ? row.errors.join(" ") : "-"),
-                },
-              ]}
-            />
-            <FormFooter>
-              <span className="ui-card-description">
-                Applying creates {preview.validRows} record(s). The refused rows are left out.
-              </span>
-              <div className="ui-row">
-                {preview.status === "APPLIED" ? (
-                  <Button
-                    disabled={busy}
-                    onClick={() => setRollbackTarget(preview)}
-                    variant="danger"
-                  >
-                    Roll back
-                  </Button>
-                ) : null}
                 <Button
-                  disabled={busy || preview.status !== "VALIDATED" || preview.validRows === 0}
+                  disabled={busy || preview.invalidRows > 0 || preview.status !== "VALIDATED"}
                   onClick={() => void apply()}
+                  size="quiet"
                 >
-                  {preview.status === "APPLIED"
-                    ? "Already applied"
-                    : `Apply ${preview.validRows} row(s)`}
+                  Apply
                 </Button>
               </div>
-            </FormFooter>
-          </Card>
+            }
+            getRowKey={(row) => String(row.rowNumber)}
+            rows={preview.rows.slice(0, 100)}
+            empty="No rows were found in this file."
+            columns={[
+              { header: "Row", align: "right", render: (row) => row.rowNumber },
+              {
+                header: "Result",
+                render: (row) =>
+                  row.valid ? (
+                    <Badge tone="success">Will be created</Badge>
+                  ) : (
+                    <Badge tone="danger">Refused</Badge>
+                  ),
+              },
+              {
+                header: "Values",
+                render: (row) =>
+                  Object.entries(row.values)
+                    .filter(([, value]) => value)
+                    .slice(0, 4)
+                    .map(([key, value]) => `${key}: ${value}`)
+                    .join(" · "),
+              },
+              {
+                header: "Why refused",
+                render: (row) => (row.errors.length ? row.errors.join(" ") : "-"),
+              },
+            ]}
+          />
         ) : (
           <StatePanel state="empty" title="No file checked yet">
             Load a template or paste a CSV export, then validate it. Nothing is written until you
@@ -323,81 +294,70 @@ export default function ImportPage() {
         )}
 
         <ResourceState error={error} onRetry={reload} state={state} title="Import history">
-          <Card>
-            <CardHeader>
-              <div>
-                <Kicker>History</Kicker>
-                <CardTitle>Past imports</CardTitle>
-              </div>
-            </CardHeader>
-            <DataTable
-              caption="Every import and what happened to it."
-              getRowKey={(batch) => batch.id}
-              rows={batches}
-              empty="No imports have been run yet."
-              columns={[
-                { header: "File", render: (batch) => <strong>{batch.fileName}</strong> },
-                { header: "Type", render: (batch) => batch.entityKind },
-                { header: "When", render: (batch) => formatDateTime(batch.createdAt) },
-                { header: "Rows", align: "right", render: (batch) => batch.totalRows },
-                { header: "Created", align: "right", render: (batch) => batch.appliedRows },
-                {
-                  header: "Status",
-                  render: (batch) => (
-                    <Badge
-                      tone={
-                        batch.status === "APPLIED"
-                          ? "success"
-                          : batch.status === "FAILED"
-                            ? "danger"
-                            : batch.status === "ROLLED_BACK"
-                              ? "warning"
-                              : "information"
-                      }
+          <DataTable
+            caption="Past imports"
+            kicker="History"
+            getRowKey={(batch) => batch.id}
+            rows={batches}
+            empty="No imports have been run yet."
+            columns={[
+              { header: "File", render: (batch) => <strong>{batch.fileName}</strong> },
+              { header: "Type", render: (batch) => batch.entityKind },
+              { header: "When", render: (batch) => formatDateTime(batch.createdAt) },
+              { header: "Rows", align: "right", render: (batch) => batch.totalRows },
+              { header: "Created", align: "right", render: (batch) => batch.appliedRows },
+              {
+                header: "Status",
+                render: (batch) => (
+                  <Badge
+                    tone={
+                      batch.status === "APPLIED"
+                        ? "success"
+                        : batch.status === "FAILED"
+                          ? "danger"
+                          : batch.status === "ROLLED_BACK"
+                            ? "warning"
+                            : "information"
+                    }
+                  >
+                    {batch.status}
+                  </Badge>
+                ),
+              },
+              {
+                header: "Actions",
+                align: "right",
+                render: (batch) => (
+                  <div className="ui-row">
+                    <Button
+                      onClick={() => {
+                        if (!api || !identity) return;
+                        void api
+                          .getImportPreview(identity.businessId, batch.id)
+                          .then(setPreview)
+                          .catch((cause: unknown) =>
+                            toasts.push({
+                              title: "Preview not loaded",
+                              description: errorMessage(cause),
+                              tone: "danger",
+                            }),
+                          );
+                      }}
+                      size="quiet"
+                      variant="secondary"
                     >
-                      {batch.status}
-                    </Badge>
-                  ),
-                },
-                {
-                  header: "Actions",
-                  align: "right",
-                  render: (batch) => (
-                    <div className="ui-row">
-                      <Button
-                        onClick={() => {
-                          if (!api || !identity) return;
-                          void api
-                            .getImportPreview(identity.businessId, batch.id)
-                            .then(setPreview)
-                            .catch((cause: unknown) =>
-                              toasts.push({
-                                title: "Preview not loaded",
-                                description: errorMessage(cause),
-                                tone: "danger",
-                              }),
-                            );
-                        }}
-                        size="quiet"
-                        variant="secondary"
-                      >
-                        Open
+                      Open
+                    </Button>
+                    {batch.status === "APPLIED" ? (
+                      <Button onClick={() => setRollbackTarget(batch)} size="quiet" variant="ghost">
+                        Roll back
                       </Button>
-                      {batch.status === "APPLIED" ? (
-                        <Button
-                          onClick={() => setRollbackTarget(batch)}
-                          size="quiet"
-                          variant="ghost"
-                        >
-                          Roll back
-                        </Button>
-                      ) : null}
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          </Card>
+                    ) : null}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </ResourceState>
       </Stack>
 

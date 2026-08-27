@@ -20,7 +20,6 @@ import {
   Kicker,
   KpiCard,
   OfflineBanner,
-  PageHeader,
   Progress,
   Split,
   Stack,
@@ -106,7 +105,11 @@ export default function DashboardPage() {
 
   return (
     <Workspace
-      activeHref="/"
+      status={
+        <StatusChip tone={readiness === 100 ? "success" : "warning"}>
+          {readiness === 100 ? "Ready to trade" : `Setup ${readiness}%`}
+        </StatusChip>
+      }
       description="What is ready to use today, what still needs setup, and where the next action belongs."
       eyebrow="Common Core"
       title="Operating dashboard"
@@ -127,17 +130,6 @@ export default function DashboardPage() {
         <ResourceState error={error} onRetry={reload} state={state} title="Dashboard">
           {data ? (
             <Stack>
-              <PageHeader
-                eyebrow="Role dashboard"
-                title={data.foundation.business.name}
-                description="Owner and administrator view. Cashiers use the POS application, which stays a separate deployable."
-                status={
-                  <StatusChip tone={readiness === 100 ? "success" : "warning"}>
-                    {readiness === 100 ? "Ready to trade" : `Setup ${readiness}%`}
-                  </StatusChip>
-                }
-              />
-
               <Grid>
                 <KpiCard
                   label="Sales today"
@@ -170,55 +162,50 @@ export default function DashboardPage() {
               </Grid>
 
               <Split>
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>P2</Kicker>
-                      <CardTitle>Recent sales</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Recent sales"
+                  kicker="P2"
+                  toolbar={
                     <Link className="ui-button ui-button--quiet" href="/sales">
                       Open sales
                     </Link>
-                  </CardHeader>
-                  <DataTable
-                    caption="The most recent sales across every Branch."
-                    getRowKey={(sale) => sale.id}
-                    empty="No sales yet. Open a shift in the POS and complete the first sale."
-                    rows={data.sales.rows}
-                    columns={[
-                      {
-                        header: "Number",
-                        render: (sale) => (
-                          <Link href={`/sales?sale=${sale.id}`}>
-                            {sale.receiptNumber ?? sale.number}
-                          </Link>
-                        ),
-                      },
-                      { header: "Customer", render: (sale) => sale.customerName ?? "Walk-in" },
-                      {
-                        header: "Status",
-                        render: (sale) => (
-                          <Badge tone={saleTone(sale.status)}>{readable(sale.status)}</Badge>
-                        ),
-                      },
-                      {
-                        header: "Total",
-                        align: "right",
-                        render: (sale) => formatMoney(sale.total, sale.currencyCode),
-                      },
-                      {
-                        header: "Due",
-                        align: "right",
-                        render: (sale) => formatMoney(sale.dueTotal),
-                      },
-                      {
-                        header: "Time",
-                        hideOnMobile: true,
-                        render: (sale) => formatDateTime(sale.createdAt),
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(sale) => sale.id}
+                  empty="No sales yet. Open a shift in the POS and complete the first sale."
+                  rows={data.sales.rows}
+                  columns={[
+                    {
+                      header: "Number",
+                      render: (sale) => (
+                        <Link href={`/sales?sale=${sale.id}`}>
+                          {sale.receiptNumber ?? sale.number}
+                        </Link>
+                      ),
+                    },
+                    { header: "Customer", render: (sale) => sale.customerName ?? "Walk-in" },
+                    {
+                      header: "Status",
+                      render: (sale) => (
+                        <Badge tone={saleTone(sale.status)}>{readable(sale.status)}</Badge>
+                      ),
+                    },
+                    {
+                      header: "Total",
+                      align: "right",
+                      render: (sale) => formatMoney(sale.total, sale.currencyCode),
+                    },
+                    {
+                      header: "Due",
+                      align: "right",
+                      render: (sale) => formatMoney(sale.dueTotal),
+                    },
+                    {
+                      header: "Time",
+                      hideOnMobile: true,
+                      render: (sale) => formatDateTime(sale.createdAt),
+                    },
+                  ]}
+                />
 
                 <Stack>
                   <Card>

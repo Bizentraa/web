@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
   DataTable,
+  DescriptionList,
   Field,
   FilterBar,
   formatMoney,
@@ -25,13 +26,19 @@ import {
   Kicker,
   KpiCard,
   MoneySummary,
-  PageHeader,
   SelectField,
   Stack,
   StatePanel,
   StatusChip,
 } from "@bizentra/design-system";
-import { Dialog, Tabs, useDebouncedValue, useToasts } from "@bizentra/design-system/client";
+import {
+  Dialog,
+  Drawer,
+  Tabs,
+  useDebouncedValue,
+  useToasts,
+  VerticalTabs,
+} from "@bizentra/design-system/client";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
@@ -43,6 +50,25 @@ interface CatalogData {
   reference: CatalogReferenceData;
   items: Paginated<ItemListRow>;
   promotions: PromotionRow[];
+}
+
+/** One row of a reference table, carrying the fields its drawer shows. */
+interface ReferenceRecord {
+  id: string;
+  primary: string;
+  secondary: string;
+  meta: string;
+  status: "ACTIVE" | "INACTIVE";
+  details: Array<{ label: string; value: string }>;
+}
+
+interface ReferenceSection {
+  value: string;
+  label: string;
+  kicker: string;
+  description: string;
+  onAdd: () => void;
+  rows: ReferenceRecord[];
 }
 
 export default function CatalogPage() {
@@ -86,6 +112,10 @@ export default function CatalogPage() {
     | null
   >(null);
   const [preview, setPreview] = useState<SaleQuote | null>(null);
+  const [organizationSection, setOrganizationSection] = useState("units");
+  const [pricingSection, setPricingSection] = useState("lists");
+  const [taxSection, setTaxSection] = useState("categories");
+  const [record, setRecord] = useState<ReferenceRecord | null>(null);
 
   const run = async (message: string, work: () => Promise<unknown>) => {
     setBusy(true);
@@ -116,6 +146,141 @@ export default function CatalogPage() {
     };
 
   const reference = data?.reference;
+
+  /*
+   * The six reference types behind an item. They were six cards side by side, which meant six
+   * short tables competing for width and none of them readable; as a rail the selected one gets
+   * the full table and a row opens into the drawer.
+   */
+  const organizationSections: ReferenceSection[] = [
+    {
+      value: "units",
+      label: "Units",
+      kicker: "CC-P1-004",
+      description: "Units of measure",
+      onAdd: () => setDialog("unit"),
+      rows: (reference?.units ?? []).map((unit) => ({
+        id: unit.id,
+        primary: unit.code,
+        secondary: unit.name,
+        meta: `${unit.precision} decimal(s)`,
+        status: unit.status,
+        details: [
+          { label: "Code", value: unit.code },
+          { label: "Name", value: unit.name },
+          { label: "Decimal places", value: String(unit.precision) },
+          { label: "Status", value: unit.status },
+        ],
+      })),
+    },
+    {
+      value: "conversions",
+      label: "Unit conversions",
+      kicker: "CC-P1-004",
+      description: "How one unit converts into another",
+      onAdd: () => setDialog("conversion"),
+      rows: (reference?.unitConversions ?? []).map((conversion) => {
+        const from = reference?.units.find((unit) => unit.id === conversion.fromUnitId);
+        const to = reference?.units.find((unit) => unit.id === conversion.toUnitId);
+        return {
+          id: conversion.id,
+          primary: `${from?.code ?? "?"} to ${to?.code ?? "?"}`,
+          secondary: `1 ${from?.code ?? "?"} = ${conversion.factor} ${to?.code ?? "?"}`,
+          meta: "",
+          status: "ACTIVE" as const,
+          details: [
+            { label: "From unit", value: from ? `${from.code} · ${from.name}` : "Unknown" },
+            { label: "To unit", value: to ? `${to.code} · ${to.name}` : "Unknown" },
+            { label: "Factor", value: String(conversion.factor) },
+          ],
+        };
+      }),
+    },
+    {
+      value: "categories",
+      label: "Categories",
+      kicker: "CC-P1-002",
+      description: "Item categories",
+      onAdd: () => setDialog("category"),
+      rows: (reference?.categories ?? []).map((category) => ({
+        id: category.id,
+        primary: category.code,
+        secondary: category.name,
+        meta: category.parentId ? "Sub-category" : "Top level",
+        status: category.status,
+        details: [
+          { label: "Code", value: category.code },
+          { label: "Name", value: category.name },
+          {
+            label: "Parent",
+            value:
+              reference?.categories.find((parent) => parent.id === category.parentId)?.name ??
+              "Top level",
+          },
+          { label: "Status", value: category.status },
+        ],
+      })),
+    },
+    {
+      value: "brands",
+      label: "Brands",
+      kicker: "CC-P1-002",
+      description: "Brands",
+      onAdd: () => setDialog("brand"),
+      rows: (reference?.brands ?? []).map((brand) => ({
+        id: brand.id,
+        primary: brand.code,
+        secondary: brand.name,
+        meta: "",
+        status: brand.status,
+        details: [
+          { label: "Code", value: brand.code },
+          { label: "Name", value: brand.name },
+          { label: "Status", value: brand.status },
+        ],
+      })),
+    },
+    {
+      value: "tags",
+      label: "Tags",
+      kicker: "CC-P1-002",
+      description: "Tags used to group items across categories",
+      onAdd: () => setDialog("tag"),
+      rows: (reference?.tags ?? []).map((tag) => ({
+        id: tag.id,
+        primary: tag.code,
+        secondary: tag.name,
+        meta: "",
+        status: tag.status,
+        details: [
+          { label: "Code", value: tag.code },
+          { label: "Name", value: tag.name },
+          { label: "Status", value: tag.status },
+        ],
+      })),
+    },
+    {
+      value: "attributes",
+      label: "Custom attributes",
+      kicker: "CC-P1-002",
+      description: "Extra fields this Business needs on its items",
+      onAdd: () => setDialog("attribute"),
+      rows: (reference?.attributes ?? []).map((attribute) => ({
+        id: attribute.id,
+        primary: attribute.code,
+        secondary: attribute.name,
+        meta: `${attribute.appliesTo} · ${attribute.dataType}`,
+        status: attribute.status,
+        details: [
+          { label: "Code", value: attribute.code },
+          { label: "Name", value: attribute.name },
+          { label: "Applies to", value: attribute.appliesTo },
+          { label: "Data type", value: attribute.dataType },
+          { label: "Status", value: attribute.status },
+        ],
+      })),
+    },
+  ];
   const readiness = data
     ? Math.round(
         ([
@@ -152,7 +317,10 @@ export default function CatalogPage() {
 
   return (
     <Workspace
-      activeHref="/catalog"
+      requirements="CC-P1-001 to CC-P1-011"
+      status={
+        <StatusChip tone={readiness >= 80 ? "success" : "warning"}>Setup {readiness}%</StatusChip>
+      }
       description="Items, units, categories, prices, promotions and tax. These records are definitions; they never move stock or money by themselves."
       eyebrow="Common Core · P1"
       title="Catalog and pricing"
@@ -176,17 +344,6 @@ export default function CatalogPage() {
       }
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P1-001 to CC-P1-011"
-          title="Master data"
-          description="Everything the POS, purchasing and reporting phases reuse. One item model covers products, services, ingredients, parts, bundles, fees and rental items."
-          status={
-            <StatusChip tone={readiness >= 80 ? "success" : "warning"}>
-              Setup {readiness}%
-            </StatusChip>
-          }
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Catalog">
           {data && reference ? (
             <Stack>
@@ -310,112 +467,83 @@ export default function CatalogPage() {
               ) : null}
 
               {tab === "organization" ? (
-                <Grid wide>
-                  <ReferenceCard
-                    action={() => setDialog("unit")}
-                    caption="Units of measure"
-                    kicker="CC-P1-004"
-                    rows={reference.units.map((unit) => ({
-                      id: unit.id,
-                      primary: unit.code,
-                      secondary: unit.name,
-                      meta: `${unit.precision} decimal(s)`,
-                      status: unit.status,
-                    }))}
-                    title="Units"
-                  />
-                  <ReferenceCard
-                    action={() => setDialog("conversion")}
-                    caption="How one unit converts into another"
-                    kicker="CC-P1-004"
-                    rows={reference.unitConversions.map((conversion) => {
-                      const from = reference.units.find(
-                        (unit) => unit.id === conversion.fromUnitId,
-                      );
-                      const to = reference.units.find((unit) => unit.id === conversion.toUnitId);
-                      return {
-                        id: conversion.id,
-                        primary: `${from?.code ?? "?"} to ${to?.code ?? "?"}`,
-                        secondary: `1 ${from?.code ?? "?"} = ${conversion.factor} ${to?.code ?? "?"}`,
-                        meta: "",
-                        status: "ACTIVE" as const,
-                      };
-                    })}
-                    title="Unit conversions"
-                  />
-                  <ReferenceCard
-                    action={() => setDialog("category")}
-                    caption="Item categories"
-                    kicker="CC-P1-002"
-                    rows={reference.categories.map((category) => ({
-                      id: category.id,
-                      primary: category.code,
-                      secondary: category.name,
-                      meta: category.parentId ? "Sub-category" : "Top level",
-                      status: category.status,
-                    }))}
-                    title="Categories"
-                  />
-                  <ReferenceCard
-                    action={() => setDialog("brand")}
-                    caption="Brands"
-                    kicker="CC-P1-002"
-                    rows={reference.brands.map((brand) => ({
-                      id: brand.id,
-                      primary: brand.code,
-                      secondary: brand.name,
-                      meta: "",
-                      status: brand.status,
-                    }))}
-                    title="Brands"
-                  />
-                  <ReferenceCard
-                    action={() => setDialog("tag")}
-                    caption="Tags used to group items across categories"
-                    kicker="CC-P1-002"
-                    rows={reference.tags.map((tag) => ({
-                      id: tag.id,
-                      primary: tag.code,
-                      secondary: tag.name,
-                      meta: "",
-                      status: tag.status,
-                    }))}
-                    title="Tags"
-                  />
-                  <ReferenceCard
-                    action={() => setDialog("attribute")}
-                    caption="Extra fields this Business needs on its items"
-                    kicker="CC-P1-002"
-                    rows={reference.attributes.map((attribute) => ({
-                      id: attribute.id,
-                      primary: attribute.code,
-                      secondary: attribute.name,
-                      meta: `${attribute.appliesTo} · ${attribute.dataType}`,
-                      status: attribute.status,
-                    }))}
-                    title="Custom attributes"
-                  />
-                </Grid>
+                <VerticalTabs
+                  onChange={setOrganizationSection}
+                  value={organizationSection}
+                  tabs={organizationSections.map((section) => ({
+                    value: section.value,
+                    label: section.label,
+                    description: section.description,
+                    badge: String(section.rows.length),
+                  }))}
+                >
+                  {organizationSections
+                    .filter((section) => section.value === organizationSection)
+                    .map((section) => (
+                      <DataTable
+                        key={section.value}
+                        caption={section.label}
+                        kicker={section.kicker}
+                        toolbar={
+                          <Button onClick={section.onAdd} size="quiet">
+                            Add
+                          </Button>
+                        }
+                        getRowKey={(row) => row.id}
+                        rows={section.rows}
+                        onRowSelect={setRecord}
+                        empty="Nothing here yet."
+                        summary={`${section.description}. ${section.rows.length} record(s) — select a row to see its detail.`}
+                        columns={[
+                          {
+                            header: "Code",
+                            render: (row) => <span className="ui-code">{row.primary}</span>,
+                          },
+                          { header: "Name", render: (row) => row.secondary },
+                          { header: "Detail", hideOnMobile: true, render: (row) => row.meta },
+                          {
+                            header: "Status",
+                            render: (row) => (
+                              <Badge tone={row.status === "ACTIVE" ? "success" : "neutral"}>
+                                {row.status}
+                              </Badge>
+                            ),
+                          },
+                        ]}
+                      />
+                    ))}
+                </VerticalTabs>
               ) : null}
 
               {tab === "pricing" ? (
-                <Stack>
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <Kicker>CC-P1-006</Kicker>
-                        <CardTitle>Price lists</CardTitle>
-                      </div>
-                      <Button onClick={() => setDialog("priceList")} size="quiet">
-                        New price list
-                      </Button>
-                    </CardHeader>
-                    <CardDescription>
-                      A customer group can point at its own price list, and a price can be set for
-                      one Branch or from a quantity break upward.
-                    </CardDescription>
+                <VerticalTabs
+                  onChange={setPricingSection}
+                  value={pricingSection}
+                  tabs={[
+                    {
+                      value: "lists",
+                      label: "Price lists",
+                      description: "What each customer group pays",
+                      badge: String(reference.priceLists.length),
+                    },
+                    {
+                      value: "promotions",
+                      label: "Promotions",
+                      description: "Time-boxed price rules",
+                      badge: String(data.promotions.length),
+                    },
+                  ]}
+                >
+                  {pricingSection === "lists" ? (
                     <DataTable
-                      caption="Price lists in this Business."
+                      caption="Price lists"
+                      summary="A customer group can point at its own price list, and a price can be set for one Branch or from a quantity break upward."
+                      kicker="CC-P1-006"
+                      toolbar={
+                        <Button onClick={() => setDialog("priceList")} size="quiet">
+                          New price list
+                        </Button>
+                      }
                       getRowKey={(priceList) => priceList.id}
                       rows={reference.priceLists}
                       columns={[
@@ -462,24 +590,18 @@ export default function CatalogPage() {
                         },
                       ]}
                     />
-                  </Card>
+                  ) : null}
 
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <Kicker>CC-P1-007</Kicker>
-                        <CardTitle>Promotions</CardTitle>
-                      </div>
-                      <Button onClick={() => setDialog("promotion")} size="quiet">
-                        New promotion
-                      </Button>
-                    </CardHeader>
-                    <CardDescription>
-                      The POS applies the promotion that gives the customer the best price and
-                      explains any promotion it skipped.
-                    </CardDescription>
+                  {pricingSection === "promotions" ? (
                     <DataTable
-                      caption="Promotions and any overlap between them."
+                      caption="Promotions"
+                      summary="The POS applies the promotion that gives the customer the best price and explains any promotion it skipped."
+                      kicker="CC-P1-007"
+                      toolbar={
+                        <Button onClick={() => setDialog("promotion")} size="quiet">
+                          New promotion
+                        </Button>
+                      }
                       getRowKey={(promotion) => promotion.id}
                       rows={data.promotions}
                       empty="No promotions yet. Percentage, fixed, coupon and buy-X-get-Y offers are supported."
@@ -544,33 +666,46 @@ export default function CatalogPage() {
                         },
                       ]}
                     />
-                  </Card>
-                </Stack>
+                  ) : null}
+                </VerticalTabs>
               ) : null}
 
               {tab === "tax" ? (
-                <Stack>
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <Kicker>CC-P1-008</Kicker>
-                        <CardTitle>Tax categories and rates</CardTitle>
-                      </div>
-                      <div className="ui-row">
-                        <Button onClick={() => setDialog("taxCategory")} size="quiet">
-                          New category
-                        </Button>
-                        <Button
-                          onClick={() => setDialog("taxRate")}
-                          size="quiet"
-                          variant="secondary"
-                        >
-                          New rate
-                        </Button>
-                      </div>
-                    </CardHeader>
+                <VerticalTabs
+                  onChange={setTaxSection}
+                  value={taxSection}
+                  tabs={[
+                    {
+                      value: "categories",
+                      label: "Tax categories",
+                      description: "Categories and their rates",
+                      badge: String(reference.taxCategories.length),
+                    },
+                    {
+                      value: "preview",
+                      label: "Price and tax preview",
+                      description: "What a cashier will see",
+                    },
+                  ]}
+                >
+                  {taxSection === "categories" ? (
                     <DataTable
-                      caption="Tax rates and the dates they apply from."
+                      caption="Tax categories and rates"
+                      kicker="CC-P1-008"
+                      toolbar={
+                        <div className="ui-row">
+                          <Button onClick={() => setDialog("taxCategory")} size="quiet">
+                            New category
+                          </Button>
+                          <Button
+                            onClick={() => setDialog("taxRate")}
+                            size="quiet"
+                            variant="secondary"
+                          >
+                            New rate
+                          </Button>
+                        </div>
+                      }
                       getRowKey={(row) => row.id}
                       rows={reference.taxCategories.flatMap((category) =>
                         category.rates.map((rate) => ({
@@ -600,84 +735,86 @@ export default function CatalogPage() {
                         },
                       ]}
                     />
-                  </Card>
+                  ) : null}
 
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <Kicker>Preview</Kicker>
-                        <CardTitle>Price and tax preview</CardTitle>
-                      </div>
-                      <CardDescription>
-                        Uses exactly the same calculation the POS uses, so what you see here is what
-                        a cashier will see.
-                      </CardDescription>
-                    </CardHeader>
-                    <form className="ui-stack" onSubmit={(event) => void runPreview(event)}>
-                      <FormGrid>
-                        <SelectField label="Item" name="itemId" required>
-                          {data.items.rows.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name}
-                            </option>
+                  {taxSection === "preview" ? (
+                    <Card>
+                      <CardHeader>
+                        <div>
+                          <Kicker>Preview</Kicker>
+                          <CardTitle>Price and tax preview</CardTitle>
+                        </div>
+                        <CardDescription>
+                          Uses exactly the same calculation the POS uses, so what you see here is
+                          what a cashier will see.
+                        </CardDescription>
+                      </CardHeader>
+                      <form className="ui-stack" onSubmit={(event) => void runPreview(event)}>
+                        <FormGrid>
+                          <SelectField label="Item" name="itemId" required>
+                            {data.items.rows.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </SelectField>
+                          <SelectField label="Branch" name="branchId" required>
+                            {reference.branches.map((branch) => (
+                              <option key={branch.id} value={branch.id}>
+                                {branch.name}
+                              </option>
+                            ))}
+                          </SelectField>
+                          <Field
+                            label="Quantity"
+                            name="quantity"
+                            defaultValue="1"
+                            inputMode="decimal"
+                          />
+                        </FormGrid>
+                        <FormFooter>
+                          <span className="ui-card-description">
+                            Promotions, quantity breaks and tax rules are all applied.
+                          </span>
+                          <Button type="submit">Preview price</Button>
+                        </FormFooter>
+                      </form>
+                      {preview ? (
+                        <Stack tight>
+                          <MoneySummary
+                            rows={[
+                              {
+                                label: "Subtotal",
+                                value: formatMoney(preview.subtotal, preview.currencyCode),
+                              },
+                              { label: "Discount", value: formatMoney(-preview.discountTotal) },
+                              { label: "Tax", value: formatMoney(preview.taxTotal) },
+                              {
+                                label: "Total",
+                                value: formatMoney(preview.total, preview.currencyCode),
+                              },
+                            ]}
+                          />
+                          {preview.appliedPromotions.map((promotion) => (
+                            <Badge key={promotion.id} tone="success">
+                              {promotion.code} saved {formatMoney(promotion.amount)}
+                            </Badge>
                           ))}
-                        </SelectField>
-                        <SelectField label="Branch" name="branchId" required>
-                          {reference.branches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                              {branch.name}
-                            </option>
+                          {preview.warnings.map((warning) => (
+                            <Badge key={warning} tone="warning">
+                              {warning}
+                            </Badge>
                           ))}
-                        </SelectField>
-                        <Field
-                          label="Quantity"
-                          name="quantity"
-                          defaultValue="1"
-                          inputMode="decimal"
-                        />
-                      </FormGrid>
-                      <FormFooter>
-                        <span className="ui-card-description">
-                          Promotions, quantity breaks and tax rules are all applied.
-                        </span>
-                        <Button type="submit">Preview price</Button>
-                      </FormFooter>
-                    </form>
-                    {preview ? (
-                      <Stack tight>
-                        <MoneySummary
-                          rows={[
-                            {
-                              label: "Subtotal",
-                              value: formatMoney(preview.subtotal, preview.currencyCode),
-                            },
-                            { label: "Discount", value: formatMoney(-preview.discountTotal) },
-                            { label: "Tax", value: formatMoney(preview.taxTotal) },
-                            {
-                              label: "Total",
-                              value: formatMoney(preview.total, preview.currencyCode),
-                            },
-                          ]}
-                        />
-                        {preview.appliedPromotions.map((promotion) => (
-                          <Badge key={promotion.id} tone="success">
-                            {promotion.code} saved {formatMoney(promotion.amount)}
-                          </Badge>
-                        ))}
-                        {preview.warnings.map((warning) => (
-                          <Badge key={warning} tone="warning">
-                            {warning}
-                          </Badge>
-                        ))}
-                      </Stack>
-                    ) : (
-                      <StatePanel state="empty" title="No preview yet">
-                        Choose an item and a Branch to see the price, discount and tax a customer
-                        would be charged.
-                      </StatePanel>
-                    )}
-                  </Card>
-                </Stack>
+                        </Stack>
+                      ) : (
+                        <StatePanel state="empty" title="No preview yet">
+                          Choose an item and a Branch to see the price, discount and tax a customer
+                          would be charged.
+                        </StatePanel>
+                      )}
+                    </Card>
+                  ) : null}
+                </VerticalTabs>
               ) : null}
             </Stack>
           ) : null}
@@ -1185,59 +1322,26 @@ export default function CatalogPage() {
           </FormFooter>
         </form>
       </Dialog>
-    </Workspace>
-  );
-}
 
-function ReferenceCard({
-  action,
-  caption,
-  kicker,
-  rows,
-  title,
-}: {
-  action: () => void;
-  caption: string;
-  kicker: string;
-  rows: Array<{
-    id: string;
-    primary: string;
-    secondary: string;
-    meta: string;
-    status: "ACTIVE" | "INACTIVE";
-  }>;
-  title: string;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <div>
-          <Kicker>{kicker}</Kicker>
-          <CardTitle>{title}</CardTitle>
-        </div>
-        <Button onClick={action} size="quiet">
-          Add
-        </Button>
-      </CardHeader>
-      <CardDescription>{caption}</CardDescription>
-      <DataTable
-        caption={caption}
-        getRowKey={(row) => row.id}
-        rows={rows}
-        empty="Nothing here yet."
-        columns={[
-          { header: "Code", render: (row) => <strong>{row.primary}</strong> },
-          { header: "Name", render: (row) => row.secondary },
-          { header: "Detail", hideOnMobile: true, render: (row) => row.meta },
-          {
-            header: "Status",
-            render: (row) => (
-              <Badge tone={row.status === "ACTIVE" ? "success" : "neutral"}>{row.status}</Badge>
-            ),
-          },
-        ]}
-      />
-    </Card>
+      <Drawer
+        eyebrow="Reference record"
+        onClose={() => setRecord(null)}
+        open={Boolean(record)}
+        title={record ? `${record.primary} · ${record.secondary}` : ""}
+      >
+        {record ? (
+          <Stack>
+            <DescriptionList
+              items={record.details.map((detail) => ({
+                label: detail.label,
+                value: detail.value,
+              }))}
+            />
+            <Badge tone={record.status === "ACTIVE" ? "success" : "neutral"}>{record.status}</Badge>
+          </Stack>
+        ) : null}
+      </Drawer>
+    </Workspace>
   );
 }
 

@@ -2,8 +2,43 @@
  * POS application styles.
  *
  * Shared component styles live in @bizentra/design-system/styles.css, which the layout imports
- * first. This file only carries the saved Business theme variables and POS-only adjustments.
+ * first. This file carries the saved Business theme variables, the Tailwind layering the shadcn
+ * components need, and POS-only adjustments.
+ *
+ * The layering contract is identical to Back Office: Tailwind is imported in pieces so preflight
+ * stays in a layer the unlayered design system beats, while the utilities stay unlayered so they
+ * beat `button, input, select, textarea { font: inherit; color: inherit }`.
  */
+
+@layer theme, base, components;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+/*
+ * The shared stylesheet is pulled in here by relative path rather than imported from the layout.
+ *
+ * Turbopack resolves PostCSS plugins per source file, so a CSS file living in
+ * packages/design-system was looked up from that package and failed with
+ * "Cannot find module '@tailwindcss/postcss'". Inlining it into this file means each application
+ * hands PostCSS exactly one CSS entry, rooted in the application that owns the config.
+ *
+ * The position matters and is the whole layering contract in one place:
+ *   preflight        layered  -> loses to the design system
+ *   design system    unlayered, imported first
+ *   utilities        unlayered, imported after -> class selectors beat the design system's
+ *                    element selectors, so `.bg-sidebar` survives `button { color: inherit }`
+ */
+@import "../../../../packages/design-system/styles.css";
+@import "tailwindcss/utilities.css";
+@import "./tw-animate.css";
+
+@source "../**/*.{ts,tsx}";
+
+/**
+ * The Business theme engine writes `--color-*` onto <html> and flips `data-color-mode` for dark
+ * mode, so shadcn's `dark:` utilities are pointed at that attribute instead of a `.dark` class.
+ */
+@custom-variant dark (&:where([data-color-mode="dark"], [data-color-mode="dark"] *));
 
 :root {
   --color-background: #f8fafc;
@@ -34,12 +69,108 @@
   --color-selection: #dbeafe;
 }
 
+/**
+ * shadcn token bridge.
+ *
+ * Every shadcn semantic token is derived from a saved Business theme variable, so the sidebar
+ * follows the Business palette and the light/dark switch with no second source of truth.
+ * `@theme inline` is deliberate: the utilities compile to `var(--sidebar)` rather than to
+ * `var(--color-sidebar)`, which keeps Tailwind's `--color-*` namespace from colliding with the
+ * Business theme's own `--color-*` variables above.
+ */
+:root {
+  --radius: 0.7rem;
+
+  --background: var(--color-background);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface-elevated);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-surface-elevated);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-primary-foreground);
+  --secondary: var(--color-surface-secondary);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-surface-secondary);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-hover-background);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-border);
+  --input: var(--color-border-strong);
+  --ring: var(--color-focus);
+
+  --chart-1: var(--color-primary);
+  --chart-2: var(--color-accent);
+  --chart-3: var(--color-success);
+  --chart-4: var(--color-warning);
+  --chart-5: var(--color-pending);
+
+  --sidebar: var(--color-surface-elevated);
+  --sidebar-foreground: var(--color-text-primary);
+  --sidebar-primary: var(--color-primary);
+  --sidebar-primary-foreground: var(--color-primary-foreground);
+  --sidebar-accent: var(--color-hover-background);
+  --sidebar-accent-foreground: var(--color-text-primary);
+  --sidebar-border: var(--color-border);
+  --sidebar-ring: var(--color-focus);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+}
+
 /* The POS is a distraction-free surface: no sidebar, and controls stay thumb-sized. */
 .ui-pos-shell .ui-button {
-  min-height: 44px;
+  min-height: 38px;
 }
 
 .ui-pos-shell .ui-field input,
 .ui-pos-shell .ui-field select {
-  min-height: 44px;
+  min-height: 38px;
 }

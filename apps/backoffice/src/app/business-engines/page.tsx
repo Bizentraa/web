@@ -10,7 +10,6 @@ import type {
 } from "@bizentra/contracts";
 import {
   Button,
-  Card,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -21,7 +20,6 @@ import {
   Grid,
   Kicker,
   KpiCard,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -83,19 +81,13 @@ export default function BusinessEnginesPage() {
 
   return (
     <Workspace
-      activeHref="/business-engines"
+      requirements="CC-P5-001 to CC-P5-012"
+      status={<StatusChip tone="information">Shared engines active</StatusChip>}
       description="Reusable workflow, ticket, booking, traceability, warranty, BOM, route and document engines."
       eyebrow="Common Core · P5"
       title="Business engines"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P5-001 to CC-P5-012"
-          title="Reusable engines for every business type"
-          description="P5 creates shared operational engines once, then later vertical packs reuse them instead of building separate job, booking, warranty and delivery systems."
-          status={<StatusChip tone="information">Shared engines active</StatusChip>}
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Business engines">
           {data ? (
             <Stack>
@@ -142,8 +134,6 @@ export default function BusinessEnginesPage() {
 
               {tab === "tickets" ? (
                 <Screen
-                  title="Work tickets"
-                  description="Reusable work tracking for repairs, service jobs, production work and internal tasks."
                   form={
                     <FormCard
                       onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -192,7 +182,10 @@ export default function BusinessEnginesPage() {
                   }
                 >
                   <DataTable
-                    caption="Work tickets."
+                    caption="Work tickets"
+                    kicker="Work engine"
+                    className="ui-scroll-panel"
+                    summary="Reusable work tracking for repairs, service jobs, production work and internal tasks."
                     empty="No work tickets yet."
                     getRowKey={(row) => row.id}
                     rows={data.engines.workTickets}
@@ -213,8 +206,6 @@ export default function BusinessEnginesPage() {
 
               {tab === "bookings" ? (
                 <Screen
-                  title="Bookings"
-                  description="Reserve a branch resource and prevent double booking for the same time range."
                   form={
                     <FormCard
                       onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -266,7 +257,10 @@ export default function BusinessEnginesPage() {
                   }
                 >
                   <DataTable
-                    caption="Bookings."
+                    caption="Bookings"
+                    kicker="Booking engine"
+                    className="ui-scroll-panel"
+                    summary="Reserve a branch resource and prevent double booking for the same time range."
                     empty="No bookings yet."
                     getRowKey={(row) => row.id}
                     rows={data.engines.bookings}
@@ -283,8 +277,6 @@ export default function BusinessEnginesPage() {
 
               {tab === "traceability" ? (
                 <Screen
-                  title="Traceability"
-                  description="Register exact units by serial, IMEI, batch, lot and expiry date."
                   form={
                     <FormCard
                       onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -320,7 +312,10 @@ export default function BusinessEnginesPage() {
                   }
                 >
                   <DataTable
-                    caption="Traceable units."
+                    caption="Traceability"
+                    kicker="Traceability engine"
+                    className="ui-scroll-panel"
+                    summary="Register exact units by serial, IMEI, batch, lot and expiry date."
                     empty="No traceable units yet."
                     getRowKey={(row) => row.id}
                     rows={data.engines.traceableUnits}
@@ -398,31 +393,17 @@ export default function BusinessEnginesPage() {
   );
 }
 
-function Screen({
-  children,
-  description,
-  form,
-  title,
-}: {
-  children: ReactNode;
-  description: string;
-  form: ReactNode;
-  title: string;
-}) {
+/**
+ * The two-column engine layout: records on the left, the create form on the right.
+ *
+ * It used to wrap the records in a card whose header repeated the title three times over - as a
+ * kicker, as the card title, and again as the table's caption. The table states its own identity,
+ * so the card is gone and the title, kicker and description are passed to it directly.
+ */
+function Screen({ children, form }: { children: ReactNode; form: ReactNode }) {
   return (
     <div className="ui-screen-grid">
-      <main className="ui-screen-main">
-        <Card className="ui-scroll-panel">
-          <CardHeader>
-            <div>
-              <Kicker>{title}</Kicker>
-              <CardTitle>{title}</CardTitle>
-              <CardDescription>{description}</CardDescription>
-            </div>
-          </CardHeader>
-          {children}
-        </Card>
-      </main>
+      <main className="ui-screen-main">{children}</main>
       <aside className="ui-screen-side">{form}</aside>
     </div>
   );
@@ -440,21 +421,14 @@ function ReadOnlyPanel<T extends { id: string }>({
   title: string;
 }) {
   return (
-    <Card className="ui-scroll-panel">
-      <CardHeader>
-        <div>
-          <Kicker>{title}</Kicker>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </div>
-      </CardHeader>
-      <DataTable
-        caption={title}
-        empty="No records yet."
-        getRowKey={(row) => row.id}
-        rows={rows}
-        columns={columns}
-      />
-    </Card>
+    <DataTable
+      caption={title}
+      className="ui-scroll-panel"
+      summary={description}
+      empty="No records yet."
+      getRowKey={(row) => row.id}
+      rows={rows}
+      columns={columns}
+    />
   );
 }

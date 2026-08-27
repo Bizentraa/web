@@ -10,8 +10,6 @@ import {
   Badge,
   Button,
   Card,
-  CardDescription,
-  CardHeader,
   CardTitle,
   DataTable,
   DescriptionList,
@@ -22,8 +20,6 @@ import {
   formatMoney,
   FormFooter,
   FormGrid,
-  Kicker,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -145,7 +141,8 @@ export default function CustomersPage() {
 
   return (
     <Workspace
-      activeHref="/customers"
+      requirements="CC-P1-009"
+      status={<StatusChip tone="success">{data?.customers.total ?? 0} customer(s)</StatusChip>}
       description="Contacts, groups, purchase history and store credit for the people who buy from this Business."
       eyebrow="Common Core · P1"
       title="Customers"
@@ -159,13 +156,6 @@ export default function CustomersPage() {
       }
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P1-009"
-          title="Customer records"
-          description="A customer group can carry its own price list, so attaching a customer at the POS changes the price the cashier sees."
-          status={<StatusChip tone="success">{data?.customers.total ?? 0} customer(s)</StatusChip>}
-        />
-
         <FilterBar
           onSearchChange={setSearch}
           searchPlaceholder="Search by name, code, phone or email"
@@ -370,61 +360,47 @@ export default function CustomersPage() {
               </FormFooter>
             </form>
 
-            <Card>
-              <CardHeader>
-                <div>
-                  <Kicker>CC-P2</Kicker>
-                  <CardTitle>Recent sales</CardTitle>
-                </div>
-              </CardHeader>
-              <DataTable
-                caption="The most recent sales for this customer."
-                getRowKey={(sale) => sale.id}
-                rows={detail.recentSales}
-                empty="This customer has not bought anything yet."
-                columns={[
-                  { header: "Number", render: (sale) => sale.receiptNumber ?? sale.number },
-                  { header: "When", render: (sale) => formatDateTime(sale.createdAt) },
-                  { header: "Total", align: "right", render: (sale) => formatMoney(sale.total) },
-                  { header: "Status", render: (sale) => sale.status },
-                ]}
-              />
-            </Card>
+            <DataTable
+              caption="Recent sales"
+              summary="Store credit is issued by a refund and can be spent as a tender on a later sale."
+              kicker="CC-P2"
+              getRowKey={(sale) => sale.id}
+              rows={detail.recentSales}
+              empty="This customer has not bought anything yet."
+              columns={[
+                { header: "Number", render: (sale) => sale.receiptNumber ?? sale.number },
+                { header: "When", render: (sale) => formatDateTime(sale.createdAt) },
+                { header: "Total", align: "right", render: (sale) => formatMoney(sale.total) },
+                { header: "Status", render: (sale) => sale.status },
+              ]}
+            />
 
-            <Card>
-              <CardHeader>
-                <div>
-                  <Kicker>CC-P2-010</Kicker>
-                  <CardTitle>Store credit</CardTitle>
-                </div>
+            <DataTable
+              caption="Store credit"
+              kicker="CC-P2-010"
+              toolbar={
                 <Badge tone={detail.storeCredit > 0 ? "success" : "neutral"}>
                   {formatMoney(detail.storeCredit)}
                 </Badge>
-              </CardHeader>
-              <CardDescription>
-                Store credit is issued by a refund and can be spent as a tender on a later sale.
-              </CardDescription>
-              <DataTable
-                caption="Store credit history."
-                getRowKey={(entry) => entry.id}
-                rows={detail.storeCreditEntries}
-                empty="No store credit has been issued to this customer."
-                columns={[
-                  { header: "When", render: (entry) => formatDateTime(entry.createdAt) },
-                  { header: "Kind", render: (entry) => entry.kind },
-                  {
-                    header: "Amount",
-                    align: "right",
-                    render: (entry) => formatMoney(entry.amount),
-                  },
-                  {
-                    header: "Balance",
-                    align: "right",
-                    render: (entry) => formatMoney(entry.balanceAfter),
-                  },
-                ]}
-              />
-            </Card>
+              }
+              getRowKey={(entry) => entry.id}
+              rows={detail.storeCreditEntries}
+              empty="No store credit has been issued to this customer."
+              columns={[
+                { header: "When", render: (entry) => formatDateTime(entry.createdAt) },
+                { header: "Kind", render: (entry) => entry.kind },
+                {
+                  header: "Amount",
+                  align: "right",
+                  render: (entry) => formatMoney(entry.amount),
+                },
+                {
+                  header: "Balance",
+                  align: "right",
+                  render: (entry) => formatMoney(entry.balanceAfter),
+                },
+              ]}
+            />
 
             <Card>
               <CardTitle>History</CardTitle>

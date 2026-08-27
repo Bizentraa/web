@@ -4,6 +4,8 @@ node_modules/
 dist/
 coverage/
 packages/database/src/generated/
+apps/*/src/components/ui/
+apps/*/src/app/tw-animate.css
 work/
 
 # Generated and tool-managed files

@@ -1,5 +1,4 @@
 import type {
-  AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   FormHTMLAttributes,
   HTMLAttributes,
@@ -8,6 +7,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
+import { BarChart3, Bell, Grid2X2, type LucideIcon, UsersRound } from "lucide-react";
 
 export type Tone = "default" | "success" | "warning" | "danger" | "information" | "neutral";
 
@@ -38,100 +38,19 @@ export function formatDateTime(value: string | null | undefined): string {
 /* Application shell                                                          */
 /* -------------------------------------------------------------------------- */
 
-export interface ShellNavigationItem {
-  href: string;
-  label: string;
-  description?: string;
-  phase?: string;
-  group?: string;
-  status?: "ready" | "in-progress" | "planned";
-}
-
 /**
- * The Back Office shell from section 3 of the UI/UX specification: sidebar, sticky top bar with
- * Business and Branch context, and mobile bottom navigation. Navigation is supplied by the app so
- * it can be filtered by Role and enabled features.
+ * Shared application content frame. Navigation UI is intentionally not rendered here.
  */
 export function AppShell(props: {
   eyebrow: string;
   title: string;
   description: string;
   children: ReactNode;
-  activeHref?: string;
-  navigation?: ShellNavigationItem[];
-  context?: { business?: string; branch?: string };
-  topbarActions?: ReactNode;
   headerActions?: ReactNode;
 }) {
-  const navigation = props.navigation ?? DEFAULT_NAVIGATION;
-  const groups = new Map<string, ShellNavigationItem[]>();
-  for (const item of navigation) {
-    const group = item.group ?? "Workspace";
-    groups.set(group, [...(groups.get(group) ?? []), item]);
-  }
-
   return (
     <main className="ui-app-shell">
-      <aside className="ui-sidebar" aria-label="Primary navigation">
-        <a className="ui-brand" href="/">
-          <span aria-hidden="true">B</span>
-          <strong>Bizentra</strong>
-        </a>
-        {[...groups.entries()].map(([group, items]) => (
-          <div className="ui-sidebar-group" key={group}>
-            <p>{group}</p>
-            <nav className="ui-sidebar-nav">
-              {items.map((item) => (
-                <ShellNavLink
-                  active={props.activeHref === item.href}
-                  href={item.href}
-                  key={item.href}
-                  status={item.status}
-                  title={`${item.phase ? `${item.phase} · ` : ""}${item.description ?? item.label}`}
-                >
-                  <span>{item.label}</span>
-                  {item.description ? (
-                    <small>
-                      {item.phase ? `${item.phase} · ` : ""}
-                      {item.description}
-                    </small>
-                  ) : null}
-                </ShellNavLink>
-              ))}
-            </nav>
-          </div>
-        ))}
-      </aside>
-
       <section className="ui-app-main">
-        <header className="ui-topbar">
-          <div className="ui-topbar-context" aria-label="Active context">
-            <span>Business</span>
-            <strong>{props.context?.business ?? "Development Business"}</strong>
-            <span>Branch</span>
-            <strong>{props.context?.branch ?? "Main Branch"}</strong>
-          </div>
-          <div className="ui-topbar-actions">
-            {props.topbarActions}
-            <a className="ui-command-trigger" href="#global-command-palette">
-              <span>Search or command</span>
-              <kbd>Ctrl K</kbd>
-            </a>
-          </div>
-        </header>
-
-        <nav className="ui-mobile-nav" aria-label="Mobile navigation">
-          {navigation.slice(0, 5).map((item) => (
-            <a
-              aria-current={props.activeHref === item.href ? "page" : undefined}
-              href={item.href}
-              key={item.href}
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
-
         <header className="ui-hero">
           <div>
             <p>{props.eyebrow}</p>
@@ -145,153 +64,6 @@ export function AppShell(props: {
         <section className="ui-content">{props.children}</section>
       </section>
     </main>
-  );
-}
-
-const DEFAULT_NAVIGATION: ShellNavigationItem[] = [
-  {
-    href: "/",
-    label: "Dashboard",
-    description: "daily overview",
-    phase: "P0",
-    group: "Run",
-    status: "ready",
-  },
-  {
-    href: "/sales",
-    label: "Sales",
-    description: "sales and shifts",
-    phase: "P2",
-    group: "Run",
-    status: "ready",
-  },
-  {
-    href: "/catalog",
-    label: "Catalog",
-    description: "items and prices",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/inventory",
-    label: "Inventory",
-    description: "stock and purchasing",
-    phase: "P3",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/finance",
-    label: "Finance",
-    description: "money and balances",
-    phase: "P4",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/business-engines",
-    label: "Business engines",
-    description: "tickets and bookings",
-    phase: "P5",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/store-reliability",
-    label: "Store reliability",
-    description: "devices and offline",
-    phase: "P6",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/reporting-operations",
-    label: "Reports and integrations",
-    description: "reports, exports, webhooks",
-    phase: "P7",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/production-readiness",
-    label: "Production readiness",
-    description: "security and go-live",
-    phase: "P8",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/customers",
-    label: "Customers",
-    description: "people who buy",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/suppliers",
-    label: "Suppliers",
-    description: "who supplies us",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/setup",
-    label: "Business setup",
-    description: "branches and locations",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/access",
-    label: "Users and roles",
-    description: "who can do what",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/controls",
-    label: "Controls",
-    description: "approvals, features, audit",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/appearance",
-    label: "Appearance",
-    description: "Business theme",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-];
-
-function ShellNavLink({
-  active,
-  children,
-  href,
-  status,
-  title,
-}: AnchorHTMLAttributes<HTMLAnchorElement> & {
-  active: boolean;
-  children: ReactNode;
-  status?: "ready" | "in-progress" | "planned" | undefined;
-}) {
-  return (
-    <a
-      aria-current={active ? "page" : undefined}
-      className={cn("ui-sidebar-link", `ui-sidebar-link--${status ?? "planned"}`)}
-      href={href}
-      title={title}
-    >
-      <span aria-hidden="true" />
-      <span>{children}</span>
-    </a>
   );
 }
 
@@ -729,42 +501,153 @@ export interface DataTableColumn<T> {
   hideOnMobile?: boolean;
 }
 
+export function DataTabs({
+  active,
+  tabs,
+}: HTMLAttributes<HTMLDivElement> & {
+  active: string;
+  tabs: Array<{ icon?: LucideIcon; label: string; value: string }>;
+}) {
+  const fallbackIcons = [Grid2X2, Bell, BarChart3, UsersRound];
+
+  return (
+    <div className="ui-data-tabs" role="tablist">
+      {tabs.map((tab, index) => {
+        const Icon = tab.icon ?? fallbackIcons[index % fallbackIcons.length] ?? Grid2X2;
+        return (
+          <button aria-selected={tab.value === active} key={tab.value} role="tab" type="button">
+            <Icon aria-hidden="true" size={17} />
+            <span>{tab.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Pagination({
+  currentPage,
+  pageCount,
+}: HTMLAttributes<HTMLElement> & {
+  currentPage: number;
+  pageCount: number;
+}) {
+  const safePageCount = Math.max(1, pageCount);
+  const safeCurrent = Math.max(1, Math.min(safePageCount, currentPage));
+  const pages =
+    safePageCount <= 5
+      ? Array.from({ length: safePageCount }, (_, index) => index + 1)
+      : [
+          1,
+          2,
+          safeCurrent > 4 ? "ellipsis-start" : 3,
+          safeCurrent > 4 ? safeCurrent : 4,
+          safePageCount,
+        ];
+
+  return (
+    <nav aria-label="Pagination" className="ui-pagination">
+      <button aria-label="Previous page" disabled={safeCurrent === 1} type="button">
+        <span aria-hidden="true">←</span>
+      </button>
+      {pages.map((page, index) =>
+        typeof page === "number" ? (
+          <button aria-current={page === safeCurrent ? "page" : undefined} key={page} type="button">
+            {page}
+          </button>
+        ) : (
+          <span aria-hidden="true" key={`${page}-${index}`}>
+            ...
+          </span>
+        ),
+      )}
+      <button aria-label="Next page" disabled={safeCurrent === safePageCount} type="button">
+        <span aria-hidden="true">→</span>
+      </button>
+    </nav>
+  );
+}
+
 /**
  * Back-office list from section 5.2 of the UI/UX specification. Below the phone breakpoint the
  * table becomes task cards instead of a shrunken table, as the specification requires.
  */
 export function DataTable<T>({
   caption,
+  className,
   columns,
   empty,
   footer,
   getRowKey,
+  kicker = "Table",
   onRowSelect,
+  selectable = false,
   rows,
+  summary,
+  toolbar,
 }: {
   caption: string;
+  /** Extra classes on the table wrapper, e.g. `ui-scroll-panel` inside a screen grid. */
+  className?: string;
   columns: Array<DataTableColumn<T>>;
   empty?: ReactNode;
   footer?: ReactNode;
   getRowKey: (row: T) => string;
+  /**
+   * Small label above the caption. Defaults to "Table", which says nothing; pass the requirement
+   * id or the record type so the table can stand on its own instead of needing a card around it
+   * to carry a heading.
+   */
+  kicker?: string;
   onRowSelect?: (row: T) => void;
+  selectable?: boolean;
   rows: T[];
+  summary?: string;
+  toolbar?: ReactNode;
 }) {
   if (!rows.length) {
     return (
-      <StatePanel state="empty" title="No records found">
-        {empty ?? "Create or import records, then they will appear in this list."}
-      </StatePanel>
+      <div className={cn("ui-table-wrap", "ui-table-wrap--empty", className)}>
+        <div className="ui-data-table-header">
+          <div>
+            <span>{kicker}</span>
+            <strong>{caption}</strong>
+          </div>
+          {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
+        </div>
+        <div className="ui-data-table-empty">
+          <StatePanel state="empty" title="No records found">
+            {empty ?? "Create or import records, then they will appear in this list."}
+          </StatePanel>
+        </div>
+        {summary ? (
+          <div className="ui-table-footer">
+            <span>{summary}</span>
+          </div>
+        ) : null}
+      </div>
     );
   }
 
   return (
     <>
-      <div className="ui-table-wrap">
+      <div className={cn("ui-table-wrap", className)}>
+        <div className="ui-data-table-header">
+          <div>
+            <span>{kicker}</span>
+            <strong>{caption}</strong>
+          </div>
+          {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
+        </div>
         <table className="ui-data-table">
           <caption>{caption}</caption>
           <thead>
             <tr>
+              {selectable ? (
+                <th className="ui-cell--select" scope="col">
+                  <input aria-label={`Select all ${caption}`} type="checkbox" />
+                </th>
+              ) : null}
               {columns.map((column) => (
                 <th
                   className={column.align === "right" ? "ui-cell--numeric" : undefined}
@@ -783,6 +666,11 @@ export function DataTable<T>({
                 onClick={onRowSelect ? () => onRowSelect(row) : undefined}
                 style={onRowSelect ? { cursor: "pointer" } : undefined}
               >
+                {selectable ? (
+                  <td className="ui-cell--select">
+                    <input aria-label={`Select row ${getRowKey(row)}`} type="checkbox" />
+                  </td>
+                ) : null}
                 {columns.map((column) => (
                   <td
                     className={column.align === "right" ? "ui-cell--numeric" : undefined}
@@ -795,7 +683,12 @@ export function DataTable<T>({
             ))}
           </tbody>
         </table>
-        {footer ? <div className="ui-table-footer">{footer}</div> : null}
+        {footer || summary ? (
+          <div className="ui-table-footer">
+            <span>{summary ?? `Showing ${rows.length} entries`}</span>
+            {footer}
+          </div>
+        ) : null}
       </div>
 
       <div className="ui-card-rows">
@@ -1022,6 +915,47 @@ export function SkeletonRows({ rows = 4 }: { rows?: number }) {
         <Skeleton key={index} style={{ width: `${100 - index * 8}%` }} />
       ))}
     </div>
+  );
+}
+
+export function SkeletonScreen({
+  className,
+  rows = 6,
+}: HTMLAttributes<HTMLElement> & { rows?: number }) {
+  return (
+    <section
+      aria-busy="true"
+      aria-label="Loading content"
+      className={cn("ui-skeleton-screen", className)}
+    >
+      <div className="ui-skeleton-screen-header" aria-hidden="true">
+        <Skeleton />
+        <Skeleton />
+      </div>
+      <div className="ui-skeleton-kpi-grid" aria-hidden="true">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div className="ui-skeleton-card" key={index}>
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+          </div>
+        ))}
+      </div>
+      <div className="ui-skeleton-table" aria-hidden="true">
+        <div>
+          <Skeleton />
+          <Skeleton />
+        </div>
+        {Array.from({ length: rows }).map((_, index) => (
+          <div className="ui-skeleton-table-row" key={index}>
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

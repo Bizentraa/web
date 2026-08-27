@@ -28,6 +28,7 @@ import {
   OfflineBanner,
   ReceiptView,
   SelectField,
+  SkeletonScreen,
   Stack,
   StatePanel,
   StatusChip,
@@ -42,6 +43,8 @@ import {
   useToasts,
 } from "@bizentra/design-system/client";
 import Link from "next/link";
+
+import { RegisterBar } from "@/components/register-bar";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { readNumber, readText } from "./lib/forms";
@@ -486,10 +489,7 @@ export default function PosPage() {
     <main className="ui-pos-shell">
       <header className="ui-pos-topbar">
         <div className="ui-row">
-          <Kicker>Register</Kicker>
-          <strong>
-            {register ? `${register.branchName} · ${register.registerCode}` : "Not set"}
-          </strong>
+          <RegisterBar onUnbind={() => setRegister(null)} register={register} shift={shift} />
           {shift ? <StatusChip tone="success">Shift {shift.number}</StatusChip> : null}
         </div>
         <div className="ui-row">
@@ -523,9 +523,7 @@ export default function PosPage() {
       ) : null}
 
       {shiftLoading ? (
-        <StatePanel state="loading" title="Checking this register">
-          Looking for an open shift on this terminal.
-        </StatePanel>
+        <SkeletonScreen rows={5} />
       ) : !shift ? (
         <Card>
           <CardHeader>

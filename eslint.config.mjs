@@ -9,6 +9,8 @@ export default tseslint.config(
       "**/dist/**",
       "**/coverage/**",
       "packages/database/src/generated/**",
+      // Vendored shadcn/ui registry primitives are tool-managed, like Prisma output.
+      "apps/*/src/components/ui/**",
     ],
   },
   eslint.configs.recommended,

@@ -25,6 +25,8 @@ import {
 } from "@bizentra/design-system";
 import { createIdempotencyKey, useToasts } from "@bizentra/design-system/client";
 import Link from "next/link";
+
+import { RegisterBar } from "@/components/register-bar";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { readNumber, readText } from "../lib/forms";
@@ -33,7 +35,7 @@ import { errorMessage, useCurrentShift, usePosApi, useRegister } from "../lib/po
 export default function ReturnsPage() {
   const { api, identity } = usePosApi();
   const toasts = useToasts();
-  const { register } = useRegister();
+  const { register, setRegister } = useRegister();
   const { shift } = useCurrentShift(api, identity?.businessId, register);
 
   const [search, setSearch] = useState("");
@@ -119,9 +121,7 @@ export default function ReturnsPage() {
       <header className="ui-pos-topbar">
         <div className="ui-row">
           <Kicker>Returns and refunds</Kicker>
-          <strong>
-            {register ? `${register.branchName} · ${register.registerCode}` : "No register"}
-          </strong>
+          <RegisterBar onUnbind={() => setRegister(null)} register={register} shift={shift} />
           {shift ? <StatusChip tone="success">Shift {shift.number}</StatusChip> : null}
         </div>
         <Link className="ui-button ui-button--secondary" href="/">
@@ -160,6 +160,9 @@ export default function ReturnsPage() {
           getRowKey={(row) => row.id}
           onRowSelect={(row) => void openSale(row.id)}
           rows={sales}
+          selectable
+          summary={`Showing ${sales.length} returnable ${sales.length === 1 ? "sale" : "sales"}`}
+          toolbar={<StatusChip tone="information">Latest 15</StatusChip>}
           empty="No sales found. Try the receipt number printed at the top of the receipt."
           columns={[
             {

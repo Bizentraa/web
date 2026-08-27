@@ -23,6 +23,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -57,6 +58,9 @@ interface BusinessThemeProviderProps {
   ) => Promise<BusinessThemeSettings>;
 }
 
+/** Kept in step with the `[data-theme-transition]` rule in styles.css. */
+const THEME_TRANSITION_MS = 260;
+
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function BusinessThemeProvider({
@@ -71,6 +75,8 @@ export function BusinessThemeProvider({
   const [systemPrefersDark, setSystemPrefersDark] = useState(false);
   const [status, setStatus] = useState<ThemeStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const hasAppliedTheme = useRef(false);
+  const themeTransitionTimer = useRef<number | undefined>(undefined);
   const resolved = useMemo(
     () => resolveTheme(settings, deviceMode, systemPrefersDark),
     [deviceMode, settings, systemPrefersDark],
@@ -130,8 +136,46 @@ export function BusinessThemeProvider({
   }, [identity, refreshTheme]);
 
   useEffect(() => {
+    /*
+     * Nothing is written until a real source of truth exists.
+     *
+     * `settings` starts as DEFAULT_BUSINESS_THEME, and the cached theme only arrives in a later
+     * effect. Applying on that first pass overwrote the values the boot script had already put on
+     * <html> with the default palette, so the saved theme visibly flashed back to light before
+     * being restored a frame later. While the status is still "idle" the boot script's values are
+     * left alone; the stylesheet's own defaults cover a genuinely themeless first visit.
+     */
+    if (status === "idle") {
+      /*
+       * Signing out of a Business identity clears the cache, so the inline values the boot script
+       * or a previous Business left on <html> have to go too, or that palette would persist with
+       * nothing backing it. Only theme tokens and color-scheme are ever set inline here.
+       */
+      if (hasAppliedTheme.current) {
+        const root = document.documentElement;
+        root.removeAttribute("style");
+        delete root.dataset.colorMode;
+        hasAppliedTheme.current = false;
+      }
+      return;
+    }
+
     const cssTokens = themeTokensToCss(resolved.tokens);
     const root = document.documentElement;
+
+    /*
+     * Cross-fade a deliberate theme change, never the first paint - animating the initial
+     * application would recreate the flash this effect exists to prevent.
+     */
+    if (hasAppliedTheme.current) {
+      root.dataset.themeTransition = "";
+      window.clearTimeout(themeTransitionTimer.current);
+      themeTransitionTimer.current = window.setTimeout(() => {
+        delete root.dataset.themeTransition;
+      }, THEME_TRANSITION_MS);
+    }
+    hasAppliedTheme.current = true;
+
     for (const [name, value] of Object.entries(cssTokens)) root.style.setProperty(name, value);
     root.dataset.colorMode = resolved.mode.toLowerCase();
     root.style.colorScheme = resolved.mode.toLowerCase();
@@ -147,7 +191,7 @@ export function BusinessThemeProvider({
       };
       window.localStorage.setItem(ACTIVE_THEME_CACHE_KEY, JSON.stringify(cache));
     }
-  }, [identity, resolved, settings]);
+  }, [identity, resolved, settings, status]);
 
   useEffect(() => {
     if (!identity) return;

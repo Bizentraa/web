@@ -43,6 +43,13 @@
 | development/06_UI_COMPONENT_SYSTEM.md | Tracked | The shared component system, where each layer lives and the rules for adding a component |
 | development/07_UIUX_IMPLEMENTATION_STATUS.md | Tracked | What has been built from the Common UI/UX specification, screen by screen |
 | development/08_P2_IMPLEMENTATION_STATUS.md | Tracked | Current P2 sales, POS, payments and returns implementation status |
+| development/09_P3_IMPLEMENTATION_STATUS.md | Tracked | Current P3 inventory, purchasing and fulfillment implementation status |
+| development/10_P4_IMPLEMENTATION_STATUS.md | Tracked | Current P4 finance, customer controls and management implementation status |
+| development/11_P5_IMPLEMENTATION_STATUS.md | Tracked | Current P5 reusable business engines implementation status |
+| development/12_P6_IMPLEMENTATION_STATUS.md | Tracked | Current P6 offline, devices and store reliability implementation status |
+| development/13_P7_IMPLEMENTATION_STATUS.md | Tracked | Current P7 reporting, integrations and migration implementation status |
+| development/14_P8_IMPLEMENTATION_STATUS.md | Tracked | Current P8 security, operations and production-readiness implementation status |
+| development/15_BACKOFFICE_SIDEBAR_SHADCN.md | Tracked | Tailwind v4 and shadcn/ui integration notes for Back Office and POS |
 | ui-ux/00_README_UIUX_DEVELOPMENT_ORDER.md | Tracked | UI/UX development order and vertical sequencing |
 | ui-ux/01_COMMON_UIUX_DESIGN_SYSTEM.md | Tracked | Shared UI/UX source of truth for every Business type |
 | ui-ux/02_GROCERY_SUPERMARKET_UIUX.md | Tracked | First vertical UI/UX companion |

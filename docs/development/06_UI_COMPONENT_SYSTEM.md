@@ -6,13 +6,20 @@
 
 ## Decision
 
-Bizentra uses the shadcn/ui idea of owned, modular, reusable components, but does not add the
-shadcn CLI or Tailwind. The platform already has a Business-selectable theme engine built on CSS
-variables; adding Tailwind would mean migrating that engine and every existing screen first. Owning
-the components directly keeps the saved Business theme authoritative and keeps the bundle small.
+**Superseded for Back Office on 2026-08-27.** See
+[`15_BACKOFFICE_SIDEBAR_SHADCN.md`](./15_BACKOFFICE_SIDEBAR_SHADCN.md).
 
-If Tailwind is adopted later, the migration is mechanical: the component API stays, and the CSS
-variables in `styles.css` map onto Tailwind theme tokens.
+The original decision was that Bizentra would use the shadcn/ui *idea* of owned, modular,
+reusable components without adding the shadcn CLI or Tailwind, because the Business-selectable
+theme engine is built on CSS variables and adding Tailwind would mean migrating that engine and
+every existing screen first.
+
+Back Office now runs Tailwind CSS v4 and the shadcn CLI alongside the existing stylesheet. POS also
+uses the same Tailwind/shadcn foundation for its register dropdown, but deliberately does not adopt
+the Back Office sidebar. The theme engine stayed authoritative: every shadcn token is derived from a
+saved Business theme variable, so nothing about how a Business chooses its palette changed.
+`packages/design-system` is still the owner of every shared `ui-*` component, so the rules below
+continue to apply to every shared component.
 
 ## Where things live
 
@@ -22,7 +29,7 @@ variables in `styles.css` map onto Tailwind theme tokens.
 | `packages/design-system/src/index.tsx` | Server-safe components and formatters | Any component |
 | `packages/design-system/src/client.tsx` | `"use client"` components and hooks | Client components only |
 | `packages/design-system/src/theme.tsx` | Business theme provider and cache | Both application layouts |
-| `apps/*/src/app/globals.css` | Only the Business theme variables and that application's own screens | Its own application |
+| `apps/*/src/app/globals.css` | Business theme defaults, Tailwind/shadcn token bridge and that application's own screens | Its own application |
 
 Before this slice each application carried its own copy of the shared styles. They are now defined
 once, so a table, chip or dialog cannot drift between Back Office and POS.
@@ -31,7 +38,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 
 | Component | Purpose |
 |---|---|
-| `AppShell` | Sidebar, sticky topbar with Business/Branch context, mobile bottom navigation |
+| `AppShell` | Shared content frame for app surfaces that do not provide their own product shell |
 | `PageHeader` | Page title, description, visible status and actions |
 | `Card`, `FormCard`, `CardHeader`, `CardContent`, `CardTitle`, `CardDescription` | Shared surfaces; `FormCard` is a card that is also the form |
 | `Kicker` | Small uppercase phase or context label |
@@ -45,7 +52,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `Progress` | Accessible progress indicator |
 | `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text |
 | `FilterBar` | Search, extra controls, actions and clearable active-filter chips |
-| `DataTable` | Sticky header, aligned numeric columns, row click, footer, and task cards below 768px |
+| `DataTable` | Sticky header, optional kicker, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
 | `Timeline` | Business history on a record |
 | `MoneySummary` | Subtotal, discount, tax, paid and due in one aligned block |
 | `StockBadge` | On-hand quantity with a semantic tone |
@@ -66,7 +73,8 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `Drawer` | Right-hand panel for record detail |
 | `Sheet` | Bottom sheet used by the POS payment flow |
 | `ConfirmDialog` | Destructive or financial confirmation that states the consequence and can require a reason |
-| `Tabs` | Section navigation inside a screen |
+| `Tabs` | Section navigation inside a screen, as a horizontal row |
+| `VerticalTabs` | Section navigation as a left-hand rail, for screens whose sections are a list of record types; full tablist keyboard support, collapses to a scrolling row below 900px |
 | `ToastProvider`, `useToasts` | Non-blocking result messages |
 | `NumberPad` | Touch numeric entry |
 | `useScanFocus` | Keeps the POS scan input focused, as section 6 requires |

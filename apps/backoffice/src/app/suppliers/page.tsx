@@ -5,8 +5,6 @@ import {
   Badge,
   Button,
   Card,
-  CardDescription,
-  CardHeader,
   CardTitle,
   DataTable,
   DescriptionList,
@@ -17,8 +15,6 @@ import {
   formatMoney,
   FormFooter,
   FormGrid,
-  Kicker,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -99,20 +95,14 @@ export default function SuppliersPage() {
 
   return (
     <Workspace
-      activeHref="/suppliers"
+      requirements="CC-P1-010"
+      status={<StatusChip tone="success">{data?.suppliers.total ?? 0} supplier(s)</StatusChip>}
       description="Supplier contacts, payment terms, lead times and the items each supplier provides."
       eyebrow="Common Core · P1"
       title="Suppliers"
       headerActions={<Button onClick={() => setCreateOpen(true)}>New supplier</Button>}
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P1-010"
-          title="Supplier records"
-          description="Supplier item codes, costs and lead times are what purchasing will reuse in P3, so they are captured here first."
-          status={<StatusChip tone="success">{data?.suppliers.total ?? 0} supplier(s)</StatusChip>}
-        />
-
         <FilterBar
           onSearchChange={setSearch}
           searchPlaceholder="Search by supplier name or code"
@@ -301,47 +291,40 @@ export default function SuppliersPage() {
               </FormFooter>
             </form>
 
-            <Card>
-              <CardHeader>
-                <div>
-                  <Kicker>CC-P1-010</Kicker>
-                  <CardTitle>Supplied items</CardTitle>
-                </div>
+            <DataTable
+              caption="Supplied items"
+              summary="Each link keeps the supplier code, cost and lead time that purchasing will use."
+              kicker="CC-P1-010"
+              toolbar={
                 <Button onClick={() => setLinkOpen(true)} size="quiet">
                   Link item
                 </Button>
-              </CardHeader>
-              <CardDescription>
-                Each link keeps the supplier code, cost and lead time that purchasing will use.
-              </CardDescription>
-              <DataTable
-                caption="Items this supplier provides."
-                getRowKey={(supplierItem) => supplierItem.itemId}
-                rows={detail.items}
-                empty="No items are linked to this supplier yet."
-                columns={[
-                  { header: "Item", render: (supplierItem) => supplierItem.itemName },
-                  {
-                    header: "Their code",
-                    render: (supplierItem) => supplierItem.supplierCode ?? "-",
-                  },
-                  {
-                    header: "Cost",
-                    align: "right",
-                    render: (supplierItem) =>
-                      supplierItem.costPrice === null ? "-" : formatMoney(supplierItem.costPrice),
-                  },
-                  {
-                    header: "Lead time",
-                    align: "right",
-                    render: (supplierItem) =>
-                      supplierItem.leadTimeDays === null
-                        ? "-"
-                        : `${supplierItem.leadTimeDays} day(s)`,
-                  },
-                ]}
-              />
-            </Card>
+              }
+              getRowKey={(supplierItem) => supplierItem.itemId}
+              rows={detail.items}
+              empty="No items are linked to this supplier yet."
+              columns={[
+                { header: "Item", render: (supplierItem) => supplierItem.itemName },
+                {
+                  header: "Their code",
+                  render: (supplierItem) => supplierItem.supplierCode ?? "-",
+                },
+                {
+                  header: "Cost",
+                  align: "right",
+                  render: (supplierItem) =>
+                    supplierItem.costPrice === null ? "-" : formatMoney(supplierItem.costPrice),
+                },
+                {
+                  header: "Lead time",
+                  align: "right",
+                  render: (supplierItem) =>
+                    supplierItem.leadTimeDays === null
+                      ? "-"
+                      : `${supplierItem.leadTimeDays} day(s)`,
+                },
+              ]}
+            />
 
             <Card>
               <CardTitle>History</CardTitle>

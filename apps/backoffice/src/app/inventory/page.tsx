@@ -14,7 +14,6 @@ import {
   Button,
   Card,
   CardDescription,
-  CardHeader,
   CardTitle,
   DataTable,
   Field,
@@ -23,7 +22,6 @@ import {
   Grid,
   Kicker,
   KpiCard,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -90,7 +88,8 @@ export default function InventoryPage() {
 
   return (
     <Workspace
-      activeHref="/inventory"
+      requirements="CC-P3-001 to CC-P3-012"
+      status={<StatusChip tone="information">Inventory ledger active</StatusChip>}
       description="Stock ledger, availability, receiving, transfers, reorder suggestions and fulfillment preparation."
       eyebrow="Common Core · P3"
       title="Inventory and purchasing"
@@ -104,13 +103,6 @@ export default function InventoryPage() {
       }
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P3-001 to CC-P3-012"
-          title="Control physical stock"
-          description="Items, prices and suppliers define what can be moved. P3 is where stock physically changes through receiving, transfers and controlled adjustments."
-          status={<StatusChip tone="information">Inventory ledger active</StatusChip>}
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Inventory">
           {data ? (
             <Stack>
@@ -154,12 +146,11 @@ export default function InventoryPage() {
               {tab === "stock" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Availability</Kicker>
-                          <CardTitle>On hand, reserved, incoming and available</CardTitle>
-                        </div>
+                    <DataTable
+                      caption="On hand, reserved, incoming and available"
+                      kicker="Availability"
+                      className="ui-scroll-panel"
+                      toolbar={
                         <div className="ui-row">
                           <Button onClick={() => setDialog("transfer")} size="quiet">
                             Transfer
@@ -168,84 +159,75 @@ export default function InventoryPage() {
                             Reorder level
                           </Button>
                         </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Current stock position by Location and Item."
-                        empty="No stock has been posted yet. Start with an opening stock adjustment or receive a purchase order."
-                        getRowKey={(row) => row.id}
-                        rows={data.inventory.availability}
-                        columns={[
-                          {
-                            header: "Item",
-                            render: (row) => (
-                              <strong>
-                                {row.itemCode} · {row.itemName}
-                              </strong>
-                            ),
-                          },
-                          { header: "Location", render: (row) => row.locationName },
-                          {
-                            header: "On hand",
-                            align: "right",
-                            render: (row) => row.onHandQuantity.toLocaleString(),
-                          },
-                          {
-                            header: "Reserved",
-                            align: "right",
-                            hideOnMobile: true,
-                            render: (row) => row.reservedQuantity.toLocaleString(),
-                          },
-                          {
-                            header: "Incoming",
-                            align: "right",
-                            hideOnMobile: true,
-                            render: (row) => row.incomingQuantity.toLocaleString(),
-                          },
-                          {
-                            header: "Available",
-                            align: "right",
-                            render: (row) => (
-                              <Badge tone={row.availableQuantity > 0 ? "success" : "warning"}>
-                                {row.availableQuantity.toLocaleString()}
-                              </Badge>
-                            ),
-                          },
-                        ]}
-                      />
-                    </Card>
+                      }
+                      empty="No stock has been posted yet. Start with an opening stock adjustment or receive a purchase order."
+                      getRowKey={(row) => row.id}
+                      rows={data.inventory.availability}
+                      columns={[
+                        {
+                          header: "Item",
+                          render: (row) => (
+                            <strong>
+                              {row.itemCode} · {row.itemName}
+                            </strong>
+                          ),
+                        },
+                        { header: "Location", render: (row) => row.locationName },
+                        {
+                          header: "On hand",
+                          align: "right",
+                          render: (row) => row.onHandQuantity.toLocaleString(),
+                        },
+                        {
+                          header: "Reserved",
+                          align: "right",
+                          hideOnMobile: true,
+                          render: (row) => row.reservedQuantity.toLocaleString(),
+                        },
+                        {
+                          header: "Incoming",
+                          align: "right",
+                          hideOnMobile: true,
+                          render: (row) => row.incomingQuantity.toLocaleString(),
+                        },
+                        {
+                          header: "Available",
+                          align: "right",
+                          render: (row) => (
+                            <Badge tone={row.availableQuantity > 0 ? "success" : "warning"}>
+                              {row.availableQuantity.toLocaleString()}
+                            </Badge>
+                          ),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Audit trail</Kicker>
-                          <CardTitle>Latest stock movements</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Stock movement audit trail."
-                        empty="No stock movement exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.inventory.movements}
-                        columns={[
-                          { header: "Type", render: (row) => readable(row.kind) },
-                          {
-                            header: "Item",
-                            render: (row) => `${row.itemCode} · ${row.itemName}`,
-                          },
-                          {
-                            header: "Qty",
-                            align: "right",
-                            render: (row) => row.quantity.toLocaleString(),
-                          },
-                          {
-                            header: "Time",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.occurredAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Latest stock movements"
+                      kicker="Audit trail"
+                      className="ui-scroll-panel"
+                      empty="No stock movement exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.inventory.movements}
+                      columns={[
+                        { header: "Type", render: (row) => readable(row.kind) },
+                        {
+                          header: "Item",
+                          render: (row) => `${row.itemCode} · ${row.itemName}`,
+                        },
+                        {
+                          header: "Qty",
+                          align: "right",
+                          render: (row) => row.quantity.toLocaleString(),
+                        },
+                        {
+                          header: "Time",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.occurredAt),
+                        },
+                      ]}
+                    />
                   </aside>
                 </div>
               ) : null}
@@ -253,12 +235,10 @@ export default function InventoryPage() {
               {tab === "purchasing" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card>
-                      <CardHeader>
-                        <div>
-                          <Kicker>Purchasing</Kicker>
-                          <CardTitle>Purchase orders and receiving</CardTitle>
-                        </div>
+                    <DataTable
+                      caption="Purchase orders and receiving"
+                      kicker="Purchasing"
+                      toolbar={
                         <div className="ui-row">
                           <Button onClick={() => setDialog("request")} size="quiet">
                             Purchase request
@@ -267,169 +247,147 @@ export default function InventoryPage() {
                             Purchase order
                           </Button>
                         </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Purchase orders with ordered, received and variance quantities."
-                        empty="No purchase orders yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.inventory.purchaseOrders}
-                        columns={[
-                          { header: "PO", render: (row) => <strong>{row.number}</strong> },
-                          { header: "Supplier", render: (row) => row.supplierName },
-                          {
-                            header: "Status",
-                            render: (row) => (
-                              <Badge tone={poTone(row.status)}>{readable(row.status)}</Badge>
+                      }
+                      empty="No purchase orders yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.inventory.purchaseOrders}
+                      columns={[
+                        { header: "PO", render: (row) => <strong>{row.number}</strong> },
+                        { header: "Supplier", render: (row) => row.supplierName },
+                        {
+                          header: "Status",
+                          render: (row) => (
+                            <Badge tone={poTone(row.status)}>{readable(row.status)}</Badge>
+                          ),
+                        },
+                        {
+                          header: "Ordered",
+                          align: "right",
+                          render: (row) => row.orderedQuantity.toLocaleString(),
+                        },
+                        {
+                          header: "Received",
+                          align: "right",
+                          render: (row) => row.receivedQuantity.toLocaleString(),
+                        },
+                        {
+                          header: "Action",
+                          render: (row) =>
+                            row.varianceQuantity > 0 ? (
+                              <Button
+                                onClick={() => {
+                                  setSelectedOrder(row);
+                                  setDialog("receive");
+                                }}
+                                size="quiet"
+                              >
+                                Receive
+                              </Button>
+                            ) : (
+                              <StatusChip tone="success">Done</StatusChip>
                             ),
-                          },
-                          {
-                            header: "Ordered",
-                            align: "right",
-                            render: (row) => row.orderedQuantity.toLocaleString(),
-                          },
-                          {
-                            header: "Received",
-                            align: "right",
-                            render: (row) => row.receivedQuantity.toLocaleString(),
-                          },
-                          {
-                            header: "Action",
-                            render: (row) =>
-                              row.varianceQuantity > 0 ? (
-                                <Button
-                                  onClick={() => {
-                                    setSelectedOrder(row);
-                                    setDialog("receive");
-                                  }}
-                                  size="quiet"
-                                >
-                                  Receive
-                                </Button>
-                              ) : (
-                                <StatusChip tone="success">Done</StatusChip>
-                              ),
-                          },
-                        ]}
-                      />
-                    </Card>
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
-                    <Card>
-                      <CardHeader>
-                        <div>
-                          <Kicker>Reorder</Kicker>
-                          <CardTitle>Suggested replenishment</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Items below reorder level."
-                        empty="No reorder suggestions."
-                        getRowKey={(row) => row.id}
-                        rows={data.inventory.reorderSuggestions}
-                        columns={[
-                          { header: "Item", render: (row) => row.itemName },
-                          {
-                            header: "Available",
-                            align: "right",
-                            render: (row) => row.availableQuantity.toLocaleString(),
-                          },
-                          {
-                            header: "Buy",
-                            align: "right",
-                            render: (row) => <Badge tone="warning">{row.suggestedQuantity}</Badge>,
-                          },
-                        ]}
-                      />
-                    </Card>
-                    <Card>
-                      <CardHeader>
-                        <div>
-                          <Kicker>Requests</Kicker>
-                          <CardTitle>Purchase requests</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Purchase request approval pipeline."
-                        empty="No purchase requests yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.inventory.purchaseRequests}
-                        columns={[
-                          { header: "Number", render: (row) => row.number },
-                          {
-                            header: "Status",
-                            render: (row) => (
-                              <Badge tone={row.status === "APPROVED" ? "success" : "warning"}>
-                                {readable(row.status)}
-                              </Badge>
-                            ),
-                          },
-                          {
-                            header: "Qty",
-                            align: "right",
-                            render: (row) => row.totalQuantity.toLocaleString(),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Suggested replenishment"
+                      kicker="Reorder"
+                      empty="No reorder suggestions."
+                      getRowKey={(row) => row.id}
+                      rows={data.inventory.reorderSuggestions}
+                      columns={[
+                        { header: "Item", render: (row) => row.itemName },
+                        {
+                          header: "Available",
+                          align: "right",
+                          render: (row) => row.availableQuantity.toLocaleString(),
+                        },
+                        {
+                          header: "Buy",
+                          align: "right",
+                          render: (row) => <Badge tone="warning">{row.suggestedQuantity}</Badge>,
+                        },
+                      ]}
+                    />
+                    <DataTable
+                      caption="Purchase requests"
+                      kicker="Requests"
+                      empty="No purchase requests yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.inventory.purchaseRequests}
+                      columns={[
+                        { header: "Number", render: (row) => row.number },
+                        {
+                          header: "Status",
+                          render: (row) => (
+                            <Badge tone={row.status === "APPROVED" ? "success" : "warning"}>
+                              {readable(row.status)}
+                            </Badge>
+                          ),
+                        },
+                        {
+                          header: "Qty",
+                          align: "right",
+                          render: (row) => row.totalQuantity.toLocaleString(),
+                        },
+                      ]}
+                    />
                   </aside>
                 </div>
               ) : null}
 
               {tab === "fulfillment" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>Fulfillment</Kicker>
-                      <CardTitle>Pick, pack and dispatch</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Pick, pack and dispatch"
+                  kicker="Fulfillment"
+                  toolbar={
                     <Button onClick={() => setDialog("fulfill")} size="quiet">
                       New fulfillment order
                     </Button>
-                  </CardHeader>
-                  <DataTable
-                    caption="Fulfillment orders waiting for pick, pack or dispatch."
-                    empty="No fulfillment orders yet."
-                    getRowKey={(row) => row.id}
-                    rows={data.inventory.fulfillmentOrders}
-                    columns={[
-                      { header: "Number", render: (row) => <strong>{row.number}</strong> },
-                      { header: "Customer", render: (row) => row.customerName ?? "Not assigned" },
-                      {
-                        header: "Status",
-                        render: (row) => (
-                          <Badge tone={fulfillmentTone(row.status)}>{readable(row.status)}</Badge>
+                  }
+                  empty="No fulfillment orders yet."
+                  getRowKey={(row) => row.id}
+                  rows={data.inventory.fulfillmentOrders}
+                  columns={[
+                    { header: "Number", render: (row) => <strong>{row.number}</strong> },
+                    { header: "Customer", render: (row) => row.customerName ?? "Not assigned" },
+                    {
+                      header: "Status",
+                      render: (row) => (
+                        <Badge tone={fulfillmentTone(row.status)}>{readable(row.status)}</Badge>
+                      ),
+                    },
+                    {
+                      header: "Qty",
+                      align: "right",
+                      render: (row) => row.totalQuantity.toLocaleString(),
+                    },
+                    {
+                      header: "Next",
+                      render: (row) =>
+                        row.status !== "DISPATCHED" && row.status !== "CANCELLED" ? (
+                          <Button
+                            onClick={() =>
+                              api && identity
+                                ? void run("Fulfillment status updated.", () =>
+                                    api.updateFulfillmentStatus(identity.businessId, row.id, {
+                                      status: nextFulfillmentStatus(row.status),
+                                    }),
+                                  )
+                                : undefined
+                            }
+                            size="quiet"
+                          >
+                            {readable(nextFulfillmentStatus(row.status))}
+                          </Button>
+                        ) : (
+                          <StatusChip tone="success">Closed</StatusChip>
                         ),
-                      },
-                      {
-                        header: "Qty",
-                        align: "right",
-                        render: (row) => row.totalQuantity.toLocaleString(),
-                      },
-                      {
-                        header: "Next",
-                        render: (row) =>
-                          row.status !== "DISPATCHED" && row.status !== "CANCELLED" ? (
-                            <Button
-                              onClick={() =>
-                                api && identity
-                                  ? void run("Fulfillment status updated.", () =>
-                                      api.updateFulfillmentStatus(identity.businessId, row.id, {
-                                        status: nextFulfillmentStatus(row.status),
-                                      }),
-                                    )
-                                  : undefined
-                              }
-                              size="quiet"
-                            >
-                              {readable(nextFulfillmentStatus(row.status))}
-                            </Button>
-                          ) : (
-                            <StatusChip tone="success">Closed</StatusChip>
-                          ),
-                      },
-                    ]}
-                  />
-                </Card>
+                    },
+                  ]}
+                />
               ) : null}
 
               {stockItems.length === 0 ? (

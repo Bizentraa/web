@@ -5,7 +5,6 @@ import {
   Badge,
   Button,
   Card,
-  CardDescription,
   CardHeader,
   CardTitle,
   DataTable,
@@ -99,7 +98,6 @@ export default function ItemDetailPage() {
 
   return (
     <Workspace
-      activeHref="/catalog"
       description="One item, everything it is used for, and the history of every change."
       eyebrow="Common Core · P1"
       title={item?.name ?? "Item"}
@@ -268,174 +266,145 @@ export default function ItemDetailPage() {
               ) : null}
 
               {tab === "prices" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P1-006</Kicker>
-                      <CardTitle>Prices</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Prices"
+                  kicker="CC-P1-006"
+                  summary="A Branch price beats a Business-wide price, and the highest quantity break the customer qualifies for wins."
+                  toolbar={
                     <Button onClick={() => setDialog("price")} size="quiet">
                       Add price
                     </Button>
-                  </CardHeader>
-                  <CardDescription>
-                    A Branch price beats a Business-wide price, and the highest quantity break the
-                    cart qualifies for wins.
-                  </CardDescription>
-                  <DataTable
-                    caption="Prices for this item."
-                    getRowKey={(price) => price.id}
-                    rows={item.prices}
-                    empty="This item has no price yet, so the POS cannot sell it."
-                    columns={[
-                      { header: "Price list", render: (price) => price.priceListName },
-                      {
-                        header: "Branch",
-                        render: (price) =>
-                          price.branchId
-                            ? (reference.branches.find((branch) => branch.id === price.branchId)
-                                ?.name ?? "Branch")
-                            : "All Branches",
-                      },
-                      {
-                        header: "From quantity",
-                        align: "right",
-                        render: (price) => price.minQuantity,
-                      },
-                      {
-                        header: "Unit price",
-                        align: "right",
-                        render: (price) => formatMoney(price.unitPrice),
-                      },
-                      {
-                        header: "Cost",
-                        align: "right",
-                        render: (price) =>
-                          price.costPrice === null ? "-" : formatMoney(price.costPrice),
-                      },
-                      {
-                        header: "Valid from",
-                        hideOnMobile: true,
-                        render: (price) => formatDateTime(price.validFrom),
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(price) => price.id}
+                  rows={item.prices}
+                  empty="This item has no price yet, so the POS cannot sell it."
+                  columns={[
+                    { header: "Price list", render: (price) => price.priceListName },
+                    {
+                      header: "Branch",
+                      render: (price) =>
+                        price.branchId
+                          ? (reference.branches.find((branch) => branch.id === price.branchId)
+                              ?.name ?? "Branch")
+                          : "All Branches",
+                    },
+                    {
+                      header: "From quantity",
+                      align: "right",
+                      render: (price) => price.minQuantity,
+                    },
+                    {
+                      header: "Unit price",
+                      align: "right",
+                      render: (price) => formatMoney(price.unitPrice),
+                    },
+                    {
+                      header: "Cost",
+                      align: "right",
+                      render: (price) =>
+                        price.costPrice === null ? "-" : formatMoney(price.costPrice),
+                    },
+                    {
+                      header: "Valid from",
+                      hideOnMobile: true,
+                      render: (price) => formatDateTime(price.validFrom),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "identifiers" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P1-005</Kicker>
-                      <CardTitle>Barcodes and codes</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Barcodes and codes"
+                  summary="A code can only belong to one item in the Business, so a scan is never ambiguous."
+                  kicker="CC-P1-005"
+                  toolbar={
                     <Button onClick={() => setDialog("identifier")} size="quiet">
                       Add code
                     </Button>
-                  </CardHeader>
-                  <CardDescription>
-                    A code can only belong to one item in the Business, so a scan is never
-                    ambiguous.
-                  </CardDescription>
-                  <DataTable
-                    caption="Codes that resolve to this item."
-                    getRowKey={(identifier) => identifier.id}
-                    rows={item.identifierRecords}
-                    empty="Add a barcode so the POS can scan this item."
-                    columns={[
-                      { header: "Kind", render: (identifier) => identifier.kind },
-                      { header: "Value", render: (identifier) => <code>{identifier.value}</code> },
-                      {
-                        header: "Variant",
-                        render: (identifier) =>
-                          identifier.variantId
-                            ? (item.variants.find((variant) => variant.id === identifier.variantId)
-                                ?.name ?? "Variant")
-                            : "Whole item",
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(identifier) => identifier.id}
+                  rows={item.identifierRecords}
+                  empty="Add a barcode so the POS can scan this item."
+                  columns={[
+                    { header: "Kind", render: (identifier) => identifier.kind },
+                    { header: "Value", render: (identifier) => <code>{identifier.value}</code> },
+                    {
+                      header: "Variant",
+                      render: (identifier) =>
+                        identifier.variantId
+                          ? (item.variants.find((variant) => variant.id === identifier.variantId)
+                              ?.name ?? "Variant")
+                          : "Whole item",
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "variants" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P1-003</Kicker>
-                      <CardTitle>Variants</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Variants"
+                  summary="Variants describe size, colour, storage, style or pack size while sharing the same item definition."
+                  kicker="CC-P1-003"
+                  toolbar={
                     <Button onClick={() => setDialog("variant")} size="quiet">
                       Add variant
                     </Button>
-                  </CardHeader>
-                  <CardDescription>
-                    Variants describe size, colour, storage, style or pack size while sharing the
-                    same item definition.
-                  </CardDescription>
-                  <DataTable
-                    caption="Variants of this item."
-                    getRowKey={(variant) => variant.id}
-                    rows={item.variants}
-                    empty="This item has no variants."
-                    columns={[
-                      { header: "Code", render: (variant) => <strong>{variant.code}</strong> },
-                      { header: "Name", render: (variant) => variant.name },
-                      {
-                        header: "Attributes",
-                        render: (variant) =>
-                          Object.entries(variant.attributes)
-                            .map(([key, value]) => `${key}: ${String(value)}`)
-                            .join(", ") || "-",
-                      },
-                      {
-                        header: "Status",
-                        render: (variant) => (
-                          <Badge tone={variant.status === "ACTIVE" ? "success" : "neutral"}>
-                            {variant.status}
-                          </Badge>
-                        ),
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(variant) => variant.id}
+                  rows={item.variants}
+                  empty="This item has no variants."
+                  columns={[
+                    { header: "Code", render: (variant) => <strong>{variant.code}</strong> },
+                    { header: "Name", render: (variant) => variant.name },
+                    {
+                      header: "Attributes",
+                      render: (variant) =>
+                        Object.entries(variant.attributes)
+                          .map(([key, value]) => `${key}: ${String(value)}`)
+                          .join(", ") || "-",
+                    },
+                    {
+                      header: "Status",
+                      render: (variant) => (
+                        <Badge tone={variant.status === "ACTIVE" ? "success" : "neutral"}>
+                          {variant.status}
+                        </Badge>
+                      ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "suppliers" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P1-010</Kicker>
-                      <CardTitle>Who supplies this item</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Who supplies this item"
+                  kicker="CC-P1-010"
+                  toolbar={
                     <Link className="ui-button ui-button--quiet" href="/suppliers">
                       Manage suppliers
                     </Link>
-                  </CardHeader>
-                  <DataTable
-                    caption="Supplier codes, costs and lead times."
-                    getRowKey={(supplier) => supplier.supplierId}
-                    rows={item.suppliers}
-                    empty="No supplier is linked to this item yet."
-                    columns={[
-                      { header: "Supplier", render: (supplier) => supplier.supplierName },
-                      { header: "Their code", render: (supplier) => supplier.supplierCode ?? "-" },
-                      {
-                        header: "Cost",
-                        align: "right",
-                        render: (supplier) =>
-                          supplier.costPrice === null ? "-" : formatMoney(supplier.costPrice),
-                      },
-                      {
-                        header: "Lead time",
-                        align: "right",
-                        render: (supplier) =>
-                          supplier.leadTimeDays === null ? "-" : `${supplier.leadTimeDays} day(s)`,
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(supplier) => supplier.supplierId}
+                  rows={item.suppliers}
+                  empty="No supplier is linked to this item yet."
+                  columns={[
+                    { header: "Supplier", render: (supplier) => supplier.supplierName },
+                    { header: "Their code", render: (supplier) => supplier.supplierCode ?? "-" },
+                    {
+                      header: "Cost",
+                      align: "right",
+                      render: (supplier) =>
+                        supplier.costPrice === null ? "-" : formatMoney(supplier.costPrice),
+                    },
+                    {
+                      header: "Lead time",
+                      align: "right",
+                      render: (supplier) =>
+                        supplier.leadTimeDays === null ? "-" : `${supplier.leadTimeDays} day(s)`,
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "history" ? (

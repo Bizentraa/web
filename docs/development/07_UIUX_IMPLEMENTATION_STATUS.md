@@ -25,29 +25,31 @@ product surfaces, not only backend features.
 | Server-safe components | `packages/design-system/src/index.tsx` | Shell, cards, tables, chips, forms, states, receipts |
 | Interactive components | `packages/design-system/src/client.tsx` | Dialog, Drawer, Sheet, ConfirmDialog, Tabs, toasts, POS hooks |
 | Business theme | `packages/themes` and `packages/design-system/src/theme.tsx` | Saved Business colours applied before hydration |
-| Back Office screens | `apps/backoffice/src/app/*` | Ten routes sharing one `Workspace` frame |
+| Back Office screens | `apps/backoffice/src/app/*` | Common Core P0-P8 routes sharing one `Workspace` frame |
+| Back Office shadcn shell | `apps/backoffice/src/components/*` and `apps/backoffice/src/components/ui/*` | sidebar-07 adaptation, breadcrumb header and Branch switcher |
 | POS screens | `apps/pos/src/app/*` | Selling workspace and returns |
+| POS shadcn controls | `apps/pos/src/components/*` and `apps/pos/src/components/ui/*` | Register dropdown only; POS keeps its distraction-free shell |
 
 ## Specification Coverage
 
 | UI/UX section | Status | Evidence |
 |---|---|---|
-| 3 Global application shell | Implemented | Sidebar grouped by Run/Manage/Settings, sticky topbar with Business and Branch context, icon-only sidebar on tablet, bottom navigation on phones |
-| 4 Navigation rules | Partly | Command palette on `Ctrl/Cmd+K` and always-visible context. Remaining: navigation filtered by the signed-in user's permissions, a working Branch switcher and an unsaved-change guard |
+| 3 Global application shell | Implemented | Back Office uses the shadcn/ui sidebar-07 pattern: grouped sidebar, icon collapse, mobile sheet, sidebar rail, breadcrumb header and Branch context |
+| 4 Navigation rules | Partly | Active route breadcrumbs and a persisted Branch switcher are implemented. Remaining: navigation filtered by the signed-in user's permissions, global command/search replacement and an unsaved-change guard |
 | 5.1 Dashboard | Implemented | Four KPI cards, a readiness checklist with next actions and a recent-sales table with drill-down |
 | 5.2 List / data table | Implemented | Search, filter chips, sticky header, right-aligned numbers, row click to open, and task cards instead of a shrunken table below 768px |
 | 5.3 Detail page | Implemented | `EntityHeader` with status and actions, tabs and an activity timeline on item, customer, supplier and sale |
 | 5.4 Form | Implemented | Grouped by business meaning, inline hints, sensible defaults and a footer that states the consequence next to the action |
 | 5.5 Wizard | Implemented for import | Choose file, validate, preview per row, apply, roll back |
 | 6 POS workspace | Implemented | Scan focus, product tiles, cart and amount due always visible, payment sheet with large tender buttons, held carts, receipt and shift close |
-| 7 Shared components | Implemented | See the component table in `06_UI_COMPONENT_SYSTEM.md` |
+| 7 Shared components | Implemented | See the component table in `06_UI_COMPONENT_SYSTEM.md`; Back Office/POS shadcn registry output is app-local and type-checked |
 | 9-13 Colour, typography, spacing | Implemented | Semantic tokens from the saved Business theme, tabular numbers for money, 4px spacing scale and the specified radii and control heights |
 | 16 Empty, loading and error states | Implemented | Skeletons while loading, and empty, error, permission, offline and needs-review panels that say what to do next |
 | 17 Offline UX | Implemented for the POS | Online/offline/syncing/needs-review banner with a pending count, and a local queue replayed idempotently |
 | 18 Permissions and approval UX | Implemented | A denied screen names the missing permission, and a blocked action explains that approval is needed |
 | 19 Accessibility baseline | Partly | Labels, visible focus, status never colour-only, reduced motion and larger POS touch targets. Remaining: automated assertions and a screen-reader pass |
-| 20 Responsive breakpoints | Implemented | Verified with no horizontal overflow at 1440px and 390px on all 12 routes |
-| 21 Search and commands | Partly | Route and action commands exist. Remaining: record search and permission awareness |
+| 20 Responsive breakpoints | Implemented | Shared components retain their mobile table/card behavior; sidebar-specific visual-regression automation remains pending |
+| 21 Search and commands | Partly | Screen-level search and filters exist. Remaining: global command palette replacement, record search and permission awareness |
 | 22 Notification center | Not started | Toasts exist for the current action; a filterable notification centre does not |
 
 ## Screens Implemented
@@ -64,21 +66,25 @@ product surfaces, not only backend features.
 | `/suppliers` | Back Office | P1 | Supplier list, detail, terms and supplied items |
 | `/import` | Back Office | P1 | Validate, preview, apply and roll back a CSV file |
 | `/sales` | Back Office | P2 | Sales, tenders, returns, receipts and shift reconciliation |
+| `/business-engines` | Back Office | P5 | Work tickets, bookings, assets, traceability and shared engines |
+| `/store-reliability` | Back Office | P6 | Devices, offline queues and sync conflicts |
+| `/reporting-operations` | Back Office | P7 | Reports, exports, webhooks and migration validation |
+| `/production-readiness` | Back Office | P8 | Security, backup, readiness, privacy and release evidence |
 | `/appearance` | Back Office | P0 | Business theme selection |
 | `/` | POS | P2 | Shift gate, scan and search, cart, payment sheet, receipt |
 | `/returns` | POS | P2 | Find the original sale and accept a return or refund |
 
 ## Verification
 
-A repeatable browser run over all 12 routes at 1440px and 390px recorded 54 passing checks: expected
-content present, no console or page errors, and no horizontal overflow at either width. A second run
-drove the real POS through opening a shift, adding an item, changing its quantity, opening the
-payment sheet, taking a cash tender and printing a receipt with change: 11 checks, all passing.
+The latest source-level verification is tracked in
+[`15_BACKOFFICE_SIDEBAR_SHADCN.md`](./15_BACKOFFICE_SIDEBAR_SHADCN.md). Browser visual-regression
+coverage for the sidebar states still needs to be automated before this can claim route-by-route
+responsive evidence for the new shell.
 
 ## Remaining UI/UX Work
 
 1. Navigation, commands and actions filtered by the signed-in user's real permissions and features.
-2. A Branch switcher that actually changes the working context, and an unsaved-change guard.
+2. Branch-scoped API filtering for `/sales`, `/inventory` and `/finance`, plus an unsaved-change guard.
 3. Saved views, a column selector and a density switch for back-office lists.
 4. A notification centre with the seven categories in section 22.
 5. Component examples, automated accessibility assertions and visual-regression snapshots.

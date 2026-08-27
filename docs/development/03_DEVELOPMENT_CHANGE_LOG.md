@@ -102,6 +102,8 @@ Each change entry should include:
 | 2026-08-26 | Implemented for shared frontend architecture slice | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001` to `CC-US-004`, `CC-US-018` | `5d71b01` | Added the first reusable app shell/navigation, global command palette, responsive mobile navigation and shared component primitives from the consolidated UI/UX remaining-work register. |
 | 2026-08-26 | Implemented for shared component-system scope | `CC-P0-001` to `CC-P0-010`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012` | `1c8bbce` | Adapted the archive’s shared component system: common stylesheet, server/client entry split, dialogs, drawers, sheets, confirmations, tabs, toasts, scan helpers, controlled filters, responsive tables, form primitives, description lists, skeletons and receipt view. |
 | 2026-08-26 | Implemented for workspace density and theme selection scope | `CC-P0-001`, `CC-P0-008`, `CC-P0-009`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001` to `CC-P2-012`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` | `58fea2b` | Reduced unused screen space across shared layouts, made POS/back-office workspaces more single-screen with internal scroll areas, and changed owner-facing theme choices from business-type names to reusable palette names with reset-to-default support. |
+| 2026-08-27 | Implemented for Back Office shell scope | `CC-P0-001`, `CC-P0-008`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` | This changeset | Replaced the hand-written Back Office shell with the shadcn/ui `sidebar-07` block on Tailwind CSS v4, added a Business Branch switcher with persisted selection, and made every loaded resource re-scope when the Branch changes. |
+| 2026-08-27 | Implemented for POS foundation scope | `CC-P2-001`, `CC-P0-001`, `CC-US-004`, `CC-US-018` | This changeset | Added the same Tailwind v4 and shadcn foundation to POS without a sidebar, and replaced the plain register text in both POS topbars with a guarded register bar that refuses re-binding while a shift is open. |
 
 ## 4. Detailed Change Entries
 
@@ -325,6 +327,32 @@ Each change entry should include:
 | Verification | Prisma schema formatted and generated; database build passed; migration `20260827100101_p7_p8_reporting_readiness` applied with deploy mode; focused contracts, domain-business-access, API client, API and Back Office checks passed. |
 | Commit | `a7232fa feat: add common core P7 P8 reporting and readiness` |
 | Remaining work | P8 still needs production OIDC/session/MFA enforcement, infrastructure backup scheduler and restore automation, logs/metrics/traces dashboards, load tests and POS response targets, customer-data export/delete execution and retention enforcement, deployment pipeline gates, release approvals, rollback automation and database-level immutable audit tests. |
+
+### 2026-08-27 - Back Office Sidebar on Tailwind and shadcn/ui
+
+| Field | Details |
+|---|---|
+| Feature / slice | Back Office application shell, navigation and Branch context |
+| Status | Implemented for Back Office shell scope |
+| SRS mapping | `CC-P0-001` Business and Branch setup; `CC-P0-008` Business theme; `CC-US-001`; `CC-US-003`; `CC-US-004`; `CC-US-018` |
+| What changed | Adopted Tailwind CSS v4 and the shadcn CLI for `apps/backoffice` only, superseding the no-Tailwind decision in `06_UI_COMPONENT_SYSTEM.md`. Replaced `bo-shell` / `bo-sidebar` with the `sidebar-07` structure: icon-collapsing sidebar, collapsible navigation groups, sidebar rail, mobile sheet, footer menu and breadcrumb header. Added a Branch switcher in place of the block's team switcher, backed by a new active-Branch context that loads Branches from `getBusinessFoundation`, persists the choice per Business and exposes it to every screen. `useResource` now passes the active Branch id to its loader and re-loads when the Branch changes. Bridged every shadcn token onto the saved Business theme variables and layered Tailwind so preflight cannot disturb the shared stylesheet. Removed the obsolete `.bo-*` rules. |
+| Main files | `apps/backoffice/package.json`; `apps/backoffice/components.json`; `apps/backoffice/postcss.config.mjs`; `apps/backoffice/tsconfig.json`; `apps/backoffice/src/lib/utils.ts`; `apps/backoffice/src/app/globals.css`; `apps/backoffice/src/app/layout.tsx`; `apps/backoffice/src/app/lib/api.tsx`; `apps/backoffice/src/app/lib/active-branch.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `apps/backoffice/src/components/app-sidebar.tsx`; `apps/backoffice/src/components/branch-switcher.tsx`; `apps/backoffice/src/components/nav-main.tsx`; `apps/backoffice/src/components/nav-user.tsx`; `eslint.config.mjs`; `.prettierignore`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md`; `docs/development/06_UI_COMPONENT_SYSTEM.md` |
+| Verification | shadcn registry files exist under `apps/backoffice/src/components/ui`; `pnpm format:check`; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/design-system test`; `pnpm --filter @bizentra/backoffice typecheck`; `pnpm --filter @bizentra/backoffice lint`; `pnpm --filter @bizentra/backoffice test`; `pnpm --filter @bizentra/backoffice build`. |
+| Commit | This changeset |
+| Remaining work | Point `/sales`, `/inventory` and `/finance` at the active Branch argument so their API requests are Branch-scoped. Replace the footer menu's truncated user id with a real signed-in user once a current-user endpoint exists. Add visual-regression coverage for the expanded, icon-collapsed and mobile sidebar states. |
+
+### 2026-08-27 - POS Tailwind and shadcn Foundation with Guarded Register Bar
+
+| Field | Details |
+|---|---|
+| Feature / slice | POS styling foundation and terminal register identity |
+| Status | Implemented for POS foundation scope |
+| SRS mapping | `CC-P2-001` Shift control; `CC-P0-001` Business and Branch setup; `CC-US-004`; `CC-US-018` |
+| What changed | Added Tailwind CSS v4, `components.json`, the `@/*` alias, `lib/utils.ts` and the Business theme token bridge to `apps/pos`, using the same layering as Back Office so preflight cannot disturb the shared stylesheet. Deliberately did **not** add a sidebar: POS states it is a distraction-free surface and already binds a Branch per terminal through `useRegister`. Replaced the plain register text in the selling and returns topbars with `RegisterBar`, a shadcn dropdown showing the bound Branch and register whose re-bind action is disabled while a shift is open and otherwise passes through the design system's `ConfirmDialog`, so the confirmation is a bottom sheet on a phone-sized till. Widened the vendored-primitive lint and format ignores to `apps/*`. |
+| Main files | `apps/pos/package.json`; `apps/pos/components.json`; `apps/pos/postcss.config.mjs`; `apps/pos/tsconfig.json`; `apps/pos/src/lib/utils.ts`; `apps/pos/src/app/globals.css`; `apps/pos/src/components/register-bar.tsx`; `apps/pos/src/app/page.tsx`; `apps/pos/src/app/returns/page.tsx`; `eslint.config.mjs`; `.prettierignore`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md` |
+| Verification | shadcn registry files exist under `apps/pos/src/components/ui`; `pnpm format:check`; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/design-system test`; `pnpm --filter @bizentra/pos typecheck`; `pnpm --filter @bizentra/pos lint`; `pnpm --filter @bizentra/pos test`; `pnpm --filter @bizentra/pos build`. |
+| Commit | This changeset |
+| Remaining work | Consider whether the shift-open guard should also cover a queued offline sale that has not yet synced, since those also belong to the bound register. |
 
 ## 5. Consolidated Remaining Work Register
 

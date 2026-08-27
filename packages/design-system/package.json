@@ -36,7 +36,8 @@
     "react": "^19.2.8"
   },
   "dependencies": {
-    "@bizentra/themes": "workspace:*"
+    "@bizentra/themes": "workspace:*",
+    "lucide-react": "^1.34.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

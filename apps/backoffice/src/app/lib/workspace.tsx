@@ -1,182 +1,37 @@
 "use client";
 
-import { ApiClientError, createApiClient, type BizentraApiClient } from "@bizentra/api-client";
-import type { BusinessFoundationSummary } from "@bizentra/contracts";
+import type { BizentraApiClient } from "@bizentra/api-client";
+import { Button, Kicker, SkeletonScreen, StatePanel } from "@bizentra/design-system";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+
+import { findNavTrail } from "@/components/app-sidebar";
 import {
-  AppShell,
-  Button,
-  Card,
-  CardDescription,
-  CardTitle,
-  Kicker,
-  SkeletonRows,
-  StatePanel,
-  StatusChip,
-  type ShellNavigationItem,
-} from "@bizentra/design-system";
-import { useBusinessTheme, type ThemeIdentity } from "@bizentra/design-system/theme";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+import { errorMessage, isPermissionError, useApi, useIdentity } from "./api";
+import { useActiveBranch } from "./active-branch";
 
-export const NAVIGATION: ShellNavigationItem[] = [
-  {
-    href: "/",
-    label: "Dashboard",
-    description: "today at a glance",
-    phase: "P0",
-    group: "Run",
-    status: "ready",
-  },
-  {
-    href: "/sales",
-    label: "Sales",
-    description: "sales, shifts, returns",
-    phase: "P2",
-    group: "Run",
-    status: "ready",
-  },
-  {
-    href: "/catalog",
-    label: "Catalog",
-    description: "items, prices, tax",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/inventory",
-    label: "Inventory",
-    description: "stock and purchasing",
-    phase: "P3",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/finance",
-    label: "Finance",
-    description: "money and balances",
-    phase: "P4",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/business-engines",
-    label: "Business engines",
-    description: "tickets and bookings",
-    phase: "P5",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/store-reliability",
-    label: "Store reliability",
-    description: "devices and offline",
-    phase: "P6",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/reporting-operations",
-    label: "Reports and integrations",
-    description: "reports, exports, webhooks",
-    phase: "P7",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/production-readiness",
-    label: "Production readiness",
-    description: "security and go-live",
-    phase: "P8",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/customers",
-    label: "Customers",
-    description: "contacts and credit",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/suppliers",
-    label: "Suppliers",
-    description: "terms and item costs",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/import",
-    label: "Import",
-    description: "CSV validate and apply",
-    phase: "P1",
-    group: "Manage",
-    status: "ready",
-  },
-  {
-    href: "/setup",
-    label: "Business setup",
-    description: "branches and locations",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/access",
-    label: "Users and roles",
-    description: "who can do what",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/controls",
-    label: "Controls",
-    description: "approvals, features, audit",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-  {
-    href: "/appearance",
-    label: "Appearance",
-    description: "Business theme",
-    phase: "P0",
-    group: "Settings",
-    status: "ready",
-  },
-];
+export { errorMessage, isPermissionError, useApi, useIdentity } from "./api";
+export { useActiveBranch } from "./active-branch";
 
-export function useIdentity(): ThemeIdentity | null {
-  return useBusinessTheme().identity;
-}
-
-export function useApi(): { api: BizentraApiClient | null; identity: ThemeIdentity | null } {
-  const identity = useIdentity();
-  const api = useMemo(
-    () => (identity ? createApiClient(API_BASE_URL, identity) : null),
-    [identity],
-  );
-  return { api, identity };
-}
-
-export function errorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) return error.body.message;
-  if (error instanceof Error) return error.message;
-  return "Something went wrong. Try again in a moment.";
-}
-
-export function isPermissionError(error: unknown): boolean {
-  return error instanceof ApiClientError && error.status === 403;
-}
-
-/** Loads any API resource with the loading, permission and error states the UI/UX spec requires. */
+/**
+ * Loads any API resource with the loading, permission and error states the UI/UX spec requires.
+ *
+ * The loader also receives the active Branch id, and every resource re-loads when the Branch is
+ * switched, so a Branch-scoped screen never shows another Branch's data.
+ */
 export function useResource<T>(
-  load: ((api: BizentraApiClient, businessId: string) => Promise<T>) | null,
+  load:
+    ((api: BizentraApiClient, businessId: string, branchId: string | null) => Promise<T>) | null,
   dependencies: unknown[] = [],
 ): {
   data: T | null;
@@ -185,6 +40,7 @@ export function useResource<T>(
   reload: () => Promise<void>;
 } {
   const { api, identity } = useApi();
+  const { activeBranchId } = useActiveBranch();
   const [data, setData] = useState<T | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error" | "permission">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -193,14 +49,14 @@ export function useResource<T>(
     if (!api || !identity || !load) return;
     setState((current) => (current === "ready" ? "ready" : "loading"));
     try {
-      setData(await load(api, identity.businessId));
+      setData(await load(api, identity.businessId, activeBranchId));
       setError(null);
       setState("ready");
     } catch (cause) {
       setError(errorMessage(cause));
       setState(isPermissionError(cause) ? "permission" : "error");
     }
-  }, [api, identity, ...dependencies]);
+  }, [activeBranchId, api, identity, ...dependencies]);
 
   useEffect(() => {
     void reload();
@@ -209,81 +65,115 @@ export function useResource<T>(
   return { data, state, error, reload };
 }
 
-/**
- * One workspace frame for every Back Office screen: shared shell, Business context from the API
- * and the identity guard that local development needs until production sign-in is connected.
- */
+/** One workspace frame for every Back Office screen. */
 export function Workspace({
-  activeHref,
   children,
   description,
   eyebrow,
   headerActions,
+  requirements,
+  status,
   title,
 }: {
-  activeHref: string;
   children: ReactNode;
   description: string;
   eyebrow: string;
   headerActions?: ReactNode;
+  /** SRS requirement range this screen implements, e.g. "CC-P2-001 to CC-P2-011". */
+  requirements?: string | undefined;
+  /** Live state of the screen, shown beside the title. */
+  status?: ReactNode;
   title: string;
 }) {
   const identity = useIdentity();
-  const [foundation, setFoundation] = useState<BusinessFoundationSummary | null>(null);
-  const { api } = useApi();
-
-  useEffect(() => {
-    if (!api || !identity) return;
-    api
-      .getBusinessFoundation(identity.businessId)
-      .then(setFoundation)
-      .catch(() => setFoundation(null));
-  }, [api, identity]);
-
-  if (!identity) {
-    return (
-      <AppShell
-        activeHref={activeHref}
-        description={description}
-        eyebrow={eyebrow}
-        navigation={NAVIGATION}
-        title={title}
-      >
-        <Card>
-          <Kicker>Local development only</Kicker>
-          <CardTitle>Load a Business identity first</CardTitle>
-          <CardDescription>
-            Open Appearance and enter the Business and owner user IDs returned by the setup
-            endpoint. Every screen uses that identity until production sign-in is connected.
-          </CardDescription>
-          <Link className="ui-button ui-button--primary" href="/appearance">
-            Open Appearance
-          </Link>
-        </Card>
-      </AppShell>
-    );
-  }
 
   return (
-    <AppShell
-      activeHref={activeHref}
-      context={{
-        business: foundation?.business.name ?? "Loading Business",
-        branch: foundation?.branches[0]?.name ?? "Main Branch",
-      }}
+    <BackOfficeShell
       description={description}
       eyebrow={eyebrow}
       headerActions={headerActions}
-      navigation={NAVIGATION}
+      requirements={requirements}
+      status={status}
       title={title}
-      topbarActions={
-        foundation ? (
-          <StatusChip tone="success">{foundation.business.defaultCurrency}</StatusChip>
-        ) : null
-      }
     >
-      {children}
-    </AppShell>
+      {identity ? children : <SkeletonScreen rows={5} />}
+    </BackOfficeShell>
+  );
+}
+
+function BackOfficeShell({
+  children,
+  description,
+  eyebrow,
+  headerActions,
+  requirements,
+  status,
+  title,
+}: {
+  children: ReactNode;
+  description: string;
+  eyebrow: string;
+  headerActions?: ReactNode;
+  requirements?: string | undefined;
+  status?: ReactNode;
+  title: string;
+}) {
+  const pathname = usePathname();
+  const { activeBranch } = useActiveBranch();
+  const trail = findNavTrail(pathname);
+  const section = trail?.group.title ?? eyebrow;
+
+  return (
+    <SidebarInset>
+      <header className="bg-background/85 sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-14">
+        <div className="flex w-full items-center gap-2 px-4">
+          <SidebarTrigger className="-ml-1" />
+          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbLink href="/">{section}</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{trail?.item.title ?? title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+
+          {activeBranch ? (
+            <span className="text-muted-foreground ml-auto hidden shrink-0 truncate text-xs sm:inline">
+              {activeBranch.code} · {activeBranch.name}
+            </span>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        {/*
+          The one header a screen gets. Built from the design system's own primitives rather than
+          Tailwind type utilities so it shares the application's type scale, and carrying the four
+          things a screen needs to state: where it sits, what it is, what it is for, and its live
+          status. Actions belong here beside the title, not in the fixed-height breadcrumb bar
+          where a wrapped second row was being clipped.
+        */}
+        <header className="bo-screen-header">
+          <div>
+            <div className="bo-screen-eyebrow">
+              <Kicker>{eyebrow}</Kicker>
+              {requirements ? <span className="ui-code">{requirements}</span> : null}
+            </div>
+            <div className="ui-page-header-title-row">
+              <h1>{title}</h1>
+              {status}
+            </div>
+            <p>{description}</p>
+          </div>
+          {headerActions ? <div className="ui-page-header-actions">{headerActions}</div> : null}
+        </header>
+        {children}
+      </div>
+    </SidebarInset>
   );
 }
 
@@ -302,12 +192,7 @@ export function ResourceState({
   title: string;
 }) {
   if (state === "loading" || state === "idle") {
-    return (
-      <Card>
-        <CardTitle>{title}</CardTitle>
-        <SkeletonRows rows={5} />
-      </Card>
-    );
+    return <SkeletonScreen rows={title === "Dashboard" ? 6 : 5} />;
   }
 
   if (state === "permission") {

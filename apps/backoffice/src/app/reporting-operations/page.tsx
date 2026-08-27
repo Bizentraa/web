@@ -3,18 +3,13 @@
 import type { ReportingOperationsOverview } from "@bizentra/contracts";
 import {
   Button,
-  Card,
-  CardHeader,
-  CardTitle,
   DataTable,
   Field,
   FormCard,
   FormFooter,
   FormGrid,
   Grid,
-  Kicker,
   KpiCard,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -123,19 +118,13 @@ export default function ReportingOperationsPage() {
 
   return (
     <Workspace
-      activeHref="/reporting-operations"
+      requirements="CC-P7-001 to CC-P7-010"
+      status={<StatusChip tone="information">Reporting foundation active</StatusChip>}
       description="Reports, exports, webhooks, integration delivery and migration validation."
       eyebrow="Common Core · P7"
       title="Reports and integrations"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P7-001 to CC-P7-010"
-          title="Use source records for reports, exports and integration control"
-          description="P7 gives managers read-only business summaries and gives operators auditable control records for exports, webhooks and migration validation."
-          status={<StatusChip tone="information">Reporting foundation active</StatusChip>}
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Reporting operations">
           {data ? (
             <Stack>
@@ -183,30 +172,24 @@ export default function ReportingOperationsPage() {
               {tab === "reports" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Saved views</Kicker>
-                          <CardTitle>Reusable report filters</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Saved report views."
-                        empty="No saved report view exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.savedViews}
-                        columns={[
-                          { header: "Code", render: (row) => row.code },
-                          { header: "Name", render: (row) => row.name },
-                          { header: "Report", render: (row) => row.reportType },
-                          {
-                            header: "Created",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.createdAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Reusable report filters"
+                      kicker="Saved views"
+                      className="ui-scroll-panel"
+                      empty="No saved report view exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.savedViews}
+                      columns={[
+                        { header: "Code", render: (row) => row.code },
+                        { header: "Name", render: (row) => row.name },
+                        { header: "Report", render: (row) => row.reportType },
+                        {
+                          header: "Created",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.createdAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Save report view" onSubmit={createReportView}>
@@ -239,30 +222,24 @@ export default function ReportingOperationsPage() {
               {tab === "exports" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Exports</Kicker>
-                          <CardTitle>Auditable data export requests</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Data exports."
-                        empty="No export has been requested yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.exports}
-                        columns={[
-                          { header: "Type", render: (row) => row.exportType },
-                          { header: "Format", render: (row) => row.format },
-                          { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
-                          {
-                            header: "Requested",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.requestedAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Auditable data export requests"
+                      kicker="Exports"
+                      className="ui-scroll-panel"
+                      empty="No export has been requested yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.exports}
+                      columns={[
+                        { header: "Type", render: (row) => row.exportType },
+                        { header: "Format", render: (row) => row.format },
+                        { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        {
+                          header: "Requested",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.requestedAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Request export" onSubmit={requestExport}>
@@ -294,15 +271,11 @@ export default function ReportingOperationsPage() {
               {tab === "webhooks" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Webhooks</Kicker>
-                          <CardTitle>Subscriptions and delivery failures</CardTitle>
-                        </div>
-                      </CardHeader>
+                    <Stack>
                       <DataTable
-                        caption="Webhook subscriptions."
+                        className="ui-scroll-panel"
+                        kicker="Webhooks"
+                        caption="Subscriptions"
                         empty="No webhook is configured yet."
                         getRowKey={(row) => row.id}
                         rows={data.webhooks}
@@ -314,7 +287,8 @@ export default function ReportingOperationsPage() {
                         ]}
                       />
                       <DataTable
-                        caption="Webhook deliveries."
+                        kicker="Webhooks"
+                        caption="Delivery failures"
                         empty="No webhook delivery exists yet."
                         getRowKey={(row) => row.id}
                         rows={data.deliveries}
@@ -329,7 +303,7 @@ export default function ReportingOperationsPage() {
                           },
                         ]}
                       />
-                    </Card>
+                    </Stack>
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Create webhook" onSubmit={createWebhook}>
@@ -362,27 +336,21 @@ export default function ReportingOperationsPage() {
               {tab === "migration" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Migration validation</Kicker>
-                          <CardTitle>Preview before final import commit</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Migration validations."
-                        empty="No migration validation exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.migrations}
-                        columns={[
-                          { header: "Source", render: (row) => row.sourceName },
-                          { header: "Entity", render: (row) => row.entityKind },
-                          { header: "Status", render: (row) => row.status },
-                          { header: "Rows", align: "right", render: (row) => row.totalRows },
-                          { header: "Invalid", align: "right", render: (row) => row.invalidRows },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Preview before final import commit"
+                      kicker="Migration validation"
+                      className="ui-scroll-panel"
+                      empty="No migration validation exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.migrations}
+                      columns={[
+                        { header: "Source", render: (row) => row.sourceName },
+                        { header: "Entity", render: (row) => row.entityKind },
+                        { header: "Status", render: (row) => row.status },
+                        { header: "Rows", align: "right", render: (row) => row.totalRows },
+                        { header: "Invalid", align: "right", render: (row) => row.invalidRows },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <FormCard title="Record validation" onSubmit={createMigration}>

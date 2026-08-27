@@ -11,7 +11,6 @@ import type {
 } from "@bizentra/contracts";
 import {
   Button,
-  Card,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -23,7 +22,6 @@ import {
   Grid,
   Kicker,
   KpiCard,
-  PageHeader,
   SelectField,
   Stack,
   StatusChip,
@@ -91,19 +89,13 @@ export default function FinancePage() {
 
   return (
     <Workspace
-      activeHref="/finance"
+      requirements="CC-P4-001 to CC-P4-012"
+      status={<StatusChip tone="information">Finance records active</StatusChip>}
       description="Customer invoices, supplier bills, expenses, cash and bank, loyalty and accounting events."
       eyebrow="Common Core · P4"
       title="Finance foundation"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P4-001 to CC-P4-012"
-          title="Control money owed, money paid and finance events"
-          description="P4 turns POS and purchasing activity into clear customer balances, supplier balances, expenses, cash movements, loyalty balances and accounting events."
-          status={<StatusChip tone="information">Finance records active</StatusChip>}
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Finance">
           {data ? (
             <Stack>
@@ -150,35 +142,29 @@ export default function FinancePage() {
               {tab === "receivables" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Customer balances</Kicker>
-                          <CardTitle>Invoices and collection status</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Customer invoices."
-                        empty="No customer invoice exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.finance.customerInvoices}
-                        columns={[
-                          { header: "Invoice", render: (row) => row.number },
-                          { header: "Customer", render: (row) => row.customerName },
-                          { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
-                          {
-                            header: "Balance",
-                            align: "right",
-                            render: (row) => formatMoney(row.balanceAmount, row.currencyCode),
-                          },
-                          {
-                            header: "Posted",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.postedAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Invoices and collection status"
+                      kicker="Customer balances"
+                      className="ui-scroll-panel"
+                      empty="No customer invoice exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.finance.customerInvoices}
+                      columns={[
+                        { header: "Invoice", render: (row) => row.number },
+                        { header: "Customer", render: (row) => row.customerName },
+                        { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        {
+                          header: "Balance",
+                          align: "right",
+                          render: (row) => formatMoney(row.balanceAmount, row.currencyCode),
+                        },
+                        {
+                          header: "Posted",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.postedAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <QuickCustomerInvoice
@@ -215,30 +201,24 @@ export default function FinancePage() {
               {tab === "payables" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Supplier balances</Kicker>
-                          <CardTitle>Bills and payment status</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Supplier bills."
-                        empty="No supplier bill exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.finance.supplierBills}
-                        columns={[
-                          { header: "Bill", render: (row) => row.number },
-                          { header: "Supplier", render: (row) => row.supplierName },
-                          { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
-                          {
-                            header: "Balance",
-                            align: "right",
-                            render: (row) => formatMoney(row.balanceAmount, row.currencyCode),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Bills and payment status"
+                      kicker="Supplier balances"
+                      className="ui-scroll-panel"
+                      empty="No supplier bill exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.finance.supplierBills}
+                      columns={[
+                        { header: "Bill", render: (row) => row.number },
+                        { header: "Supplier", render: (row) => row.supplierName },
+                        { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        {
+                          header: "Balance",
+                          align: "right",
+                          render: (row) => formatMoney(row.balanceAmount, row.currencyCode),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <QuickSupplierBill
@@ -275,34 +255,28 @@ export default function FinancePage() {
               {tab === "expenses" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Expenses</Kicker>
-                          <CardTitle>Posted business expenses</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Expenses."
-                        empty="No expense exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.finance.expenses}
-                        columns={[
-                          { header: "Description", render: (row) => row.description },
-                          { header: "Category", render: (row) => row.categoryName },
-                          {
-                            header: "Amount",
-                            align: "right",
-                            render: (row) => formatMoney(row.amount, row.currencyCode),
-                          },
-                          {
-                            header: "Method",
-                            hideOnMobile: true,
-                            render: (row) => row.paymentMethod,
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Posted business expenses"
+                      kicker="Expenses"
+                      className="ui-scroll-panel"
+                      empty="No expense exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.finance.expenses}
+                      columns={[
+                        { header: "Description", render: (row) => row.description },
+                        { header: "Category", render: (row) => row.categoryName },
+                        {
+                          header: "Amount",
+                          align: "right",
+                          render: (row) => formatMoney(row.amount, row.currencyCode),
+                        },
+                        {
+                          header: "Method",
+                          hideOnMobile: true,
+                          render: (row) => row.paymentMethod,
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <QuickExpense
@@ -345,30 +319,24 @@ export default function FinancePage() {
               {tab === "cash" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Cash and bank</Kicker>
-                          <CardTitle>Accounts and latest movements</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Cash and bank accounts."
-                        empty="No cash or bank account exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.finance.bankAccounts}
-                        columns={[
-                          { header: "Code", render: (row) => row.code },
-                          { header: "Account", render: (row) => row.name },
-                          { header: "Type", render: (row) => row.type },
-                          {
-                            header: "Balance",
-                            align: "right",
-                            render: (row) => formatMoney(row.currentBalance, row.currencyCode),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Accounts and latest movements"
+                      kicker="Cash and bank"
+                      className="ui-scroll-panel"
+                      empty="No cash or bank account exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.finance.bankAccounts}
+                      columns={[
+                        { header: "Code", render: (row) => row.code },
+                        { header: "Account", render: (row) => row.name },
+                        { header: "Type", render: (row) => row.type },
+                        {
+                          header: "Balance",
+                          align: "right",
+                          render: (row) => formatMoney(row.currentBalance, row.currencyCode),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <QuickBankAccount
@@ -395,30 +363,24 @@ export default function FinancePage() {
               {tab === "loyalty" ? (
                 <div className="ui-screen-grid">
                   <main className="ui-screen-main">
-                    <Card className="ui-scroll-panel">
-                      <CardHeader>
-                        <div>
-                          <Kicker>Loyalty</Kicker>
-                          <CardTitle>Customer points and tiers</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <DataTable
-                        caption="Loyalty accounts."
-                        empty="No loyalty balance exists yet."
-                        getRowKey={(row) => row.id}
-                        rows={data.finance.loyaltyAccounts}
-                        columns={[
-                          { header: "Customer", render: (row) => row.customerName },
-                          { header: "Tier", render: (row) => row.tier },
-                          { header: "Points", align: "right", render: (row) => row.pointsBalance },
-                          {
-                            header: "Activity",
-                            hideOnMobile: true,
-                            render: (row) => formatDateTime(row.lastActivityAt),
-                          },
-                        ]}
-                      />
-                    </Card>
+                    <DataTable
+                      caption="Customer points and tiers"
+                      kicker="Loyalty"
+                      className="ui-scroll-panel"
+                      empty="No loyalty balance exists yet."
+                      getRowKey={(row) => row.id}
+                      rows={data.finance.loyaltyAccounts}
+                      columns={[
+                        { header: "Customer", render: (row) => row.customerName },
+                        { header: "Tier", render: (row) => row.tier },
+                        { header: "Points", align: "right", render: (row) => row.pointsBalance },
+                        {
+                          header: "Activity",
+                          hideOnMobile: true,
+                          render: (row) => formatDateTime(row.lastActivityAt),
+                        },
+                      ]}
+                    />
                   </main>
                   <aside className="ui-screen-side">
                     <QuickLoyalty
@@ -444,38 +406,32 @@ export default function FinancePage() {
               ) : null}
 
               {tab === "events" ? (
-                <Card className="ui-scroll-panel">
-                  <CardHeader>
-                    <div>
-                      <Kicker>Accounting bridge</Kicker>
-                      <CardTitle>Finance event queue</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <DataTable
-                    caption="Accounting events."
-                    empty="No accounting event exists yet."
-                    getRowKey={(row) => row.id}
-                    rows={data.finance.accountingEvents}
-                    columns={[
-                      { header: "Event", render: (row) => row.eventType },
-                      { header: "Source", render: (row) => `${row.sourceType} · ${row.sourceId}` },
-                      { header: "Status", render: (row) => row.status },
-                      {
-                        header: "Amount",
-                        align: "right",
-                        render: (row) =>
-                          row.amount === null
-                            ? "-"
-                            : formatMoney(row.amount, row.currencyCode ?? defaultCurrency),
-                      },
-                      {
-                        header: "Created",
-                        hideOnMobile: true,
-                        render: (row) => formatDateTime(row.createdAt),
-                      },
-                    ]}
-                  />
-                </Card>
+                <DataTable
+                  caption="Finance event queue"
+                  kicker="Accounting bridge"
+                  className="ui-scroll-panel"
+                  empty="No accounting event exists yet."
+                  getRowKey={(row) => row.id}
+                  rows={data.finance.accountingEvents}
+                  columns={[
+                    { header: "Event", render: (row) => row.eventType },
+                    { header: "Source", render: (row) => `${row.sourceType} · ${row.sourceId}` },
+                    { header: "Status", render: (row) => row.status },
+                    {
+                      header: "Amount",
+                      align: "right",
+                      render: (row) =>
+                        row.amount === null
+                          ? "-"
+                          : formatMoney(row.amount, row.currencyCode ?? defaultCurrency),
+                    },
+                    {
+                      header: "Created",
+                      hideOnMobile: true,
+                      render: (row) => formatDateTime(row.createdAt),
+                    },
+                  ]}
+                />
               ) : null}
             </Stack>
           ) : null}

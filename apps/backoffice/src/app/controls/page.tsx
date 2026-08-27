@@ -22,7 +22,6 @@ import {
   FormFooter,
   FormGrid,
   Kicker,
-  PageHeader,
   SelectField,
   Stack,
   StatePanel,
@@ -133,23 +132,17 @@ export default function ControlsPage() {
 
   return (
     <Workspace
-      activeHref="/controls"
+      requirements="CC-P0-007 to CC-P0-010"
+      status={
+        <StatusChip tone={pending.length ? "warning" : "success"}>
+          {pending.length ? `${pending.length} waiting approval` : "Nothing waiting"}
+        </StatusChip>
+      }
       description="Approval rules, feature packs, document numbering and the audit history."
       eyebrow="Common Core · P0"
       title="Controls and audit"
     >
       <Stack>
-        <PageHeader
-          eyebrow="CC-P0-007 to CC-P0-010"
-          title="Management controls"
-          description="Sensitive actions can require a second person, features can be turned on per Business, numbers stay readable, and every important change is kept in an append-only history."
-          status={
-            <StatusChip tone={pending.length ? "warning" : "success"}>
-              {pending.length ? `${pending.length} waiting approval` : "Nothing waiting"}
-            </StatusChip>
-          }
-        />
-
         <Tabs
           onChange={setTab}
           value={tab}
@@ -166,282 +159,259 @@ export default function ControlsPage() {
             <>
               {tab === "approvals" ? (
                 <Stack>
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <Kicker>CC-P0-007</Kicker>
-                        <CardTitle>Approval rules</CardTitle>
-                      </div>
+                  <DataTable
+                    caption="Approval rules"
+                    summary="A rule applies from its threshold upward. Leave the threshold empty to require approval every time."
+                    kicker="CC-P0-007"
+                    toolbar={
                       <CardDescription>
                         A rule applies from its threshold upward. Leave the threshold empty to
                         require approval every time.
                       </CardDescription>
-                    </CardHeader>
-                    <DataTable
-                      caption="Sensitive actions and the rule that protects each one."
-                      getRowKey={(action) => action.code}
-                      rows={approvals.approvableActions}
-                      columns={[
-                        { header: "Action", render: (action) => <strong>{action.name}</strong> },
-                        {
-                          header: "Decided with",
-                          hideOnMobile: true,
-                          render: (action) => <code>{action.decisionPermission}</code>,
+                    }
+                    getRowKey={(action) => action.code}
+                    rows={approvals.approvableActions}
+                    columns={[
+                      { header: "Action", render: (action) => <strong>{action.name}</strong> },
+                      {
+                        header: "Decided with",
+                        hideOnMobile: true,
+                        render: (action) => <code>{action.decisionPermission}</code>,
+                      },
+                      {
+                        header: "Threshold",
+                        align: "right",
+                        render: (action) => {
+                          const policy = approvals.policies.find(
+                            (candidate) => candidate.actionCode === action.code,
+                          );
+                          if (!policy) return "No rule";
+                          return policy.thresholdAmount === null
+                            ? "Always"
+                            : formatMoney(policy.thresholdAmount, policy.currencyCode ?? "");
                         },
-                        {
-                          header: "Threshold",
-                          align: "right",
-                          render: (action) => {
-                            const policy = approvals.policies.find(
-                              (candidate) => candidate.actionCode === action.code,
-                            );
-                            if (!policy) return "No rule";
-                            return policy.thresholdAmount === null
-                              ? "Always"
-                              : formatMoney(policy.thresholdAmount, policy.currencyCode ?? "");
-                          },
+                      },
+                      {
+                        header: "State",
+                        render: (action) => {
+                          const policy = approvals.policies.find(
+                            (candidate) => candidate.actionCode === action.code,
+                          );
+                          if (!policy) return <Badge tone="neutral">Not configured</Badge>;
+                          return (
+                            <Badge tone={policy.enabled ? "success" : "neutral"}>
+                              {policy.enabled ? "Enforced" : "Disabled"}
+                            </Badge>
+                          );
                         },
-                        {
-                          header: "State",
-                          render: (action) => {
-                            const policy = approvals.policies.find(
-                              (candidate) => candidate.actionCode === action.code,
-                            );
-                            if (!policy) return <Badge tone="neutral">Not configured</Badge>;
-                            return (
-                              <Badge tone={policy.enabled ? "success" : "neutral"}>
-                                {policy.enabled ? "Enforced" : "Disabled"}
-                              </Badge>
-                            );
-                          },
-                        },
-                        {
-                          header: "Actions",
-                          align: "right",
-                          render: (action) => (
-                            <Button
-                              onClick={() => setPolicyDialog(action.code)}
-                              size="quiet"
-                              variant="secondary"
-                            >
-                              Configure
-                            </Button>
-                          ),
-                        },
-                      ]}
-                    />
-                  </Card>
+                      },
+                      {
+                        header: "Actions",
+                        align: "right",
+                        render: (action) => (
+                          <Button
+                            onClick={() => setPolicyDialog(action.code)}
+                            size="quiet"
+                            variant="secondary"
+                          >
+                            Configure
+                          </Button>
+                        ),
+                      },
+                    ]}
+                  />
 
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <Kicker>Requests</Kicker>
-                        <CardTitle>Approval requests</CardTitle>
-                      </div>
+                  <DataTable
+                    caption="Approval requests"
+                    summary="Turning a pack off never deletes data. A pack that other packs depend on cannot be turned off until they are."
+                    kicker="Requests"
+                    toolbar={
                       <Badge tone={pending.length ? "warning" : "neutral"}>
                         {pending.length} waiting
                       </Badge>
-                    </CardHeader>
-                    <DataTable
-                      caption="Requests raised by the POS and Back Office."
-                      getRowKey={(request) => request.id}
-                      rows={approvals.requests}
-                      empty="Nothing has needed approval yet."
-                      columns={[
-                        { header: "Action", render: (request) => request.actionName },
-                        {
-                          header: "Amount",
-                          align: "right",
-                          render: (request) =>
-                            request.amount === null
-                              ? "-"
-                              : formatMoney(request.amount, request.currencyCode ?? ""),
-                        },
-                        { header: "Reason", render: (request) => request.reason },
-                        {
-                          header: "Requested by",
-                          hideOnMobile: true,
-                          render: (request) => request.requestedBy,
-                        },
-                        {
-                          header: "Status",
-                          render: (request) => (
-                            <Badge
-                              tone={
-                                request.status === "APPROVED"
-                                  ? "success"
-                                  : request.status === "PENDING"
-                                    ? "warning"
-                                    : "danger"
-                              }
-                            >
-                              {request.status}
-                            </Badge>
+                    }
+                    getRowKey={(request) => request.id}
+                    rows={approvals.requests}
+                    empty="Nothing has needed approval yet."
+                    columns={[
+                      { header: "Action", render: (request) => request.actionName },
+                      {
+                        header: "Amount",
+                        align: "right",
+                        render: (request) =>
+                          request.amount === null
+                            ? "-"
+                            : formatMoney(request.amount, request.currencyCode ?? ""),
+                      },
+                      { header: "Reason", render: (request) => request.reason },
+                      {
+                        header: "Requested by",
+                        hideOnMobile: true,
+                        render: (request) => request.requestedBy,
+                      },
+                      {
+                        header: "Status",
+                        render: (request) => (
+                          <Badge
+                            tone={
+                              request.status === "APPROVED"
+                                ? "success"
+                                : request.status === "PENDING"
+                                  ? "warning"
+                                  : "danger"
+                            }
+                          >
+                            {request.status}
+                          </Badge>
+                        ),
+                      },
+                      {
+                        header: "Decision",
+                        align: "right",
+                        render: (request) =>
+                          request.status === "PENDING" ? (
+                            <div className="ui-row">
+                              <Button
+                                disabled={busy}
+                                onClick={() =>
+                                  api && identity
+                                    ? void run("Request approved.", () =>
+                                        api.decideApprovalRequest(identity.businessId, request.id, {
+                                          decision: "APPROVED",
+                                        }),
+                                      )
+                                    : undefined
+                                }
+                                size="quiet"
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                disabled={busy}
+                                onClick={() =>
+                                  api && identity
+                                    ? void run("Request rejected.", () =>
+                                        api.decideApprovalRequest(identity.businessId, request.id, {
+                                          decision: "REJECTED",
+                                        }),
+                                      )
+                                    : undefined
+                                }
+                                size="quiet"
+                                variant="ghost"
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="ui-card-description">{request.decidedBy ?? "-"}</span>
                           ),
-                        },
-                        {
-                          header: "Decision",
-                          align: "right",
-                          render: (request) =>
-                            request.status === "PENDING" ? (
-                              <div className="ui-row">
-                                <Button
-                                  disabled={busy}
-                                  onClick={() =>
-                                    api && identity
-                                      ? void run("Request approved.", () =>
-                                          api.decideApprovalRequest(
-                                            identity.businessId,
-                                            request.id,
-                                            { decision: "APPROVED" },
-                                          ),
-                                        )
-                                      : undefined
-                                  }
-                                  size="quiet"
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  disabled={busy}
-                                  onClick={() =>
-                                    api && identity
-                                      ? void run("Request rejected.", () =>
-                                          api.decideApprovalRequest(
-                                            identity.businessId,
-                                            request.id,
-                                            { decision: "REJECTED" },
-                                          ),
-                                        )
-                                      : undefined
-                                  }
-                                  size="quiet"
-                                  variant="ghost"
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            ) : (
-                              <span className="ui-card-description">
-                                {request.decidedBy ?? "-"}
-                              </span>
-                            ),
-                        },
-                      ]}
-                    />
-                  </Card>
+                      },
+                    ]}
+                  />
                 </Stack>
               ) : null}
 
               {tab === "features" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P0-008</Kicker>
-                      <CardTitle>Feature packs</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Feature packs"
+                  kicker="CC-P0-008"
+                  toolbar={
                     <CardDescription>
                       Turning a pack off never deletes data. A pack that other packs depend on
                       cannot be turned off until they are.
                     </CardDescription>
-                  </CardHeader>
-                  <DataTable
-                    caption="Features available to this Business."
-                    getRowKey={(feature) => feature.key}
-                    rows={data.features}
-                    columns={[
-                      { header: "Feature", render: (feature) => <strong>{feature.name}</strong> },
-                      { header: "What it adds", render: (feature) => feature.description },
-                      {
-                        header: "Kind",
-                        render: (feature) => <Badge tone="neutral">{feature.kind}</Badge>,
-                      },
-                      {
-                        header: "State",
-                        render: (feature) =>
-                          feature.enabled ? (
-                            <Badge tone="success">Enabled</Badge>
-                          ) : feature.blockedBy.length ? (
-                            <Badge tone="warning">Needs {feature.blockedBy.join(", ")}</Badge>
-                          ) : (
-                            <Badge tone="neutral">Disabled</Badge>
-                          ),
-                      },
-                      {
-                        header: "Actions",
-                        align: "right",
-                        render: (feature) => (
-                          <Button
-                            disabled={busy || (!feature.enabled && feature.blockedBy.length > 0)}
-                            onClick={() =>
-                              api && identity
-                                ? void run(
-                                    feature.enabled ? "Feature disabled." : "Feature enabled.",
-                                    () =>
-                                      api.setFeature(identity.businessId, {
-                                        featureKey: feature.key,
-                                        enabled: !feature.enabled,
-                                      }),
-                                  )
-                                : undefined
-                            }
-                            size="quiet"
-                            variant="secondary"
-                          >
-                            {feature.enabled ? "Disable" : "Enable"}
-                          </Button>
+                  }
+                  getRowKey={(feature) => feature.key}
+                  rows={data.features}
+                  columns={[
+                    { header: "Feature", render: (feature) => <strong>{feature.name}</strong> },
+                    { header: "What it adds", render: (feature) => feature.description },
+                    {
+                      header: "Kind",
+                      render: (feature) => <Badge tone="neutral">{feature.kind}</Badge>,
+                    },
+                    {
+                      header: "State",
+                      render: (feature) =>
+                        feature.enabled ? (
+                          <Badge tone="success">Enabled</Badge>
+                        ) : feature.blockedBy.length ? (
+                          <Badge tone="warning">Needs {feature.blockedBy.join(", ")}</Badge>
+                        ) : (
+                          <Badge tone="neutral">Disabled</Badge>
                         ),
-                      },
-                    ]}
-                  />
-                </Card>
+                    },
+                    {
+                      header: "Actions",
+                      align: "right",
+                      render: (feature) => (
+                        <Button
+                          disabled={busy || (!feature.enabled && feature.blockedBy.length > 0)}
+                          onClick={() =>
+                            api && identity
+                              ? void run(
+                                  feature.enabled ? "Feature disabled." : "Feature enabled.",
+                                  () =>
+                                    api.setFeature(identity.businessId, {
+                                      featureKey: feature.key,
+                                      enabled: !feature.enabled,
+                                    }),
+                                )
+                              : undefined
+                          }
+                          size="quiet"
+                          variant="secondary"
+                        >
+                          {feature.enabled ? "Disable" : "Enable"}
+                        </Button>
+                      ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "numbering" ? (
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <Kicker>CC-P0-010</Kicker>
-                      <CardTitle>Document numbers</CardTitle>
-                    </div>
+                <DataTable
+                  caption="Document numbers"
+                  summary="Numbers are allocated atomically, so two terminals never receive the same number. A sequence can only move forward."
+                  kicker="CC-P0-010"
+                  toolbar={
                     <CardDescription>
                       Numbers are allocated atomically, so two terminals never receive the same
                       number. A sequence can only move forward.
                     </CardDescription>
-                  </CardHeader>
-                  <DataTable
-                    caption="Number sequences by Business and Branch."
-                    getRowKey={(sequence) => sequence.id}
-                    rows={data.sequences}
-                    empty="Sequences are created with the Business and each Branch."
-                    columns={[
-                      {
-                        header: "Document",
-                        render: (sequence) => <strong>{sequence.documentType}</strong>,
-                      },
-                      { header: "Scope", render: (sequence) => sequence.branchName ?? "Business" },
-                      { header: "Prefix", render: (sequence) => sequence.prefix },
-                      {
-                        header: "Next number",
-                        align: "right",
-                        render: (sequence) => <code>{sequence.nextNumberPreview}</code>,
-                      },
-                      {
-                        header: "Actions",
-                        align: "right",
-                        render: (sequence) => (
-                          <Button
-                            onClick={() => setSequenceDialog(sequence)}
-                            size="quiet"
-                            variant="secondary"
-                          >
-                            Change
-                          </Button>
-                        ),
-                      },
-                    ]}
-                  />
-                </Card>
+                  }
+                  getRowKey={(sequence) => sequence.id}
+                  rows={data.sequences}
+                  empty="Sequences are created with the Business and each Branch."
+                  columns={[
+                    {
+                      header: "Document",
+                      render: (sequence) => <strong>{sequence.documentType}</strong>,
+                    },
+                    { header: "Scope", render: (sequence) => sequence.branchName ?? "Business" },
+                    { header: "Prefix", render: (sequence) => sequence.prefix },
+                    {
+                      header: "Next number",
+                      align: "right",
+                      render: (sequence) => <code>{sequence.nextNumberPreview}</code>,
+                    },
+                    {
+                      header: "Actions",
+                      align: "right",
+                      render: (sequence) => (
+                        <Button
+                          onClick={() => setSequenceDialog(sequence)}
+                          size="quiet"
+                          variant="secondary"
+                        >
+                          Change
+                        </Button>
+                      ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "audit" ? (

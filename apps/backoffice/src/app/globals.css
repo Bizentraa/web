@@ -1,10 +1,51 @@
 /**
  * Back Office application styles.
  *
- * Shared component styles live in @bizentra/design-system/styles.css, which the layout imports
- * first. This file only carries the saved Business theme variables and the styles that belong to
- * Back Office screens themselves.
+ * Layering contract
+ * -----------------
+ * `@bizentra/design-system/styles.css` is imported by the layout BEFORE this file and is
+ * unlayered, so it must keep winning over Tailwind's preflight while still losing to the
+ * Tailwind utilities that the shadcn sidebar components rely on. Tailwind is therefore imported
+ * in pieces rather than as one `@import "tailwindcss"`:
+ *
+ *   theme      -> Tailwind design tokens          (layer, lowest)
+ *   base       -> Tailwind preflight              (layer, loses to the design system)
+ *   components -> reserved                        (layer)
+ *   utilities  -> UNLAYERED, so `.bg-sidebar` beats `button { color: inherit }`
+ *
+ * Unlayered rules always beat layered rules regardless of specificity, which is why preflight is
+ * layered and utilities are not.
  */
+
+@layer theme, base, components;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+/*
+ * The shared stylesheet is pulled in here by relative path rather than imported from the layout.
+ *
+ * Turbopack resolves PostCSS plugins per source file, so a CSS file living in
+ * packages/design-system was looked up from that package and failed with
+ * "Cannot find module '@tailwindcss/postcss'". Inlining it into this file means each application
+ * hands PostCSS exactly one CSS entry, rooted in the application that owns the config.
+ *
+ * The position matters and is the whole layering contract in one place:
+ *   preflight        layered  -> loses to the design system
+ *   design system    unlayered, imported first
+ *   utilities        unlayered, imported after -> class selectors beat the design system's
+ *                    element selectors, so `.bg-sidebar` survives `button { color: inherit }`
+ */
+@import "../../../../packages/design-system/styles.css";
+@import "tailwindcss/utilities.css";
+@import "./tw-animate.css";
+
+@source "../**/*.{ts,tsx}";
+
+/**
+ * The Business theme engine writes `--color-*` onto <html> and flips `data-color-mode` for dark
+ * mode, so shadcn's `dark:` utilities are pointed at that attribute instead of a `.dark` class.
+ */
+@custom-variant dark (&:where([data-color-mode="dark"], [data-color-mode="dark"] *));
 
 :root {
   --color-background: #f8fafc;
@@ -35,136 +76,146 @@
   --color-selection: #dbeafe;
 }
 
-.global-command-floating {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 42px;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 13px;
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  font-weight: 800;
-  text-decoration: none;
+/**
+ * shadcn token bridge.
+ *
+ * Every shadcn semantic token is derived from a saved Business theme variable, so the sidebar
+ * follows the Business palette and the light/dark switch with no second source of truth.
+ * `@theme inline` is deliberate: the utilities compile to `var(--sidebar)` rather than to
+ * `var(--color-sidebar)`, which keeps Tailwind's `--color-*` namespace from colliding with the
+ * Business theme's own `--color-*` variables above.
+ */
+:root {
+  --radius: 0.7rem;
+
+  --background: var(--color-background);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface-elevated);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-surface-elevated);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: var(--color-primary-foreground);
+  --secondary: var(--color-surface-secondary);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-surface-secondary);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-hover-background);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-danger);
+  --destructive-foreground: #ffffff;
+  --border: var(--color-border);
+  --input: var(--color-border-strong);
+  --ring: var(--color-focus);
+
+  --chart-1: var(--color-primary);
+  --chart-2: var(--color-accent);
+  --chart-3: var(--color-success);
+  --chart-4: var(--color-warning);
+  --chart-5: var(--color-pending);
+
+  --sidebar: var(--color-surface-elevated);
+  --sidebar-foreground: var(--color-text-primary);
+  --sidebar-primary: var(--color-primary);
+  --sidebar-primary-foreground: var(--color-primary-foreground);
+  --sidebar-accent: var(--color-hover-background);
+  --sidebar-accent-foreground: var(--color-text-primary);
+  --sidebar-border: var(--color-border);
+  --sidebar-ring: var(--color-focus);
 }
 
-kbd {
-  padding: 3px 7px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 7px;
-  background: var(--color-surface-secondary);
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  font-weight: 900;
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.global-command-floating {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 30;
-  display: none;
-  box-shadow: 0 18px 42px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
-.global-command-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: grid;
-  align-items: start;
-  justify-items: center;
-  padding: 9vh 18px 24px;
-  background: color-mix(in srgb, var(--color-text-primary) 42%, transparent);
-}
-
-.global-command-panel {
-  width: min(720px, 100%);
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  background: var(--color-surface);
-  box-shadow: 0 28px 70px color-mix(in srgb, var(--color-text-primary) 24%, transparent);
-}
-
-.global-command-search {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.global-command-search label {
-  display: grid;
-  gap: 7px;
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 850;
-}
-
-.global-command-search input {
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 12px;
-  background: var(--color-input-background);
-  color: var(--color-text-primary);
-}
-
-.global-command-search button {
-  align-self: end;
-  min-height: 46px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--color-surface-secondary);
-  color: var(--color-text-primary);
-  font-weight: 850;
-}
-
-.global-command-list {
-  display: grid;
-  gap: 6px;
-  max-height: min(55vh, 440px);
-  padding: 12px;
-  margin: 0;
-  overflow: auto;
-  list-style: none;
-}
-
-.global-command-list a {
+/**
+ * Screen header.
+ *
+ * The single header for a screen. Screens used to render a second design-system `PageHeader`
+ * inside their own content, which duplicated the title and description and left two competing
+ * headers stacked; that block is gone and its status chip and SRS range moved up here.
+ *
+ * It borrows the design system's scale wholesale — same tokens, same letter-spacing language,
+ * same actions row — and steps the title one size above `.ui-page-header h2` so a section header
+ * used inside a screen still reads as subordinate.
+ */
+.bo-screen-header {
+  align-items: flex-start;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   justify-content: space-between;
-  gap: 14px;
-  padding: 13px 14px;
-  border-radius: 13px;
-  color: var(--color-text-primary);
-  text-decoration: none;
 }
 
-.global-command-list a:hover {
-  background: var(--color-surface-secondary);
+.bo-screen-eyebrow {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.global-command-list span {
-  font-weight: 850;
-}
-
-.global-command-list small,
-.global-command-empty {
+/* The SRS range is traceability metadata, so it sits quieter than the phase label beside it. */
+.bo-screen-eyebrow > .ui-code {
   color: var(--color-text-muted);
-  font-weight: 800;
+  font-size: 0.7rem;
 }
 
-.global-command-empty {
-  margin: 0;
-  padding: 0 16px 18px;
+.bo-screen-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 4px 0 0;
 }
 
+.bo-screen-header p {
+  color: var(--color-text-secondary);
+  margin: 6px 0 0;
+  max-width: 80ch;
+}
 .theme-back-link {
   margin: 0 0 20px;
   color: var(--color-primary);
@@ -390,12 +441,24 @@ kbd {
 .theme-field input,
 .theme-field select {
   width: 100%;
-  min-height: 44px;
-  padding: 9px 12px;
+  min-height: 34px;
+  padding: 5px 10px;
   border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--color-input-background);
   color: var(--color-text-primary);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
+}
+
+.theme-field input:focus,
+.theme-field select:focus,
+.theme-colour-input input:focus {
+  border-color: color-mix(in srgb, var(--color-primary) 72%, var(--color-border-strong));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  outline: none;
 }
 
 .theme-field small {
@@ -453,7 +516,7 @@ kbd {
 
 .theme-colour-input input {
   width: 52px;
-  height: 38px;
+  height: 32px;
   padding: 3px;
   border: 1px solid var(--color-border-strong);
   border-radius: 9px;
@@ -471,15 +534,20 @@ kbd {
 }
 
 .theme-primary-button {
-  min-height: 44px;
-  padding: 10px 18px;
-  border-radius: 11px;
+  min-height: 34px;
+  padding: 6px 13px;
+  border-radius: 9px;
   background: var(--color-primary);
   color: var(--color-primary-foreground);
+  font-size: 0.84rem;
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .theme-primary-button:hover {
   background: var(--color-primary-hover);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .theme-primary-button:disabled {
@@ -672,8 +740,8 @@ kbd {
 }
 
 .catalog-secondary-action {
-  min-height: 44px;
-  padding: 10px 14px;
+  min-height: 34px;
+  padding: 6px 11px;
 }
 
 .catalog-score-grid {
@@ -893,28 +961,6 @@ kbd {
 }
 
 @media (max-width: 1120px) {
-  .ui-app-shell {
-    grid-template-columns: 88px minmax(0, 1fr);
-  }
-
-  .ui-sidebar {
-    padding: 16px 10px;
-  }
-
-  .ui-brand {
-    justify-content: center;
-  }
-
-  .ui-brand strong,
-  .ui-sidebar-link small {
-    display: none;
-  }
-
-  .ui-sidebar-link {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
   .catalog-command-center,
   .catalog-main-grid {
     grid-template-columns: 1fr;
@@ -930,65 +976,6 @@ kbd {
 }
 
 @media (max-width: 760px) {
-  .ui-app-shell {
-    display: block;
-    padding-bottom: 66px;
-  }
-
-  .ui-sidebar,
-  .ui-command-trigger {
-    display: none;
-  }
-
-  .ui-topbar {
-    position: static;
-  }
-
-  .ui-topbar-context strong {
-    max-width: 48vw;
-  }
-
-  .ui-mobile-nav {
-    position: fixed;
-    right: 10px;
-    bottom: 10px;
-    left: 10px;
-    z-index: 40;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid var(--color-border);
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--color-surface-elevated) 95%, transparent);
-    box-shadow: 0 18px 48px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
-    backdrop-filter: blur(14px);
-  }
-
-  .ui-mobile-nav a {
-    overflow: hidden;
-    padding: 10px 7px;
-    border-radius: 12px;
-    color: var(--color-text-secondary);
-    font-size: 0.76rem;
-    font-weight: 850;
-    text-align: center;
-    text-decoration: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ui-mobile-nav a[aria-current="page"] {
-    background: var(--color-primary-soft);
-    color: var(--color-primary);
-  }
-
-  .global-command-floating {
-    display: inline-flex;
-    bottom: 86px;
-  }
-
-  .global-command-search,
   .ui-filter-bar {
     grid-template-columns: 1fr;
   }
@@ -1039,49 +1026,6 @@ kbd {
    blank card areas while still preserving the shared component contract.
 ------------------------------------------------------------------ */
 
-.ui-app-shell {
-  grid-template-columns: 248px minmax(0, 1fr);
-  background:
-    radial-gradient(
-      circle at 100% 0%,
-      color-mix(in srgb, var(--color-primary) 8%, transparent),
-      transparent 34rem
-    ),
-    var(--color-background);
-}
-
-.ui-sidebar {
-  gap: 14px;
-  padding: 16px 12px;
-  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-primary-soft));
-}
-
-.ui-sidebar-link {
-  padding: 8px 10px;
-}
-
-.ui-topbar {
-  min-height: 56px;
-  padding: 8px 18px;
-}
-
-.ui-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px 12px;
-}
-
-.ui-hero h1 {
-  font-size: clamp(1.25rem, 2vw, 1.55rem);
-}
-
-.ui-content {
-  min-height: calc(100vh - 114px);
-  padding: 16px 18px 18px;
-}
-
 .ui-stack {
   gap: 14px;
 }
@@ -1103,8 +1047,8 @@ kbd {
 .ui-card {
   gap: 10px;
   padding: 14px;
-  border-radius: 14px;
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-text-primary) 5%, transparent);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
 }
 
 .ui-screen-grid {
@@ -1135,10 +1079,6 @@ kbd {
 }
 
 @media (max-width: 1120px) {
-  .ui-app-shell {
-    grid-template-columns: 84px minmax(0, 1fr);
-  }
-
   .theme-workspace-grid,
   .theme-overview-panel {
     grid-template-columns: 1fr;
@@ -1161,18 +1101,12 @@ kbd {
 }
 
 @media (max-width: 760px) {
-  .ui-app-shell {
-    display: block;
-    padding-bottom: 66px;
-  }
-
   .ui-hero {
     display: block;
   }
 
   .ui-content {
     min-height: auto;
-    padding: 12px;
   }
 
   .theme-grid {

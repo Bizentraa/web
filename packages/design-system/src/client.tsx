@@ -1,7 +1,31 @@
 "use client";
 
 import {
+  BarChart3,
+  Bell,
+  Boxes,
+  Building2,
+  CircleDollarSign,
+  ClipboardCheck,
+  FileInput,
+  Gauge,
+  Grid2X2,
+  KeyRound,
+  Layers3,
+  ListChecks,
+  PackageSearch,
+  ReceiptText,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Store,
+  Truck,
+  UsersRound,
+  type LucideIcon,
+} from "lucide-react";
+import {
   createContext,
+  type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
   useContext,
   useEffect,
@@ -25,7 +49,7 @@ function useOverlayBehaviour(open: boolean, onClose: () => void) {
 
   useEffect(() => {
     if (!open) return;
-    const onKeyDown = (event: KeyboardEvent) => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
         onClose();
@@ -276,25 +300,145 @@ export function Tabs({
   value,
 }: {
   onChange: (value: string) => void;
-  tabs: Array<{ value: string; label: string; badge?: string }>;
+  tabs: Array<{ value: string; label: string; badge?: string; icon?: LucideIcon }>;
   value: string;
 }) {
   return (
     <div className="ui-section-nav" role="tablist">
-      {tabs.map((tab) => (
-        <button
-          aria-selected={tab.value === value}
-          key={tab.value}
-          onClick={() => onChange(tab.value)}
-          role="tab"
-          type="button"
-        >
-          {tab.label}
-          {tab.badge ? ` (${tab.badge})` : ""}
-        </button>
-      ))}
+      {tabs.map((tab) => {
+        const Icon = tab.icon ?? tabIcon(tab.value, tab.label);
+        return (
+          <button
+            aria-selected={tab.value === value}
+            key={tab.value}
+            onClick={() => onChange(tab.value)}
+            role="tab"
+            type="button"
+          >
+            <Icon aria-hidden="true" size={17} />
+            <span>{tab.label}</span>
+            {tab.badge ? <small>{tab.badge}</small> : null}
+          </button>
+        );
+      })}
     </div>
   );
+}
+
+/**
+ * Section navigation as a left-hand rail, for a screen whose sections are a list of record types
+ * rather than a short row of views. A horizontal `Tabs` row stops working once there are six or
+ * more sections or the labels are long ("Prices and promotions"); a rail keeps every section
+ * readable, shows counts, and leaves the table beside it full width.
+ *
+ * Implements the tablist keyboard contract: up/down move, home/end jump, and only the selected
+ * tab is in the tab order, so the rail is one stop rather than one per section.
+ */
+export function VerticalTabs({
+  children,
+  onChange,
+  tabs,
+  value,
+}: {
+  children: ReactNode;
+  onChange: (value: string) => void;
+  tabs: Array<{
+    value: string;
+    label: string;
+    badge?: string;
+    description?: string;
+    icon?: LucideIcon;
+  }>;
+  value: string;
+}) {
+  const move = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const keys = ["ArrowDown", "ArrowUp", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    event.preventDefault();
+
+    const index = tabs.findIndex((tab) => tab.value === value);
+    const last = tabs.length - 1;
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? last
+          : event.key === "ArrowDown"
+            ? (index + 1) % tabs.length
+            : (index - 1 + tabs.length) % tabs.length;
+
+    const target = tabs[next];
+    if (!target) return;
+    onChange(target.value);
+    const rail = event.currentTarget;
+    rail.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+  };
+
+  return (
+    <div className="ui-vertical-tabs">
+      <div
+        aria-orientation="vertical"
+        className="ui-vertical-tabs-nav"
+        onKeyDown={move}
+        role="tablist"
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon ?? tabIcon(tab.value, tab.label);
+          const selected = tab.value === value;
+          return (
+            <button
+              aria-selected={selected}
+              key={tab.value}
+              onClick={() => onChange(tab.value)}
+              role="tab"
+              tabIndex={selected ? 0 : -1}
+              type="button"
+            >
+              <Icon aria-hidden="true" size={17} />
+              <span>
+                <strong>{tab.label}</strong>
+                {tab.description ? <small>{tab.description}</small> : null}
+              </span>
+              {tab.badge ? <em>{tab.badge}</em> : null}
+            </button>
+          );
+        })}
+      </div>
+      <div className="ui-vertical-tabs-panel" role="tabpanel">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function tabIcon(value: string, label: string): LucideIcon {
+  const key = `${value} ${label}`.toLowerCase();
+  if (key.includes("analytics") || key.includes("report")) return BarChart3;
+  if (key.includes("approval") || key.includes("control")) return SlidersHorizontal;
+  if (key.includes("audit") || key.includes("history")) return ListChecks;
+  if (key.includes("business") || key.includes("branch") || key.includes("setup")) return Building2;
+  if (key.includes("catalog") || key.includes("item") || key.includes("price")) return Boxes;
+  if (key.includes("customer")) return UsersRound;
+  if (key.includes("engine") || key.includes("booking") || key.includes("ticket")) return Store;
+  if (key.includes("finance") || key.includes("money") || key.includes("payment")) {
+    return CircleDollarSign;
+  }
+  if (key.includes("import")) return FileInput;
+  if (key.includes("inventory") || key.includes("stock")) return PackageSearch;
+  if (key.includes("notification") || key.includes("alert")) return Bell;
+  if (key.includes("permission") || key.includes("role") || key.includes("user")) return KeyRound;
+  if (key.includes("production") || key.includes("security") || key.includes("ready")) {
+    return ShieldCheck;
+  }
+  if (key.includes("sale") || key.includes("shift") || key.includes("return")) return ReceiptText;
+  if (key.includes("store") || key.includes("offline") || key.includes("device")) {
+    return ClipboardCheck;
+  }
+  if (key.includes("supplier") || key.includes("purchase")) return Truck;
+  if (key.includes("setting") || key.includes("configuration")) return Settings2;
+  if (key.includes("layer") || key.includes("variant")) return Layers3;
+  if (key.includes("dashboard") || key.includes("overview")) return Gauge;
+  return Grid2X2;
 }
 
 /* -------------------------------------------------------------------------- */
