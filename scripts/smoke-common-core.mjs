@@ -131,17 +131,23 @@ async function main() {
   const adminRole = access.roles.find((role) => role.code === "ADMINISTRATOR");
   const managerRole = access.roles.find((role) => role.code === "BRANCH_MANAGER");
   const financeRole = access.roles.find((role) => role.code === "FINANCE_USER");
+  const operationsRole = access.roles.find((role) => role.code === "OPERATIONS_USER");
+  const deviceRole = access.roles.find((role) => role.code === "DEVICE_USER");
   check("Role templates were created with the Business", Boolean(cashierRole && adminRole));
   check(
     "Cashier Role cannot manage Roles",
     Boolean(cashierRole) && !cashierRole.permissions.includes("ROLE_MANAGE"),
   );
   check(
-    "Permission catalogue covers P0, P1, P2, P3 and P4",
+    "Permission catalogue covers P0, P1, P2, P3, P4, P5 and P6",
     access.permissionCatalog.some((permission) => permission.code === "INVENTORY_VIEW") &&
       access.permissionCatalog.some((permission) => permission.phase === "P3") &&
       access.permissionCatalog.some((permission) => permission.code === "AR_MANAGE") &&
-      access.permissionCatalog.some((permission) => permission.phase === "P4"),
+      access.permissionCatalog.some((permission) => permission.phase === "P4") &&
+      access.permissionCatalog.some((permission) => permission.code === "WORK_TICKET_MANAGE") &&
+      access.permissionCatalog.some((permission) => permission.phase === "P5") &&
+      access.permissionCatalog.some((permission) => permission.code === "OFFLINE_MANAGE") &&
+      access.permissionCatalog.some((permission) => permission.phase === "P6"),
   );
   check(
     "Business Administrator Role receives P3 permissions",
@@ -161,6 +167,26 @@ async function main() {
       financeRole.permissions.includes("AR_MANAGE") &&
       financeRole.permissions.includes("AP_MANAGE") &&
       financeRole.permissions.includes("BANK_MANAGE"),
+  );
+  check(
+    "Business Administrator Role receives P5/P6 permissions",
+    Boolean(adminRole) &&
+      adminRole.permissions.includes("WORK_TICKET_MANAGE") &&
+      adminRole.permissions.includes("DEVICE_MANAGE") &&
+      adminRole.permissions.includes("OFFLINE_MANAGE"),
+  );
+  check(
+    "Operations User Role receives P5 permissions",
+    Boolean(operationsRole) &&
+      operationsRole.permissions.includes("WORK_TICKET_MANAGE") &&
+      operationsRole.permissions.includes("BOOKING_MANAGE") &&
+      operationsRole.permissions.includes("TRACEABILITY_MANAGE"),
+  );
+  check(
+    "Device User Role receives P6 permissions",
+    Boolean(deviceRole) &&
+      deviceRole.permissions.includes("DEVICE_MANAGE") &&
+      deviceRole.permissions.includes("OFFLINE_MANAGE"),
   );
 
   const manager = await call(`/businesses/${owner.businessId}/users`, {
@@ -837,6 +863,317 @@ async function main() {
       financeOverview.accountingEvents.some((event) => event.sourceType === "SupplierBill"),
   );
 
+  /* ------------------------------------------------------------ P5 engines */
+  console.log("\nP5 reusable business engines");
+  const initialEngines = await call(`/businesses/${owner.businessId}/business-engines/overview`, {
+    identity: owner,
+  });
+  check("Business engines overview loads for Business Owner", Boolean(initialEngines.counts));
+
+  const workflowStatus = await call(
+    `/businesses/${owner.businessId}/business-engines/workflow-statuses`,
+    {
+      method: "POST",
+      identity: owner,
+      body: { appliesTo: "WORK_TICKET", code: `OPEN${stamp.slice(-3)}`, name: "Open" },
+    },
+  );
+  check("Workflow status can be created", Boolean(workflowStatus.id));
+
+  const workTicket = await call(`/businesses/${owner.businessId}/business-engines/work-tickets`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      title: "Smoke work ticket",
+      description: "Check reusable work ticket engine",
+      priority: "HIGH",
+      sourceType: "Smoke",
+      sourceId: key("ticket-source"),
+    },
+  });
+  check("Work ticket can be created", Boolean(workTicket.id));
+
+  await call(
+    `/businesses/${owner.businessId}/business-engines/work-tickets/${workTicket.id}/status`,
+    {
+      method: "PATCH",
+      identity: owner,
+      body: { status: "IN_PROGRESS" },
+    },
+  );
+  check("Work ticket status can be updated", true);
+
+  const startsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  const booking = await call(`/businesses/${owner.businessId}/business-engines/bookings`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      customerId: customer.id,
+      resourceCode: `ROOM${stamp.slice(-3)}`,
+      title: "Smoke booking",
+      startsAt,
+      endsAt,
+    },
+  });
+  check("Booking can be created", Boolean(booking.id));
+
+  const overlappingBooking = await call(
+    `/businesses/${owner.businessId}/business-engines/bookings`,
+    {
+      method: "POST",
+      identity: owner,
+      expect: 409,
+      body: {
+        branchId: mainBranchId,
+        resourceCode: `ROOM${stamp.slice(-3)}`,
+        title: "Overlap booking",
+        startsAt,
+        endsAt,
+      },
+    },
+  );
+  check("Overlapping confirmed booking is refused", overlappingBooking.code === "CONFLICT");
+
+  const asset = await call(`/businesses/${owner.businessId}/business-engines/customer-assets`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      customerId: customer.id,
+      code: `ASSET${stamp.slice(-6)}`,
+      name: "Smoke customer asset",
+      assetType: "Device",
+      identifier: `DEV-${stamp}`,
+    },
+  });
+  check("Customer asset can be registered", Boolean(asset.id));
+
+  const traceableUnit = await call(
+    `/businesses/${owner.businessId}/business-engines/traceable-units`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        itemId: item.id,
+        locationId: foundation.locationId,
+        serialNumber: `SN-${stamp}`,
+        batchNumber: `BATCH-${stamp}`,
+        expiryDate: "2027-12-31",
+      },
+    },
+  );
+  check("Traceable serial or batch unit can be registered", Boolean(traceableUnit.id));
+
+  const warrantyClaim = await call(
+    `/businesses/${owner.businessId}/business-engines/warranty-claims`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        customerId: customer.id,
+        itemDescription: "Smoke warranty item",
+        serialReference: `SN-${stamp}`,
+        issue: "Device does not power on",
+      },
+    },
+  );
+  check("Warranty claim can be opened", Boolean(warrantyClaim.id));
+
+  const bom = await call(`/businesses/${owner.businessId}/business-engines/boms`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      code: `BOM${stamp.slice(-6)}`,
+      name: "Smoke BOM",
+      outputItemId: item.id,
+      outputQuantity: 1,
+      components: [{ itemId: item.id, quantity: 1 }],
+    },
+  });
+  check("BOM can be created without stock mutation", Boolean(bom.id));
+
+  const consumption = await call(
+    `/businesses/${owner.businessId}/business-engines/material-consumptions`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        itemId: item.id,
+        quantity: 1,
+        sourceType: "WORK_TICKET",
+        sourceId: workTicket.id,
+        notes: "Smoke material use",
+      },
+    },
+  );
+  check("Material consumption can be posted once against a work record", Boolean(consumption.id));
+
+  const route = await call(`/businesses/${owner.businessId}/business-engines/delivery-routes`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      code: `RT${stamp.slice(-6)}`,
+      name: "Smoke delivery route",
+      plannedDate: "2026-08-27",
+      vehicleReference: "Van 01",
+      driverName: "Smoke Driver",
+      stops: [
+        {
+          sequence: 1,
+          customerName: "Smoke Customer",
+          sourceType: "Sale",
+          sourceId: key("delivery"),
+        },
+      ],
+    },
+  });
+  check("Delivery route and stop plan can be created", Boolean(route.id));
+
+  const notification = await call(
+    `/businesses/${owner.businessId}/business-engines/notifications`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        channel: "EMAIL",
+        recipient: `notify-${stamp}@example.com`,
+        subject: "Smoke notification",
+        body: "Smoke notification body",
+        sourceType: "WorkTicket",
+        sourceId: workTicket.id,
+      },
+    },
+  );
+  check("Notification event can be queued", Boolean(notification.id));
+
+  const document = await call(`/businesses/${owner.businessId}/business-engines/documents`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      entityType: "WorkTicket",
+      entityId: workTicket.id,
+      fileName: "smoke-photo.jpg",
+      mimeType: "image/jpeg",
+      url: "https://example.com/smoke-photo.jpg",
+    },
+  });
+  check("Document metadata can be attached to a record", Boolean(document.id));
+
+  const enginesOverview = await call(`/businesses/${owner.businessId}/business-engines/overview`, {
+    identity: owner,
+  });
+  check(
+    "Business engines overview reports created records",
+    enginesOverview.workTickets.some((row) => row.id === workTicket.id) &&
+      enginesOverview.bookings.some((row) => row.id === booking.id) &&
+      enginesOverview.traceableUnits.some((row) => row.id === traceableUnit.id) &&
+      enginesOverview.boms.some((row) => row.id === bom.id),
+  );
+
+  /* ------------------------------------------------------------ P6 reliability */
+  console.log("\nP6 offline, devices and store reliability");
+  const initialReliability = await call(
+    `/businesses/${owner.businessId}/store-reliability/overview`,
+    {
+      identity: owner,
+    },
+  );
+  check("Store reliability overview loads for Business Owner", Boolean(initialReliability.counts));
+
+  const device = await call(`/businesses/${owner.businessId}/store-reliability/devices`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      branchId: mainBranchId,
+      code: `POS${stamp.slice(-6)}`,
+      name: "Smoke POS terminal",
+      kind: "POS_TERMINAL",
+      hardwareId: `HW-${stamp}`,
+      capabilities: { receipt: true, scanner: true, offline: true },
+    },
+  });
+  check("Store device can be registered", Boolean(device.id));
+
+  await call(`/businesses/${owner.businessId}/store-reliability/devices/${device.id}/heartbeat`, {
+    method: "PATCH",
+    identity: owner,
+    body: { pendingOfflineItems: 1 },
+  });
+  check("Device heartbeat updates terminal health", true);
+
+  const offlineItem = await call(
+    `/businesses/${owner.businessId}/store-reliability/offline-queue`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        branchId: mainBranchId,
+        deviceId: device.id,
+        idempotencyKey: key("offline-sale"),
+        operationType: "POS_HELD_SALE",
+        payload: { localSaleId: key("local-sale"), total: 100 },
+        riskLevel: "NORMAL",
+      },
+    },
+  );
+  check("Offline operation can be queued with an idempotency key", Boolean(offlineItem.id));
+
+  const sameOfflineItem = await call(
+    `/businesses/${owner.businessId}/store-reliability/offline-queue`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        branchId: mainBranchId,
+        deviceId: device.id,
+        idempotencyKey: key("offline-sale"),
+        operationType: "POS_HELD_SALE",
+        payload: { localSaleId: key("local-sale"), total: 100 },
+        riskLevel: "NORMAL",
+      },
+    },
+  );
+  check(
+    "Offline queue idempotency prevents duplicate records",
+    sameOfflineItem.id === offlineItem.id,
+  );
+
+  await call(`/businesses/${owner.businessId}/store-reliability/offline-queue/${offlineItem.id}`, {
+    method: "PATCH",
+    identity: owner,
+    body: { status: "CONFLICT", failureReason: "Smoke conflict review" },
+  });
+  check("Offline queue item can be marked as conflict", true);
+
+  const reliabilityOverview = await call(
+    `/businesses/${owner.businessId}/store-reliability/overview`,
+    {
+      identity: owner,
+    },
+  );
+  const openConflict = reliabilityOverview.conflicts.find(
+    (row) => row.queueItemId === offlineItem.id,
+  );
+  check(
+    "Store reliability overview reports device, queue and open conflict",
+    reliabilityOverview.devices.some((row) => row.id === device.id) &&
+      reliabilityOverview.queue.some((row) => row.id === offlineItem.id) &&
+      Boolean(openConflict),
+  );
+
+  await call(
+    `/businesses/${owner.businessId}/store-reliability/sync-conflicts/${openConflict.id}`,
+    {
+      method: "PATCH",
+      identity: owner,
+      body: { status: "RESOLVED", resolution: "Smoke conflict resolved" },
+    },
+  );
+  check("Sync conflict can be resolved", true);
+
   /* ------------------------------------------------------------ P2 selling */
   console.log("\nP2 shift, sale, payment and receipt");
   const shift = await call(`/businesses/${owner.businessId}/pos/shifts`, {
@@ -1224,6 +1561,19 @@ async function main() {
       actions.has("Expense") &&
       actions.has("BankTransaction") &&
       actions.has("LoyaltyAccount"),
+  );
+  check(
+    "Audit records cover reusable business engines",
+    actions.has("WorkTicket") &&
+      actions.has("Booking") &&
+      actions.has("TraceableUnit") &&
+      actions.has("WarrantyClaim") &&
+      actions.has("Bom") &&
+      actions.has("DeliveryRoute"),
+  );
+  check(
+    "Audit records cover store reliability",
+    actions.has("StoreDevice") && actions.has("OfflineQueueItem") && actions.has("SyncConflict"),
   );
 
   const sequences = await call(`/businesses/${owner.businessId}/document-numbers`, {

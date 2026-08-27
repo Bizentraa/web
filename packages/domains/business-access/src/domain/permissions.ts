@@ -127,12 +127,52 @@ export const P4_PERMISSIONS = [
   { code: "ACCOUNTING_EVENT_VIEW", name: "View accounting event queue", area: "Finance" },
 ] as const satisfies readonly PermissionDefinition[];
 
+export const P5_PERMISSIONS = [
+  { code: "WORKFLOW_VIEW", name: "View workflow setup", area: "Workflow" },
+  { code: "WORKFLOW_MANAGE", name: "Manage workflow setup", area: "Workflow", sensitive: true },
+  { code: "WORK_TICKET_VIEW", name: "View work tickets", area: "Work tickets" },
+  { code: "WORK_TICKET_MANAGE", name: "Manage work tickets", area: "Work tickets" },
+  { code: "BOOKING_VIEW", name: "View bookings", area: "Bookings" },
+  { code: "BOOKING_MANAGE", name: "Manage bookings", area: "Bookings" },
+  { code: "TRACEABILITY_VIEW", name: "View traceability", area: "Traceability" },
+  {
+    code: "TRACEABILITY_MANAGE",
+    name: "Manage traceability",
+    area: "Traceability",
+    sensitive: true,
+  },
+  { code: "WARRANTY_VIEW", name: "View warranties", area: "Warranty" },
+  { code: "WARRANTY_MANAGE", name: "Manage warranties", area: "Warranty" },
+  { code: "BOM_VIEW", name: "View recipes and BOMs", area: "Recipe / BOM" },
+  { code: "BOM_MANAGE", name: "Manage recipes and BOMs", area: "Recipe / BOM", sensitive: true },
+  { code: "ROUTE_VIEW", name: "View routes and deliveries", area: "Route / delivery" },
+  { code: "ROUTE_MANAGE", name: "Manage routes and deliveries", area: "Route / delivery" },
+  { code: "NOTIFICATION_VIEW", name: "View notifications", area: "Notifications" },
+  { code: "NOTIFICATION_MANAGE", name: "Manage notifications", area: "Notifications" },
+  { code: "DOCUMENT_VIEW", name: "View documents", area: "Documents" },
+  { code: "DOCUMENT_MANAGE", name: "Manage documents", area: "Documents" },
+] as const satisfies readonly PermissionDefinition[];
+
+export const P6_PERMISSIONS = [
+  { code: "DEVICE_VIEW", name: "View devices", area: "Devices" },
+  { code: "DEVICE_MANAGE", name: "Manage devices", area: "Devices", sensitive: true },
+  { code: "OFFLINE_VIEW", name: "View offline queue", area: "Offline sync" },
+  {
+    code: "OFFLINE_MANAGE",
+    name: "Manage offline queue",
+    area: "Offline sync",
+    sensitive: true,
+  },
+] as const satisfies readonly PermissionDefinition[];
+
 export const PLATFORM_PERMISSIONS = [
   ...P0_PERMISSIONS,
   ...P1_PERMISSIONS,
   ...P2_PERMISSIONS,
   ...P3_PERMISSIONS,
   ...P4_PERMISSIONS,
+  ...P5_PERMISSIONS,
+  ...P6_PERMISSIONS,
 ] as const;
 
 export type P0PermissionCode = (typeof P0_PERMISSIONS)[number]["code"];
@@ -140,6 +180,8 @@ export type P1PermissionCode = (typeof P1_PERMISSIONS)[number]["code"];
 export type P2PermissionCode = (typeof P2_PERMISSIONS)[number]["code"];
 export type P3PermissionCode = (typeof P3_PERMISSIONS)[number]["code"];
 export type P4PermissionCode = (typeof P4_PERMISSIONS)[number]["code"];
+export type P5PermissionCode = (typeof P5_PERMISSIONS)[number]["code"];
+export type P6PermissionCode = (typeof P6_PERMISSIONS)[number]["code"];
 export type PlatformPermissionCode = (typeof PLATFORM_PERMISSIONS)[number]["code"];
 
 const PERMISSION_CODES = new Set<string>(
@@ -249,6 +291,24 @@ export const ROLE_TEMPLATES = [
       "LOYALTY_VIEW",
       "LOYALTY_MANAGE",
       "ACCOUNTING_EVENT_VIEW",
+      "WORKFLOW_VIEW",
+      "WORK_TICKET_VIEW",
+      "WORK_TICKET_MANAGE",
+      "BOOKING_VIEW",
+      "BOOKING_MANAGE",
+      "TRACEABILITY_VIEW",
+      "TRACEABILITY_MANAGE",
+      "WARRANTY_VIEW",
+      "WARRANTY_MANAGE",
+      "BOM_VIEW",
+      "BOM_MANAGE",
+      "ROUTE_VIEW",
+      "ROUTE_MANAGE",
+      "NOTIFICATION_VIEW",
+      "DOCUMENT_VIEW",
+      "DOCUMENT_MANAGE",
+      "DEVICE_VIEW",
+      "OFFLINE_VIEW",
     ],
   },
   {
@@ -270,6 +330,12 @@ export const ROLE_TEMPLATES = [
       "RECEIPT_PRINT",
       "RETURN_CREATE",
       "STORE_CREDIT_VIEW",
+      "DEVICE_VIEW",
+      "OFFLINE_VIEW",
+      "OFFLINE_MANAGE",
+      "WORK_TICKET_VIEW",
+      "BOOKING_VIEW",
+      "DOCUMENT_VIEW",
     ],
   },
   {
@@ -315,6 +381,10 @@ export const ROLE_TEMPLATES = [
       "FULFILLMENT_VIEW",
       "FULFILLMENT_MANAGE",
       "AUDIT_VIEW",
+      "TRACEABILITY_VIEW",
+      "TRACEABILITY_MANAGE",
+      "BOM_VIEW",
+      "BOM_MANAGE",
     ],
   },
   {
@@ -362,6 +432,53 @@ export const ROLE_TEMPLATES = [
     ],
   },
   {
+    code: "OPERATIONS_USER",
+    name: "Operations User",
+    description:
+      "Manages workflows, work tickets, bookings, traceability, warranties and delivery execution.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "LOCATION_VIEW",
+      "CUSTOMER_VIEW",
+      "CATALOG_VIEW",
+      "INVENTORY_VIEW",
+      "WORKFLOW_VIEW",
+      "WORK_TICKET_VIEW",
+      "WORK_TICKET_MANAGE",
+      "BOOKING_VIEW",
+      "BOOKING_MANAGE",
+      "TRACEABILITY_VIEW",
+      "TRACEABILITY_MANAGE",
+      "WARRANTY_VIEW",
+      "WARRANTY_MANAGE",
+      "BOM_VIEW",
+      "BOM_MANAGE",
+      "ROUTE_VIEW",
+      "ROUTE_MANAGE",
+      "NOTIFICATION_VIEW",
+      "DOCUMENT_VIEW",
+      "DOCUMENT_MANAGE",
+      "DEVICE_VIEW",
+      "OFFLINE_VIEW",
+    ],
+  },
+  {
+    code: "DEVICE_USER",
+    name: "Device / Offline User",
+    description: "Manages store devices, offline queue review and sync conflict resolution.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "LOCATION_VIEW",
+      "DEVICE_VIEW",
+      "DEVICE_MANAGE",
+      "OFFLINE_VIEW",
+      "OFFLINE_MANAGE",
+      "AUDIT_VIEW",
+    ],
+  },
+  {
     code: "AUDITOR",
     name: "Auditor / Read-only User",
     description: "Reviews records and audit history without changing business data.",
@@ -395,6 +512,17 @@ export const ROLE_TEMPLATES = [
       "BANK_VIEW",
       "LOYALTY_VIEW",
       "ACCOUNTING_EVENT_VIEW",
+      "WORKFLOW_VIEW",
+      "WORK_TICKET_VIEW",
+      "BOOKING_VIEW",
+      "TRACEABILITY_VIEW",
+      "WARRANTY_VIEW",
+      "BOM_VIEW",
+      "ROUTE_VIEW",
+      "NOTIFICATION_VIEW",
+      "DOCUMENT_VIEW",
+      "DEVICE_VIEW",
+      "OFFLINE_VIEW",
     ],
   },
 ] as const satisfies readonly {
@@ -452,6 +580,20 @@ export const FEATURE_DEFINITIONS = [
     description: "Stock ledger, availability, receiving, transfers, purchasing and fulfillment.",
     kind: "CORE",
     dependsOn: ["MASTER_DATA"],
+  },
+  {
+    key: "BUSINESS_ENGINES",
+    name: "Reusable business engines",
+    description: "Work tickets, bookings, traceability, warranties, BOMs, routes and documents.",
+    kind: "CORE",
+    dependsOn: ["INVENTORY_PURCHASING"],
+  },
+  {
+    key: "STORE_RELIABILITY",
+    name: "Offline, devices and store reliability",
+    description: "Device registry, offline queue, sync conflicts and terminal health.",
+    kind: "CORE",
+    dependsOn: ["POS_SALES"],
   },
   {
     key: "GROCERY_PACK",

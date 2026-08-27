@@ -175,6 +175,82 @@ export const loyaltyEntryKindSchema = z.enum(["EARN", "REDEEM", "ADJUST", "EXPIR
 
 export const accountingEventStatusSchema = z.enum(["PENDING", "EXPORTED", "FAILED"]);
 
+export const workTicketStatusSchema = z.enum([
+  "OPEN",
+  "IN_PROGRESS",
+  "WAITING",
+  "COMPLETED",
+  "CANCELLED",
+]);
+
+export const workTicketPrioritySchema = z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]);
+
+export const bookingStatusSchema = z.enum([
+  "REQUESTED",
+  "CONFIRMED",
+  "CANCELLED",
+  "NO_SHOW",
+  "COMPLETED",
+]);
+
+export const traceableUnitStatusSchema = z.enum([
+  "AVAILABLE",
+  "RESERVED",
+  "SOLD",
+  "CONSUMED",
+  "RETURNED",
+  "DAMAGED",
+  "EXPIRED",
+]);
+
+export const warrantyClaimStatusSchema = z.enum([
+  "OPEN",
+  "INSPECTING",
+  "APPROVED",
+  "REJECTED",
+  "REPAIRED",
+  "REPLACED",
+  "CLOSED",
+]);
+
+export const bomStatusSchema = z.enum(["DRAFT", "ACTIVE", "INACTIVE"]);
+
+export const deliveryStatusSchema = z.enum([
+  "PLANNED",
+  "LOADED",
+  "IN_TRANSIT",
+  "DELIVERED",
+  "FAILED",
+  "CANCELLED",
+]);
+
+export const notificationStatusSchema = z.enum(["PENDING", "SENT", "FAILED", "CANCELLED"]);
+
+export const deviceKindSchema = z.enum([
+  "POS_TERMINAL",
+  "RECEIPT_PRINTER",
+  "LABEL_PRINTER",
+  "KITCHEN_PRINTER",
+  "BARCODE_SCANNER",
+  "CASH_DRAWER",
+  "PAYMENT_TERMINAL",
+  "CUSTOMER_DISPLAY",
+  "CAMERA",
+  "OTHER",
+]);
+
+export const deviceStatusSchema = z.enum(["REGISTERED", "ACTIVE", "DISABLED", "LOST"]);
+
+export const offlineQueueStatusSchema = z.enum([
+  "QUEUED",
+  "SYNCED",
+  "CONFLICT",
+  "FAILED",
+  "CANCELLED",
+]);
+
+export const syncConflictStatusSchema = z.enum(["OPEN", "RESOLVED", "IGNORED"]);
+
 export const featureKindSchema = z.enum(["CORE", "BUSINESS_PACK", "OPTIONAL"]);
 
 export type RecordStatus = z.infer<typeof recordStatusSchema>;
@@ -210,6 +286,18 @@ export type BankAccountType = z.infer<typeof bankAccountTypeSchema>;
 export type BankTransactionKind = z.infer<typeof bankTransactionKindSchema>;
 export type LoyaltyEntryKind = z.infer<typeof loyaltyEntryKindSchema>;
 export type AccountingEventStatus = z.infer<typeof accountingEventStatusSchema>;
+export type WorkTicketStatus = z.infer<typeof workTicketStatusSchema>;
+export type WorkTicketPriority = z.infer<typeof workTicketPrioritySchema>;
+export type BookingStatus = z.infer<typeof bookingStatusSchema>;
+export type TraceableUnitStatus = z.infer<typeof traceableUnitStatusSchema>;
+export type WarrantyClaimStatus = z.infer<typeof warrantyClaimStatusSchema>;
+export type BomStatus = z.infer<typeof bomStatusSchema>;
+export type DeliveryStatus = z.infer<typeof deliveryStatusSchema>;
+export type NotificationStatus = z.infer<typeof notificationStatusSchema>;
+export type DeviceKind = z.infer<typeof deviceKindSchema>;
+export type DeviceStatus = z.infer<typeof deviceStatusSchema>;
+export type OfflineQueueStatus = z.infer<typeof offlineQueueStatusSchema>;
+export type SyncConflictStatus = z.infer<typeof syncConflictStatusSchema>;
 export type FeatureKind = z.infer<typeof featureKindSchema>;
 
 /* -------------------------------------------------------------------------- */
@@ -1142,6 +1230,196 @@ export const adjustLoyaltySchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/* P5 - Reusable business engines                                             */
+/* -------------------------------------------------------------------------- */
+
+export const createWorkflowStatusSchema = z.object({
+  appliesTo: z.string().trim().min(2).max(80),
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(120),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+  isFinal: z.boolean().default(false),
+});
+
+export const createWorkflowTransitionSchema = z.object({
+  appliesTo: z.string().trim().min(2).max(80),
+  fromStatusCode: shortCodeSchema,
+  toStatusCode: shortCodeSchema,
+  requiredPermission: z.string().trim().min(2).max(80).optional(),
+  requiresApproval: z.boolean().default(false),
+});
+
+export const createWorkTicketSchema = z.object({
+  branchId: z.uuid().optional(),
+  title: z.string().trim().min(2).max(180),
+  description: z.string().trim().max(1000).optional(),
+  priority: workTicketPrioritySchema.default("NORMAL"),
+  sourceType: z.string().trim().max(80).optional(),
+  sourceId: z.string().trim().max(80).optional(),
+  assigneeMembershipId: z.uuid().optional(),
+  checklist: z
+    .array(z.object({ label: z.string().trim().min(1).max(120), done: z.boolean().default(false) }))
+    .max(50)
+    .optional(),
+  dueAt: z.iso.datetime().optional(),
+});
+
+export const updateWorkTicketStatusSchema = z.object({
+  status: workTicketStatusSchema,
+});
+
+export const createBookingSchema = z.object({
+  branchId: z.uuid(),
+  customerId: z.uuid().optional(),
+  resourceCode: shortCodeSchema,
+  title: z.string().trim().min(2).max(180),
+  startsAt: z.iso.datetime(),
+  endsAt: z.iso.datetime(),
+  capacityUsed: z.coerce.number().int().positive().default(1),
+  depositAmount: nonNegativeMoneySchema.default(0),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const createCustomerAssetSchema = z.object({
+  customerId: z.uuid(),
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(180),
+  assetType: z.string().trim().min(2).max(80),
+  identifier: z.string().trim().max(120).optional(),
+  attributes: optionalJsonRecordSchema,
+});
+
+export const createTraceableUnitSchema = z.object({
+  itemId: z.uuid(),
+  variantId: z.uuid().optional(),
+  locationId: z.uuid().optional(),
+  serialNumber: z.string().trim().max(120).optional(),
+  batchNumber: z.string().trim().max(120).optional(),
+  lotNumber: z.string().trim().max(120).optional(),
+  imei: z.string().trim().max(120).optional(),
+  manufactureDate: z.iso.date().optional(),
+  expiryDate: z.iso.date().optional(),
+  sourceType: z.string().trim().max(80).optional(),
+  sourceId: z.string().trim().max(80).optional(),
+});
+
+export const createWarrantyClaimSchema = z.object({
+  customerId: z.uuid().optional(),
+  itemDescription: z.string().trim().min(2).max(240),
+  serialReference: z.string().trim().max(120).optional(),
+  issue: z.string().trim().min(3).max(1000),
+});
+
+export const createBomSchema = z.object({
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(180),
+  outputItemId: z.uuid(),
+  outputQuantity: positiveQuantitySchema,
+  notes: z.string().trim().max(500).optional(),
+  components: z
+    .array(
+      z.object({
+        itemId: z.uuid(),
+        variantId: z.uuid().optional(),
+        quantity: positiveQuantitySchema,
+        wastagePercent: nonNegativeMoneySchema.default(0),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+export const postMaterialConsumptionSchema = z.object({
+  itemId: z.uuid(),
+  variantId: z.uuid().optional(),
+  quantity: positiveQuantitySchema,
+  sourceType: z.string().trim().min(2).max(80),
+  sourceId: z.string().trim().min(2).max(80),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const createDeliveryRouteSchema = z.object({
+  branchId: z.uuid(),
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(180),
+  vehicleReference: z.string().trim().max(120).optional(),
+  driverName: z.string().trim().max(120).optional(),
+  plannedDate: z.iso.date(),
+  stops: z
+    .array(
+      z.object({
+        sequence: z.coerce.number().int().positive(),
+        customerName: z.string().trim().min(2).max(180),
+        address: optionalJsonRecordSchema,
+        sourceType: z.string().trim().max(80).optional(),
+        sourceId: z.string().trim().max(80).optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+export const updateDeliveryStopSchema = z.object({
+  status: deliveryStatusSchema,
+  proofReference: z.string().trim().max(240).optional(),
+  failedReason: z.string().trim().max(240).optional(),
+});
+
+export const createNotificationEventSchema = z.object({
+  channel: z.string().trim().min(2).max(40),
+  recipient: z.string().trim().min(3).max(254),
+  subject: z.string().trim().min(2).max(180),
+  body: z.string().trim().min(2).max(1000),
+  sourceType: z.string().trim().max(80).optional(),
+  sourceId: z.string().trim().max(80).optional(),
+});
+
+export const attachBusinessDocumentSchema = z.object({
+  entityType: z.string().trim().min(2).max(80),
+  entityId: z.string().trim().min(2).max(80),
+  fileName: z.string().trim().min(2).max(240),
+  mimeType: z.string().trim().min(2).max(120),
+  url: z.url().max(1000),
+  notes: z.string().trim().max(500).optional(),
+});
+
+/* -------------------------------------------------------------------------- */
+/* P6 - Offline, devices and store reliability                                */
+/* -------------------------------------------------------------------------- */
+
+export const registerDeviceSchema = z.object({
+  branchId: z.uuid().optional(),
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(120),
+  kind: deviceKindSchema,
+  hardwareId: z.string().trim().max(160).optional(),
+  capabilities: optionalJsonRecordSchema,
+});
+
+export const heartbeatDeviceSchema = z.object({
+  pendingOfflineItems: z.coerce.number().int().min(0).default(0),
+});
+
+export const queueOfflineOperationSchema = z.object({
+  branchId: z.uuid().optional(),
+  deviceId: z.uuid().optional(),
+  idempotencyKey: idempotencyKeySchema,
+  operationType: z.string().trim().min(2).max(120),
+  payload: z.record(z.string(), z.unknown()),
+  riskLevel: z.string().trim().min(2).max(40).default("NORMAL"),
+});
+
+export const markOfflineQueueItemSchema = z.object({
+  status: offlineQueueStatusSchema,
+  failureReason: z.string().trim().max(500).optional(),
+});
+
+export const resolveSyncConflictSchema = z.object({
+  status: syncConflictStatusSchema,
+  resolution: z.string().trim().min(2).max(500),
+});
+
+/* -------------------------------------------------------------------------- */
 /* Input types                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -1234,6 +1512,25 @@ export type CreateExpenseInput = z.output<typeof createExpenseSchema>;
 export type CreateBankAccountInput = z.output<typeof createBankAccountSchema>;
 export type PostBankTransactionInput = z.output<typeof postBankTransactionSchema>;
 export type AdjustLoyaltyInput = z.output<typeof adjustLoyaltySchema>;
+export type CreateWorkflowStatusInput = z.output<typeof createWorkflowStatusSchema>;
+export type CreateWorkflowTransitionInput = z.output<typeof createWorkflowTransitionSchema>;
+export type CreateWorkTicketInput = z.output<typeof createWorkTicketSchema>;
+export type UpdateWorkTicketStatusInput = z.output<typeof updateWorkTicketStatusSchema>;
+export type CreateBookingInput = z.output<typeof createBookingSchema>;
+export type CreateCustomerAssetInput = z.output<typeof createCustomerAssetSchema>;
+export type CreateTraceableUnitInput = z.output<typeof createTraceableUnitSchema>;
+export type CreateWarrantyClaimInput = z.output<typeof createWarrantyClaimSchema>;
+export type CreateBomInput = z.output<typeof createBomSchema>;
+export type PostMaterialConsumptionInput = z.output<typeof postMaterialConsumptionSchema>;
+export type CreateDeliveryRouteInput = z.output<typeof createDeliveryRouteSchema>;
+export type UpdateDeliveryStopInput = z.output<typeof updateDeliveryStopSchema>;
+export type CreateNotificationEventInput = z.output<typeof createNotificationEventSchema>;
+export type AttachBusinessDocumentInput = z.output<typeof attachBusinessDocumentSchema>;
+export type RegisterDeviceInput = z.output<typeof registerDeviceSchema>;
+export type HeartbeatDeviceInput = z.output<typeof heartbeatDeviceSchema>;
+export type QueueOfflineOperationInput = z.output<typeof queueOfflineOperationSchema>;
+export type MarkOfflineQueueItemInput = z.output<typeof markOfflineQueueItemSchema>;
+export type ResolveSyncConflictInput = z.output<typeof resolveSyncConflictSchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Response contracts                                                          */
@@ -1996,6 +2293,166 @@ export interface FinanceOverview {
   accountingEvents: AccountingEventRow[];
 }
 
+export interface WorkTicketRow {
+  id: string;
+  number: string;
+  branchName: string | null;
+  title: string;
+  status: WorkTicketStatus;
+  priority: WorkTicketPriority;
+  sourceType: string | null;
+  sourceId: string | null;
+  createdBy: string;
+  createdAt: string;
+  dueAt: string | null;
+}
+
+export interface BookingRow {
+  id: string;
+  number: string;
+  branchName: string;
+  customerName: string | null;
+  resourceCode: string;
+  title: string;
+  status: BookingStatus;
+  startsAt: string;
+  endsAt: string;
+  depositAmount: number;
+}
+
+export interface TraceableUnitRow {
+  id: string;
+  itemName: string;
+  locationName: string | null;
+  serialNumber: string | null;
+  batchNumber: string | null;
+  imei: string | null;
+  expiryDate: string | null;
+  status: TraceableUnitStatus;
+}
+
+export interface WarrantyClaimRow {
+  id: string;
+  number: string;
+  customerName: string | null;
+  status: WarrantyClaimStatus;
+  itemDescription: string;
+  serialReference: string | null;
+  issue: string;
+  openedAt: string;
+}
+
+export interface BomRow {
+  id: string;
+  code: string;
+  name: string;
+  outputItemName: string;
+  outputQuantity: number;
+  status: BomStatus;
+  componentCount: number;
+}
+
+export interface DeliveryRouteRow {
+  id: string;
+  code: string;
+  name: string;
+  branchName: string;
+  plannedDate: string;
+  vehicleReference: string | null;
+  driverName: string | null;
+  stopCount: number;
+}
+
+export interface NotificationEventRow {
+  id: string;
+  channel: string;
+  recipient: string;
+  subject: string;
+  status: NotificationStatus;
+  sourceType: string | null;
+  sourceId: string | null;
+  createdAt: string;
+}
+
+export interface BusinessDocumentRow {
+  id: string;
+  entityType: string;
+  entityId: string;
+  fileName: string;
+  mimeType: string;
+  url: string;
+  createdAt: string;
+}
+
+export interface BusinessEnginesOverview {
+  counts: {
+    workflowStatuses: number;
+    workTickets: number;
+    bookings: number;
+    traceableUnits: number;
+    warrantyClaims: number;
+    boms: number;
+    deliveryRoutes: number;
+    notifications: number;
+    documents: number;
+  };
+  workTickets: WorkTicketRow[];
+  bookings: BookingRow[];
+  traceableUnits: TraceableUnitRow[];
+  warrantyClaims: WarrantyClaimRow[];
+  boms: BomRow[];
+  deliveryRoutes: DeliveryRouteRow[];
+  notifications: NotificationEventRow[];
+  documents: BusinessDocumentRow[];
+}
+
+export interface StoreDeviceRow {
+  id: string;
+  code: string;
+  name: string;
+  branchName: string | null;
+  kind: DeviceKind;
+  status: DeviceStatus;
+  hardwareId: string | null;
+  pendingOfflineItems: number;
+  lastSeenAt: string | null;
+}
+
+export interface OfflineQueueItemRow {
+  id: string;
+  idempotencyKey: string;
+  operationType: string;
+  status: OfflineQueueStatus;
+  riskLevel: string;
+  failureReason: string | null;
+  createdAt: string;
+  syncedAt: string | null;
+}
+
+export interface SyncConflictRow {
+  id: string;
+  queueItemId: string;
+  entityType: string;
+  entityId: string | null;
+  reason: string;
+  status: SyncConflictStatus;
+  resolution: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface StoreReliabilityOverview {
+  counts: {
+    devices: number;
+    activeDevices: number;
+    queuedOfflineItems: number;
+    openConflicts: number;
+  };
+  devices: StoreDeviceRow[];
+  queue: OfflineQueueItemRow[];
+  conflicts: SyncConflictRow[];
+}
+
 export interface BusinessFoundationCreated {
   businessId: string;
   branchId: string;
@@ -2074,7 +2531,7 @@ export interface PermissionCatalogEntry {
   code: string;
   name: string;
   area: string;
-  phase: "P0" | "P1" | "P2" | "P3" | "P4";
+  phase: "P0" | "P1" | "P2" | "P3" | "P4" | "P5" | "P6";
   sensitive: boolean;
 }
 

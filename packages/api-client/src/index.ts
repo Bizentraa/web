@@ -8,6 +8,7 @@ import type {
   AuditQuery,
   BusinessFoundationCreated,
   BusinessFoundationSummary,
+  BusinessEnginesOverview,
   BusinessThemeSettings,
   CashMovementInput,
   CatalogRecordCreated,
@@ -18,14 +19,19 @@ import type {
   CollectCustomerPaymentInput,
   CreateApprovalRequestInput,
   CreateAttributeDefinitionInput,
+  AttachBusinessDocumentInput,
   CreateBankAccountInput,
+  CreateBomInput,
+  CreateBookingInput,
   CreateBranchInput,
   CreateBrandInput,
   CreateBusinessFoundationInput,
   CreateCategoryInput,
+  CreateCustomerAssetInput,
   CreateCustomerGroupInput,
   CreateCustomerInvoiceInput,
   CreateCustomerInput,
+  CreateDeliveryRouteInput,
   CreateExpenseCategoryInput,
   CreateExpenseInput,
   CreateExchangeInput,
@@ -36,6 +42,7 @@ import type {
   CreateItemTagInput,
   CreateItemVariantInput,
   CreateLocationInput,
+  CreateNotificationEventInput,
   CreatePriceListInput,
   CreatePromotionInput,
   CreatePurchaseOrderInput,
@@ -47,8 +54,13 @@ import type {
   CreateSupplierInput,
   CreateTaxCategoryInput,
   CreateTaxRateInput,
+  CreateTraceableUnitInput,
   CreateUnitConversionInput,
   CreateUnitInput,
+  CreateWarrantyClaimInput,
+  CreateWorkflowStatusInput,
+  CreateWorkflowTransitionInput,
+  CreateWorkTicketInput,
   CustomerDetail,
   CustomerListRow,
   DecideApprovalRequestInput,
@@ -57,6 +69,7 @@ import type {
   ExchangeResult,
   FeatureRow,
   FinanceOverview,
+  HeartbeatDeviceInput,
   HealthResponse,
   ImportApplied,
   ImportBatchSummary,
@@ -75,12 +88,16 @@ import type {
   PaySupplierBillInput,
   PosCatalogEntry,
   PostBankTransactionInput,
+  PostMaterialConsumptionInput,
+  QueueOfflineOperationInput,
   PromotionRow,
   QuoteSaleInput,
   ReceiptDocument,
+  RegisterDeviceInput,
   ReceivePurchaseOrderInput,
   ReorderSettingInput,
   ResolvePaymentInput,
+  ResolveSyncConflictInput,
   ReturnResult,
   SaleDetail,
   SaleListRow,
@@ -89,18 +106,21 @@ import type {
   SetFeatureInput,
   SetItemAttributeValuesInput,
   ShiftSummary,
+  StoreReliabilityOverview,
   StockAdjustmentInput,
   StockTransferInput,
   SupplierDetail,
   SupplierListRow,
   SyncQueueInput,
   SyncResultEntry,
+  MarkOfflineQueueItemInput,
   UpdateBranchInput,
   UpdateBrandInput,
   UpdateBusinessInput,
   UpdateBusinessThemeInput,
   UpdateCategoryInput,
   UpdateCustomerInput,
+  UpdateDeliveryStopInput,
   UpdateFulfillmentStatusInput,
   UpdateHeldSaleInput,
   UpdateItemInput,
@@ -113,6 +133,7 @@ import type {
   UpdateTaxCategoryInput,
   UpdateTaxRateInput,
   UpdateUnitInput,
+  UpdateWorkTicketStatusInput,
   UpsertApprovalPolicyInput,
   UpsertDocumentSequenceInput,
   UpsertItemPriceInput,
@@ -455,6 +476,103 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
       post<CatalogRecordCreated>(`/businesses/${businessId}/finance/bank-transactions`, input),
     adjustLoyalty: (businessId: string, input: AdjustLoyaltyInput) =>
       post<CatalogRecordCreated>(`/businesses/${businessId}/finance/loyalty-adjustments`, input),
+
+    /* ------------------------------------------- P5 reusable business engines */
+    getBusinessEnginesOverview: (businessId: string) =>
+      request<BusinessEnginesOverview>(`/businesses/${businessId}/business-engines/overview`),
+    createWorkflowStatus: (businessId: string, input: CreateWorkflowStatusInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/workflow-statuses`,
+        input,
+      ),
+    createWorkflowTransition: (businessId: string, input: CreateWorkflowTransitionInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/workflow-transitions`,
+        input,
+      ),
+    createWorkTicket: (businessId: string, input: CreateWorkTicketInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/business-engines/work-tickets`, input),
+    updateWorkTicketStatus: (
+      businessId: string,
+      ticketId: string,
+      input: UpdateWorkTicketStatusInput,
+    ) =>
+      patch<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/work-tickets/${ticketId}/status`,
+        input,
+      ),
+    createBooking: (businessId: string, input: CreateBookingInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/business-engines/bookings`, input),
+    createCustomerAsset: (businessId: string, input: CreateCustomerAssetInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/customer-assets`,
+        input,
+      ),
+    createTraceableUnit: (businessId: string, input: CreateTraceableUnitInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/traceable-units`,
+        input,
+      ),
+    createWarrantyClaim: (businessId: string, input: CreateWarrantyClaimInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/warranty-claims`,
+        input,
+      ),
+    createBom: (businessId: string, input: CreateBomInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/business-engines/boms`, input),
+    postMaterialConsumption: (businessId: string, input: PostMaterialConsumptionInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/material-consumptions`,
+        input,
+      ),
+    createDeliveryRoute: (businessId: string, input: CreateDeliveryRouteInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/delivery-routes`,
+        input,
+      ),
+    updateDeliveryStop: (businessId: string, stopId: string, input: UpdateDeliveryStopInput) =>
+      patch<CatalogRecordCreated>(
+        `/businesses/${businessId}/business-engines/delivery-stops/${stopId}`,
+        input,
+      ),
+    createNotificationEvent: (businessId: string, input: CreateNotificationEventInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/business-engines/notifications`, input),
+    attachBusinessDocument: (businessId: string, input: AttachBusinessDocumentInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/business-engines/documents`, input),
+
+    /* ------------------------------------------- P6 store reliability */
+    getStoreReliabilityOverview: (businessId: string) =>
+      request<StoreReliabilityOverview>(`/businesses/${businessId}/store-reliability/overview`),
+    registerDevice: (businessId: string, input: RegisterDeviceInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/store-reliability/devices`, input),
+    heartbeatDevice: (businessId: string, deviceId: string, input: HeartbeatDeviceInput) =>
+      patch<CatalogRecordCreated>(
+        `/businesses/${businessId}/store-reliability/devices/${deviceId}/heartbeat`,
+        input,
+      ),
+    queueOfflineOperation: (businessId: string, input: QueueOfflineOperationInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/store-reliability/offline-queue`,
+        input,
+      ),
+    markOfflineQueueItem: (
+      businessId: string,
+      queueItemId: string,
+      input: MarkOfflineQueueItemInput,
+    ) =>
+      patch<CatalogRecordCreated>(
+        `/businesses/${businessId}/store-reliability/offline-queue/${queueItemId}`,
+        input,
+      ),
+    resolveSyncConflict: (
+      businessId: string,
+      conflictId: string,
+      input: ResolveSyncConflictInput,
+    ) =>
+      patch<CatalogRecordCreated>(
+        `/businesses/${businessId}/store-reliability/sync-conflicts/${conflictId}`,
+        input,
+      ),
 
     /* ------------------------------------------------------------- P2 POS */
     openShift: (businessId: string, input: OpenShiftInput) =>

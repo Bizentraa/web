@@ -312,6 +312,110 @@ enum AccountingEventStatus {
   FAILED
 }
 
+enum WorkflowTransitionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum WorkTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkTicketPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum BookingStatus {
+  REQUESTED
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+  COMPLETED
+}
+
+enum TraceableUnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  CONSUMED
+  RETURNED
+  DAMAGED
+  EXPIRED
+}
+
+enum WarrantyClaimStatus {
+  OPEN
+  INSPECTING
+  APPROVED
+  REJECTED
+  REPAIRED
+  REPLACED
+  CLOSED
+}
+
+enum BomStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+}
+
+enum DeliveryStatus {
+  PLANNED
+  LOADED
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum DeviceKind {
+  POS_TERMINAL
+  RECEIPT_PRINTER
+  LABEL_PRINTER
+  KITCHEN_PRINTER
+  BARCODE_SCANNER
+  CASH_DRAWER
+  PAYMENT_TERMINAL
+  CUSTOMER_DISPLAY
+  CAMERA
+  OTHER
+}
+
+enum DeviceStatus {
+  REGISTERED
+  ACTIVE
+  DISABLED
+  LOST
+}
+
+enum OfflineQueueStatus {
+  QUEUED
+  SYNCED
+  CONFLICT
+  FAILED
+  CANCELLED
+}
+
+enum SyncConflictStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
 model Business {
   id              String       @id @default(uuid()) @db.Uuid
   slug            String       @unique @db.VarChar(80)
@@ -326,52 +430,69 @@ model Business {
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
 
-  branches            Branch[]
-  locations           Location[]
-  memberships         BusinessMembership[]
-  roles               Role[]
-  approvalPolicies    ApprovalPolicy[]
-  features            BusinessFeature[]
-  auditEvents         AuditEvent[]
-  documentSequences   DocumentSequence[]
-  outboxEvents        OutboxEvent[]
-  theme               BusinessTheme?
-  units               Unit[]
-  itemCategories      ItemCategory[]
-  brands              Brand[]
-  itemTags            ItemTag[]
-  attributes          CustomAttributeDefinition[]
-  taxCategories       TaxCategory[]
-  priceLists          PriceList[]
-  items               Item[]
-  promotions          Promotion[]
-  customerGroups      CustomerGroup[]
-  customers           Customer[]
-  suppliers           Supplier[]
-  importBatches       ImportBatch[]
-  approvalRequests    ApprovalRequest[]
-  shifts              PosShift[]
-  sales               Sale[]
-  saleReturns         SaleReturn[]
-  storeCredits        StoreCreditAccount[]
-  stockBalances       StockBalance[]
-  stockMovements      StockMovement[]
-  reorderSettings     ReorderSetting[]
-  purchaseRequests    PurchaseRequest[]
-  purchaseOrders      PurchaseOrder[]
-  goodsReceipts       GoodsReceipt[]
-  fulfillmentOrders   FulfillmentOrder[]
-  customerInvoices    CustomerInvoice[]
-  customerCollections CustomerCollection[]
-  supplierBills       SupplierBill[]
-  supplierPayments    SupplierPayment[]
-  expenseCategories   ExpenseCategory[]
-  expenses            Expense[]
-  bankAccounts        BankAccount[]
-  bankTransactions    BankTransaction[]
-  loyaltyAccounts     LoyaltyAccount[]
-  loyaltyEntries      LoyaltyEntry[]
-  accountingEvents    AccountingEvent[]
+  branches             Branch[]
+  locations            Location[]
+  memberships          BusinessMembership[]
+  roles                Role[]
+  approvalPolicies     ApprovalPolicy[]
+  features             BusinessFeature[]
+  auditEvents          AuditEvent[]
+  documentSequences    DocumentSequence[]
+  outboxEvents         OutboxEvent[]
+  theme                BusinessTheme?
+  units                Unit[]
+  itemCategories       ItemCategory[]
+  brands               Brand[]
+  itemTags             ItemTag[]
+  attributes           CustomAttributeDefinition[]
+  taxCategories        TaxCategory[]
+  priceLists           PriceList[]
+  items                Item[]
+  promotions           Promotion[]
+  customerGroups       CustomerGroup[]
+  customers            Customer[]
+  suppliers            Supplier[]
+  importBatches        ImportBatch[]
+  approvalRequests     ApprovalRequest[]
+  shifts               PosShift[]
+  sales                Sale[]
+  saleReturns          SaleReturn[]
+  storeCredits         StoreCreditAccount[]
+  stockBalances        StockBalance[]
+  stockMovements       StockMovement[]
+  reorderSettings      ReorderSetting[]
+  purchaseRequests     PurchaseRequest[]
+  purchaseOrders       PurchaseOrder[]
+  goodsReceipts        GoodsReceipt[]
+  fulfillmentOrders    FulfillmentOrder[]
+  customerInvoices     CustomerInvoice[]
+  customerCollections  CustomerCollection[]
+  supplierBills        SupplierBill[]
+  supplierPayments     SupplierPayment[]
+  expenseCategories    ExpenseCategory[]
+  expenses             Expense[]
+  bankAccounts         BankAccount[]
+  bankTransactions     BankTransaction[]
+  loyaltyAccounts      LoyaltyAccount[]
+  loyaltyEntries       LoyaltyEntry[]
+  accountingEvents     AccountingEvent[]
+  workflowStatuses     WorkflowStatus[]
+  workflowTransitions  WorkflowTransition[]
+  workTickets          WorkTicket[]
+  bookings             Booking[]
+  customerAssets       CustomerAsset[]
+  traceableUnits       TraceableUnit[]
+  warrantyPolicies     WarrantyPolicy[]
+  warrantyClaims       WarrantyClaim[]
+  boms                 Bom[]
+  materialConsumptions MaterialConsumption[]
+  deliveryRoutes       DeliveryRoute[]
+  deliveryStops        DeliveryStop[]
+  notificationEvents   NotificationEvent[]
+  documents            BusinessDocument[]
+  devices              StoreDevice[]
+  offlineQueueItems    OfflineQueueItem[]
+  syncConflicts        SyncConflict[]
 
   @@map("businesses")
 }
@@ -607,6 +728,10 @@ model Item {
   fulfillmentLines     FulfillmentLine[]
   customerInvoiceLines CustomerInvoiceLine[]
   supplierBillLines    SupplierBillLine[]
+  traceableUnits       TraceableUnit[]
+  bomOutputs           Bom[]
+  bomComponents        BomComponent[]
+  materialConsumptions MaterialConsumption[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -637,6 +762,9 @@ model ItemVariant {
   purchaseOrderLines   PurchaseOrderLine[]
   goodsReceiptLines    GoodsReceiptLine[]
   fulfillmentLines     FulfillmentLine[]
+  traceableUnits       TraceableUnit[]
+  bomComponents        BomComponent[]
+  materialConsumptions MaterialConsumption[]
 
   @@unique([businessId, itemId, code])
   @@unique([id, businessId])
@@ -752,6 +880,9 @@ model Customer {
   collections    CustomerCollection[]
   loyalty        LoyaltyAccount?
   loyaltyEntries LoyaltyEntry[]
+  assets         CustomerAsset[]
+  bookings       Booking[]
+  warrantyClaims WarrantyClaim[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -895,6 +1026,12 @@ model Branch {
   supplierPayments    SupplierPayment[]
   expenses            Expense[]
   bankTransactions    BankTransaction[]
+  workTickets         WorkTicket[]
+  bookings            Booking[]
+  deliveryRoutes      DeliveryRoute[]
+  deliveryStops       DeliveryStop[]
+  devices             StoreDevice[]
+  offlineQueueItems   OfflineQueueItem[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -919,6 +1056,7 @@ model Location {
   stockMovements  StockMovement[]
   reorderSettings ReorderSetting[]
   goodsReceipts   GoodsReceipt[]
+  traceableUnits  TraceableUnit[]
 
   @@unique([businessId, branchId, code])
   @@unique([id, businessId])
@@ -949,32 +1087,42 @@ model BusinessMembership {
   createdAt  DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime         @updatedAt @db.Timestamptz(3)
 
-  business            Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  user                User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
-  branchAssignments   BranchAssignment[]
-  roleAssignments     MembershipRole[]
-  auditEvents         AuditEvent[]         @relation("AuditActor")
-  approvalRequests    ApprovalRequest[]    @relation("ApprovalRequestedBy")
-  approvalDecisions   ApprovalRequest[]    @relation("ApprovalDecidedBy")
-  openedShifts        PosShift[]           @relation("ShiftOpenedBy")
-  closedShifts        PosShift[]           @relation("ShiftClosedBy")
-  cashMovements       CashMovement[]       @relation("CashMovementCreatedBy")
-  sales               Sale[]               @relation("SaleCreatedBy")
-  salePayments        SalePayment[]        @relation("PaymentCreatedBy")
-  saleReturns         SaleReturn[]         @relation("ReturnCreatedBy")
-  storeCreditEntries  StoreCreditEntry[]   @relation("StoreCreditCreatedBy")
-  stockMovements      StockMovement[]      @relation("StockMovementCreatedBy")
-  purchaseRequests    PurchaseRequest[]    @relation("PurchaseRequestCreatedBy")
-  purchaseOrders      PurchaseOrder[]      @relation("PurchaseOrderCreatedBy")
-  goodsReceipts       GoodsReceipt[]       @relation("GoodsReceiptCreatedBy")
-  fulfillmentOrders   FulfillmentOrder[]   @relation("FulfillmentCreatedBy")
-  customerInvoices    CustomerInvoice[]    @relation("CustomerInvoiceCreatedBy")
-  customerCollections CustomerCollection[] @relation("CustomerCollectionCreatedBy")
-  supplierBills       SupplierBill[]       @relation("SupplierBillCreatedBy")
-  supplierPayments    SupplierPayment[]    @relation("SupplierPaymentCreatedBy")
-  expenses            Expense[]            @relation("ExpenseCreatedBy")
-  bankTransactions    BankTransaction[]    @relation("BankTransactionCreatedBy")
-  loyaltyEntries      LoyaltyEntry[]       @relation("LoyaltyEntryCreatedBy")
+  business             Business              @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  branchAssignments    BranchAssignment[]
+  roleAssignments      MembershipRole[]
+  auditEvents          AuditEvent[]          @relation("AuditActor")
+  approvalRequests     ApprovalRequest[]     @relation("ApprovalRequestedBy")
+  approvalDecisions    ApprovalRequest[]     @relation("ApprovalDecidedBy")
+  openedShifts         PosShift[]            @relation("ShiftOpenedBy")
+  closedShifts         PosShift[]            @relation("ShiftClosedBy")
+  cashMovements        CashMovement[]        @relation("CashMovementCreatedBy")
+  sales                Sale[]                @relation("SaleCreatedBy")
+  salePayments         SalePayment[]         @relation("PaymentCreatedBy")
+  saleReturns          SaleReturn[]          @relation("ReturnCreatedBy")
+  storeCreditEntries   StoreCreditEntry[]    @relation("StoreCreditCreatedBy")
+  stockMovements       StockMovement[]       @relation("StockMovementCreatedBy")
+  purchaseRequests     PurchaseRequest[]     @relation("PurchaseRequestCreatedBy")
+  purchaseOrders       PurchaseOrder[]       @relation("PurchaseOrderCreatedBy")
+  goodsReceipts        GoodsReceipt[]        @relation("GoodsReceiptCreatedBy")
+  fulfillmentOrders    FulfillmentOrder[]    @relation("FulfillmentCreatedBy")
+  customerInvoices     CustomerInvoice[]     @relation("CustomerInvoiceCreatedBy")
+  customerCollections  CustomerCollection[]  @relation("CustomerCollectionCreatedBy")
+  supplierBills        SupplierBill[]        @relation("SupplierBillCreatedBy")
+  supplierPayments     SupplierPayment[]     @relation("SupplierPaymentCreatedBy")
+  expenses             Expense[]             @relation("ExpenseCreatedBy")
+  bankTransactions     BankTransaction[]     @relation("BankTransactionCreatedBy")
+  loyaltyEntries       LoyaltyEntry[]        @relation("LoyaltyEntryCreatedBy")
+  workTickets          WorkTicket[]          @relation("WorkTicketCreatedBy")
+  bookings             Booking[]             @relation("BookingCreatedBy")
+  warrantyClaims       WarrantyClaim[]       @relation("WarrantyClaimCreatedBy")
+  materialConsumptions MaterialConsumption[] @relation("MaterialConsumptionCreatedBy")
+  deliveryRoutes       DeliveryRoute[]       @relation("DeliveryRouteCreatedBy")
+  notifications        NotificationEvent[]   @relation("NotificationCreatedBy")
+  documents            BusinessDocument[]    @relation("DocumentCreatedBy")
+  devices              StoreDevice[]         @relation("DeviceRegisteredBy")
+  offlineQueueItems    OfflineQueueItem[]    @relation("OfflineQueueCreatedBy")
+  resolvedConflicts    SyncConflict[]        @relation("SyncConflictResolvedBy")
 
   @@unique([businessId, userId])
   @@unique([id, businessId])
@@ -2088,4 +2236,445 @@ model AccountingEvent {
   @@unique([businessId, sourceType, sourceId, eventType])
   @@index([businessId, status, createdAt])
   @@map("accounting_events")
+}
+
+/// CC-P5-001: reusable workflow statuses can be shared by tickets, bookings and later vertical packs.
+model WorkflowStatus {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  code       String       @db.VarChar(50)
+  name       String       @db.VarChar(120)
+  appliesTo  String       @db.VarChar(80)
+  sortOrder  Int          @default(0)
+  isFinal    Boolean      @default(false)
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, appliesTo, code])
+  @@unique([id, businessId])
+  @@index([businessId, appliesTo, status])
+  @@map("workflow_statuses")
+}
+
+model WorkflowTransition {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  businessId         String                   @db.Uuid
+  appliesTo          String                   @db.VarChar(80)
+  fromStatusCode     String                   @db.VarChar(50)
+  toStatusCode       String                   @db.VarChar(50)
+  requiredPermission String?                  @db.VarChar(80)
+  requiresApproval   Boolean                  @default(false)
+  status             WorkflowTransitionStatus @default(ACTIVE)
+  createdAt          DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime                 @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, appliesTo, fromStatusCode, toStatusCode])
+  @@index([businessId, appliesTo, status])
+  @@map("workflow_transitions")
+}
+
+/// CC-P5-002: one work-ticket engine for service, repair, production and operations work.
+model WorkTicket {
+  id                    String             @id @default(uuid()) @db.Uuid
+  businessId            String             @db.Uuid
+  branchId              String?            @db.Uuid
+  number                String             @db.VarChar(60)
+  title                 String             @db.VarChar(180)
+  description           String?            @db.VarChar(1000)
+  status                WorkTicketStatus   @default(OPEN)
+  priority              WorkTicketPriority @default(NORMAL)
+  sourceType            String?            @db.VarChar(80)
+  sourceId              String?            @db.VarChar(80)
+  assigneeMembershipId  String?            @db.Uuid
+  checklist             Json?
+  dueAt                 DateTime?          @db.Timestamptz(3)
+  completedAt           DateTime?          @db.Timestamptz(3)
+  createdByMembershipId String             @db.Uuid
+  createdAt             DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime           @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch?            @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("WorkTicketCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, status, priority])
+  @@index([businessId, sourceType, sourceId])
+  @@map("work_tickets")
+}
+
+/// CC-P5-003: reusable booking records reserve time/resource capacity without creating sales or stock movement.
+model Booking {
+  id                    String        @id @default(uuid()) @db.Uuid
+  businessId            String        @db.Uuid
+  branchId              String        @db.Uuid
+  customerId            String?       @db.Uuid
+  number                String        @db.VarChar(60)
+  resourceCode          String        @db.VarChar(80)
+  title                 String        @db.VarChar(180)
+  status                BookingStatus @default(CONFIRMED)
+  startsAt              DateTime      @db.Timestamptz(3)
+  endsAt                DateTime      @db.Timestamptz(3)
+  capacityUsed          Int           @default(1)
+  depositAmount         Decimal       @default(0) @db.Decimal(19, 4)
+  notes                 String?       @db.VarChar(500)
+  createdByMembershipId String        @db.Uuid
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime      @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  customer  Customer?          @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("BookingCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, branchId, resourceCode, startsAt, endsAt])
+  @@index([businessId, status, startsAt])
+  @@map("bookings")
+}
+
+/// CC-P5-004: customer-owned assets such as vehicles, devices or equipment.
+model CustomerAsset {
+  id         String       @id @default(uuid()) @db.Uuid
+  businessId String       @db.Uuid
+  customerId String       @db.Uuid
+  code       String       @db.VarChar(60)
+  name       String       @db.VarChar(180)
+  assetType  String       @db.VarChar(80)
+  identifier String?      @db.VarChar(120)
+  attributes Json?
+  status     RecordStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, customerId])
+  @@map("customer_assets")
+}
+
+/// CC-P5-005: exact-unit traceability for serial, IMEI, batch, lot and expiry-controlled items.
+model TraceableUnit {
+  id              String              @id @default(uuid()) @db.Uuid
+  businessId      String              @db.Uuid
+  itemId          String              @db.Uuid
+  variantId       String?             @db.Uuid
+  locationId      String?             @db.Uuid
+  serialNumber    String?             @db.VarChar(120)
+  batchNumber     String?             @db.VarChar(120)
+  lotNumber       String?             @db.VarChar(120)
+  imei            String?             @db.VarChar(120)
+  manufactureDate DateTime?           @db.Date
+  expiryDate      DateTime?           @db.Date
+  status          TraceableUnitStatus @default(AVAILABLE)
+  sourceType      String?             @db.VarChar(80)
+  sourceId        String?             @db.VarChar(80)
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime            @updatedAt @db.Timestamptz(3)
+
+  business Business     @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  item     Item         @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+  variant  ItemVariant? @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Restrict)
+  location Location?    @relation(fields: [locationId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, serialNumber])
+  @@unique([businessId, imei])
+  @@unique([id, businessId])
+  @@index([businessId, itemId, status])
+  @@index([businessId, batchNumber])
+  @@index([businessId, expiryDate])
+  @@map("traceable_units")
+}
+
+model WarrantyPolicy {
+  id           String       @id @default(uuid()) @db.Uuid
+  businessId   String       @db.Uuid
+  code         String       @db.VarChar(50)
+  name         String       @db.VarChar(120)
+  durationDays Int
+  terms        String?      @db.VarChar(1000)
+  status       RecordStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@map("warranty_policies")
+}
+
+/// CC-P5-006: warranty/RMA claims have lifecycle history without directly changing stock or finance.
+model WarrantyClaim {
+  id                    String              @id @default(uuid()) @db.Uuid
+  businessId            String              @db.Uuid
+  customerId            String?             @db.Uuid
+  number                String              @db.VarChar(60)
+  status                WarrantyClaimStatus @default(OPEN)
+  itemDescription       String              @db.VarChar(240)
+  serialReference       String?             @db.VarChar(120)
+  issue                 String              @db.VarChar(1000)
+  resolution            String?             @db.VarChar(1000)
+  createdByMembershipId String              @db.Uuid
+  openedAt              DateTime            @default(now()) @db.Timestamptz(3)
+  closedAt              DateTime?           @db.Timestamptz(3)
+  updatedAt             DateTime            @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer  Customer?          @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("WarrantyClaimCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, status, openedAt])
+  @@map("warranty_claims")
+}
+
+/// CC-P5-007: recipe/BOM definitions do not mutate stock until a consumption record is posted.
+model Bom {
+  id             String    @id @default(uuid()) @db.Uuid
+  businessId     String    @db.Uuid
+  code           String    @db.VarChar(60)
+  name           String    @db.VarChar(180)
+  outputItemId   String    @db.Uuid
+  outputQuantity Decimal   @db.Decimal(19, 4)
+  status         BomStatus @default(DRAFT)
+  notes          String?   @db.VarChar(500)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  business   Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  outputItem Item           @relation(fields: [outputItemId, businessId], references: [id, businessId], onDelete: Restrict)
+  components BomComponent[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("boms")
+}
+
+model BomComponent {
+  id             String  @id @default(uuid()) @db.Uuid
+  businessId     String  @db.Uuid
+  bomId          String  @db.Uuid
+  itemId         String  @db.Uuid
+  variantId      String? @db.Uuid
+  quantity       Decimal @db.Decimal(19, 4)
+  wastagePercent Decimal @default(0) @db.Decimal(9, 4)
+
+  bom     Bom          @relation(fields: [bomId, businessId], references: [id, businessId], onDelete: Cascade)
+  item    Item         @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+  variant ItemVariant? @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, itemId])
+  @@map("bom_components")
+}
+
+/// CC-P5-008: material usage is posted once against a real execution record.
+model MaterialConsumption {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @db.Uuid
+  itemId                String   @db.Uuid
+  variantId             String?  @db.Uuid
+  quantity              Decimal  @db.Decimal(19, 4)
+  sourceType            String   @db.VarChar(80)
+  sourceId              String   @db.VarChar(80)
+  notes                 String?  @db.VarChar(500)
+  createdByMembershipId String   @db.Uuid
+  consumedAt            DateTime @default(now()) @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  item      Item               @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+  variant   ItemVariant?       @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("MaterialConsumptionCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, sourceType, sourceId, itemId, variantId])
+  @@index([businessId, itemId, consumedAt])
+  @@map("material_consumptions")
+}
+
+/// CC-P5-009 and CC-P5-010: route and delivery records plan delivery without moving stock.
+model DeliveryRoute {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @db.Uuid
+  branchId              String   @db.Uuid
+  code                  String   @db.VarChar(60)
+  name                  String   @db.VarChar(180)
+  vehicleReference      String?  @db.VarChar(120)
+  driverName            String?  @db.VarChar(120)
+  plannedDate           DateTime @db.Date
+  createdByMembershipId String   @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("DeliveryRouteCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  stops     DeliveryStop[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, branchId, plannedDate])
+  @@map("delivery_routes")
+}
+
+model DeliveryStop {
+  id             String         @id @default(uuid()) @db.Uuid
+  businessId     String         @db.Uuid
+  routeId        String         @db.Uuid
+  branchId       String         @db.Uuid
+  sequence       Int
+  customerName   String         @db.VarChar(180)
+  address        Json?
+  sourceType     String?        @db.VarChar(80)
+  sourceId       String?        @db.VarChar(80)
+  status         DeliveryStatus @default(PLANNED)
+  proofReference String?        @db.VarChar(240)
+  failedReason   String?        @db.VarChar(240)
+  completedAt    DateTime?      @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+
+  business Business      @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch   Branch        @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  route    DeliveryRoute @relation(fields: [routeId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, routeId, sequence])
+  @@unique([id, businessId])
+  @@index([businessId, status, createdAt])
+  @@map("delivery_stops")
+}
+
+/// CC-P5-011: notification events are queued with reason, recipient and delivery state.
+model NotificationEvent {
+  id                    String             @id @default(uuid()) @db.Uuid
+  businessId            String             @db.Uuid
+  channel               String             @db.VarChar(40)
+  recipient             String             @db.VarChar(254)
+  subject               String             @db.VarChar(180)
+  body                  String             @db.VarChar(1000)
+  status                NotificationStatus @default(PENDING)
+  sourceType            String?            @db.VarChar(80)
+  sourceId              String?            @db.VarChar(80)
+  createdByMembershipId String?            @db.Uuid
+  createdAt             DateTime           @default(now()) @db.Timestamptz(3)
+  sentAt                DateTime?          @db.Timestamptz(3)
+
+  business  Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  createdBy BusinessMembership? @relation("NotificationCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, status, createdAt])
+  @@index([businessId, sourceType, sourceId])
+  @@map("notification_events")
+}
+
+/// CC-P5-012: document metadata links files/photos to business records without storing binary data in Postgres.
+model BusinessDocument {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @db.Uuid
+  entityType            String   @db.VarChar(80)
+  entityId              String   @db.VarChar(80)
+  fileName              String   @db.VarChar(240)
+  mimeType              String   @db.VarChar(120)
+  url                   String   @db.VarChar(1000)
+  notes                 String?  @db.VarChar(500)
+  createdByMembershipId String   @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  createdBy BusinessMembership @relation("DocumentCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@index([businessId, entityType, entityId])
+  @@map("business_documents")
+}
+
+/// CC-P6-001 to CC-P6-003 and CC-P6-008: store terminals and connected hardware.
+model StoreDevice {
+  id                       String       @id @default(uuid()) @db.Uuid
+  businessId               String       @db.Uuid
+  branchId                 String?      @db.Uuid
+  code                     String       @db.VarChar(60)
+  name                     String       @db.VarChar(120)
+  kind                     DeviceKind
+  status                   DeviceStatus @default(REGISTERED)
+  hardwareId               String?      @db.VarChar(160)
+  capabilities             Json?
+  lastSeenAt               DateTime?    @db.Timestamptz(3)
+  pendingOfflineItems      Int          @default(0)
+  registeredByMembershipId String       @db.Uuid
+  createdAt                DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime     @updatedAt @db.Timestamptz(3)
+
+  business     Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch       Branch?            @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  registeredBy BusinessMembership @relation("DeviceRegisteredBy", fields: [registeredByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  queueItems   OfflineQueueItem[]
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, branchId, status])
+  @@map("store_devices")
+}
+
+/// CC-P6-004 to CC-P6-007: queued offline actions are idempotent and reviewed on sync.
+model OfflineQueueItem {
+  id                    String             @id @default(uuid()) @db.Uuid
+  businessId            String             @db.Uuid
+  branchId              String?            @db.Uuid
+  deviceId              String?            @db.Uuid
+  idempotencyKey        String             @db.VarChar(120)
+  operationType         String             @db.VarChar(120)
+  payload               Json
+  status                OfflineQueueStatus @default(QUEUED)
+  riskLevel             String             @default("NORMAL") @db.VarChar(40)
+  failureReason         String?            @db.VarChar(500)
+  createdByMembershipId String             @db.Uuid
+  createdAt             DateTime           @default(now()) @db.Timestamptz(3)
+  syncedAt              DateTime?          @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch?            @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  device    StoreDevice?       @relation(fields: [deviceId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership @relation("OfflineQueueCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  conflicts SyncConflict[]
+
+  @@unique([businessId, idempotencyKey])
+  @@unique([id, businessId])
+  @@index([businessId, status, createdAt])
+  @@index([businessId, deviceId, status])
+  @@map("offline_queue_items")
+}
+
+model SyncConflict {
+  id                     String             @id @default(uuid()) @db.Uuid
+  businessId             String             @db.Uuid
+  queueItemId            String             @db.Uuid
+  entityType             String             @db.VarChar(80)
+  entityId               String?            @db.VarChar(80)
+  reason                 String             @db.VarChar(500)
+  serverSnapshot         Json?
+  clientSnapshot         Json?
+  status                 SyncConflictStatus @default(OPEN)
+  resolution             String?            @db.VarChar(500)
+  resolvedByMembershipId String?            @db.Uuid
+  createdAt              DateTime           @default(now()) @db.Timestamptz(3)
+  resolvedAt             DateTime?          @db.Timestamptz(3)
+
+  business   Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  queueItem  OfflineQueueItem    @relation(fields: [queueItemId, businessId], references: [id, businessId], onDelete: Cascade)
+  resolvedBy BusinessMembership? @relation("SyncConflictResolvedBy", fields: [resolvedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, status, createdAt])
+  @@map("sync_conflicts")
 }

@@ -1,11 +1,13 @@
 import type { OnApplicationShutdown, Provider } from "@nestjs/common";
 import { Inject, Injectable } from "@nestjs/common";
 import {
+  BusinessEnginesService,
   BusinessAccessService,
   CatalogService,
   FinanceService,
   ImportService,
   InventoryService,
+  StoreReliabilityService,
 } from "@bizentra/domain-business-access";
 import { PosService, PricingService } from "@bizentra/domain-commerce";
 import { createDatabaseClient, type DatabaseClient } from "@bizentra/database";
@@ -29,6 +31,12 @@ export const catalogProvider: Provider = {
   useFactory: (database: DatabaseClient) => new CatalogService(database),
 };
 
+export const businessEnginesProvider: Provider = {
+  provide: BusinessEnginesService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new BusinessEnginesService(database),
+};
+
 export const importProvider: Provider = {
   provide: ImportService,
   inject: [DATABASE],
@@ -45,6 +53,12 @@ export const inventoryProvider: Provider = {
   provide: InventoryService,
   inject: [DATABASE],
   useFactory: (database: DatabaseClient) => new InventoryService(database),
+};
+
+export const storeReliabilityProvider: Provider = {
+  provide: StoreReliabilityService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new StoreReliabilityService(database),
 };
 
 export const pricingProvider: Provider = {

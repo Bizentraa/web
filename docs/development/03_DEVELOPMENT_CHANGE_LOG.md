@@ -70,6 +70,18 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P4 finance foundation scope | `CC-P4-001` to `CC-P4-010`, `CC-P4-012`, `CC-US-010`, `CC-US-011` | `32e3a2c` | Added receivables, collections, payables, supplier payments, expenses, cash/bank accounts, bank transactions, loyalty balances, accounting events, P4 permissions/role sync, API/client contracts, Back Office `/finance` workspace and live smoke coverage. |
 
+### Common Core P5 Reusable Business Engines
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-27 | Implemented for current P5 shared-engine foundation scope | `CC-P5-001` to `CC-P5-012`, `CC-US-012`, `CC-US-013`, `CC-US-014` | Uncommitted | Added workflow statuses/transitions, work tickets, bookings with overlap prevention, customer assets, traceable units, warranty claims, BOMs, material consumption, delivery routes/stops, notification events, document metadata, P5 permissions/role sync, API/client contracts, Back Office `/business-engines` workspace and live smoke coverage. |
+
+### Common Core P6 Offline, Devices and Store Reliability
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-27 | Implemented for current P6 device/offline foundation scope | `CC-P6-001` to `CC-P6-008`, `CC-US-015` | Uncommitted | Added store device registry, device heartbeat, offline queue idempotency, queue status updates, sync conflicts, conflict resolution, P6 permissions/role sync, API/client contracts, Back Office `/store-reliability` workspace and live smoke coverage. |
+
 ### Common UI/UX System
 
 | Date | Status | SRS mapping | Commit | Summary |
@@ -250,6 +262,32 @@ Each change entry should include:
 | Commit | `32e3a2c feat: add common core P4 finance foundation` |
 | Remaining work | P4 still needs customer credit limits, ageing, statements, formal reconciliation sessions, purchase order/goods receipt/supplier bill matching, sales-cost-gross-margin reporting, accounting export/retry/failure integration and richer finance-safe reversal/void workflows with approval hooks. |
 
+### 2026-08-27 - Common Core P5 Reusable Business Engines
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P5 reusable business-engine foundation |
+| Status | Implemented for current P5 shared-engine foundation scope |
+| SRS mapping | `CC-P5-001` Workflow; `CC-P5-002` Work Ticket; `CC-P5-003` Booking; `CC-P5-004` Customer Asset; `CC-P5-005` Traceability; `CC-P5-006` Warranty; `CC-P5-007` Recipe/BOM; `CC-P5-008` Consumption; `CC-P5-009` Route; `CC-P5-010` Proof of Delivery foundation; `CC-P5-011` Notifications; `CC-P5-012` Documents; `CC-US-012`; `CC-US-013`; `CC-US-014` |
+| What changed | Added P5 database models for workflow statuses/transitions, work tickets, bookings, customer assets, traceable units, warranty policies/claims, BOMs/components, material consumption, delivery routes/stops, notification events and business documents. Added P5 permissions, Operations User role template and additive existing-role sync. Added Business Engines service rules for booking time validation, overlapping booking refusal, traceable unit capture, BOM definition without stock mutation, material consumption against a source record, delivery route planning, audit records and outbox events. Added API routes, API-client methods, Back Office `/business-engines` workspace and live smoke coverage. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826205021_p5_p6_engines_devices/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/business-engines.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/business-engines.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/business-engines/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/11_P5_IMPLEMENTATION_STATUS.md` |
+| Verification | Focused builds/typechecks passed for contracts, database, domain-business-access, API client, API and Back Office; `pnpm db:migrate:deploy` applied migration `20260826205021_p5_p6_engines_devices`; live smoke passed P5 workflow, ticket, booking, asset, traceability, warranty, BOM, material consumption, route, notification, document and audit checks as part of 139 total checks. |
+| Commit | Uncommitted |
+| Remaining work | P5 still needs workflow designer UI, richer work-board/ticket assignment/timer flows, calendar capacity/cancellation/no-show workflows, warranty policy activation and inspection/approval/repair/replacement closure, traceability movement linkage to receipt/sale/return/transfer events, BOM production/assembly posting, mobile proof-of-delivery capture and notification provider retry/failure management. |
+
+### 2026-08-27 - Common Core P6 Offline, Devices and Store Reliability
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P6 device, offline queue and store reliability foundation |
+| Status | Implemented for current P6 device/offline foundation scope |
+| SRS mapping | `CC-P6-001` Devices; `CC-P6-002` Printer foundation; `CC-P6-003` Scanner foundation; `CC-P6-004` Offline Sale foundation; `CC-P6-005` Offline Queue; `CC-P6-006` Conflict; `CC-P6-007` Payment Offline Safety foundation; `CC-P6-008` Device Health; `CC-US-015` |
+| What changed | Added P6 database models for store devices, offline queue items and sync conflicts. Added P6 permissions, Device / Offline User role template and additive existing-role sync. Added Store Reliability service rules for device registration/upsert, heartbeat last-seen updates, offline queue idempotency, queue status changes, conflict creation and conflict resolution. Added API routes, API-client methods, Back Office `/store-reliability` workspace and live smoke coverage. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826205021_p5_p6_engines_devices/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/store-reliability.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/store-reliability.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/store-reliability/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/12_P6_IMPLEMENTATION_STATUS.md` |
+| Verification | Focused builds/typechecks passed for contracts, database, domain-business-access, API client, API and Back Office; `pnpm db:migrate:deploy` applied migration `20260826205021_p5_p6_engines_devices`; live smoke passed P6 device registration, heartbeat, offline queue idempotency, conflict marking, conflict overview, conflict resolution and audit checks as part of 139 total checks. |
+| Commit | Uncommitted |
+| Remaining work | P6 still needs real POS browser offline storage/replay, always-visible POS offline banner, sync queue drawer, payment-provider-specific offline risk restrictions, printer/scanner/cash-drawer adapters, conflict comparison UI and device pairing/revocation/lost-device lockout. |
+
 ## 5. Consolidated Remaining Work Register
 
 This section lists remaining work that must be considered before a phase or UI/UX capability is treated as complete. It combines gaps from the SRS, UI/UX plan and the detailed change entries above.
@@ -321,22 +359,22 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| Workflow/work tickets | Configurable statuses/transitions; reusable Work Ticket engine; assignment, checklist, timer, materials, attachments and history. |
-| Booking | Calendar, resources, capacity, deposits, cancellation, no-show and conflict prevention. |
-| Customer assets | Vehicle/device/customer asset history and links to sales, services and warranties. |
-| Traceability/warranty | Serial/IMEI/batch/lot/expiry tracking; warranty activation, claim, inspection, approval, repair/replacement and RMA closure. |
-| Recipe/BOM/route/POD | BOM/recipe definitions; material consumption events; routes/stops/vehicles/drivers; proof of delivery. |
-| Notifications/documents | Configurable notifications and file/photo attachments for supported records. |
-| UI/UX | `BookingCalendar`, `WorkBoard`, `WorkTicketPanel`, `SerialPicker`, `BatchExpiryPicker`, warranty UI, route/POD UI and document panels. |
+| Workflow/work tickets | Implemented for current scope: workflow status/transition records, work-ticket creation, branch/source/assignee/checklist/due-date fields and status update. Remaining: visual workflow designer, transition enforcement UI, WorkBoard, timers, assignment queues, checklist editing and attachments inside ticket detail. |
+| Booking | Implemented for current scope: booking records with branch, resource, customer, time range, deposit field and overlap prevention. Remaining: full calendar UI, capacity rules, deposits tied to payments, cancellation, no-show and reminders. |
+| Customer assets | Implemented for current scope: customer-owned asset records with type, identifier and attributes. Remaining: asset history timeline and direct links to service tickets, sales and warranties. |
+| Traceability/warranty | Implemented for current scope: serial/IMEI/batch/lot/expiry unit records and warranty/RMA claim opening. Remaining: traceability movements tied to receipts/sales/returns/transfers; warranty policy activation, claim inspection, approval, repair/replacement and RMA closure. |
+| Recipe/BOM/route/POD | Implemented for current scope: BOM definitions/components without stock mutation, material consumption records, delivery route/stop planning and proof/failure fields. Remaining: production/assembly posting, stock consumption automation, mobile proof-of-delivery signature/photo capture and failed-delivery retry flow. |
+| Notifications/documents | Implemented for current scope: notification event queue records and business-document metadata attachments. Remaining: templates, provider integrations, retry/failure queues, secure file storage and per-record document panels. |
+| UI/UX | Implemented for current scope: Back Office `/business-engines` workspace with KPI cards, tabs, responsive tables and quick actions. Remaining: `BookingCalendar`, `WorkBoard`, `WorkTicketPanel`, `SerialPicker`, `BatchExpiryPicker`, warranty UI, route/POD UI and document panels. |
 
 ### P6 - Offline, Devices and Store Reliability
 
 | Area | Remaining work |
 |---|---|
-| Devices | POS terminal registration, printer support, scanner support and device health/status. |
-| Offline | Approved offline operation rules, offline queue, unique offline IDs, sync, conflict handling and visible pending count. |
-| Payment safety | Restrict offline payment methods by provider/risk; payment unknown and needs-review states. |
-| UI/UX | Always-visible offline banner for operational surfaces, sync queue drawer, conflict comparison and mobile/device-first states. |
+| Devices | Implemented for current scope: store device registry, device type, branch assignment, capabilities, last-seen heartbeat and pending offline count. Remaining: pairing flow, revocation, lost-device lockout and hardware adapter health checks. |
+| Offline | Implemented for current scope: offline queue records, unique idempotency keys, queue status changes, conflict creation and conflict resolution. Remaining: browser/POS IndexedDB queue, automatic replay, retry backoff and background sync. |
+| Payment safety | Implemented for current scope: offline queue risk level field and reviewable conflict state. Remaining: payment-provider-specific offline method restrictions and payment unknown/needs-review integration. |
+| UI/UX | Implemented for current scope: Back Office `/store-reliability` workspace with device health, queue and conflict views. Remaining: always-visible POS offline banner, sync queue drawer, server/client conflict comparison and mobile/device-first states. |
 
 ### P7 - Reporting, Integrations and Migration
 
