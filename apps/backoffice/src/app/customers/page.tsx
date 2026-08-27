@@ -15,7 +15,6 @@ import {
   DescriptionList,
   EntityHeader,
   Field,
-  FilterBar,
   formatDateTime,
   formatMoney,
   FormFooter,
@@ -156,77 +155,73 @@ export default function CustomersPage() {
       }
     >
       <Stack>
-        <FilterBar
-          onSearchChange={setSearch}
-          searchPlaceholder="Search by name, code, phone or email"
-          value={search}
-          actions={
-            <Button onClick={() => setCreateOpen(true)} size="quiet">
-              New customer
-            </Button>
-          }
-          chips={
-            statusFilter
-              ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
-              : []
-          }
-        >
-          <SelectField
-            label="Status"
-            onChange={(event) => setStatusFilter(event.target.value)}
-            value={statusFilter}
-          >
-            <option value="">Every status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </SelectField>
-        </FilterBar>
-
         <ResourceState error={error} onRetry={reload} state={state} title="Customers">
           {data ? (
-            <Card flush>
-              <DataTable
-                caption={`${data.customers.total} customer(s). Click a row to open the record.`}
-                getRowKey={(customer) => customer.id}
-                onRowSelect={(customer) => void openDetail(customer)}
-                rows={data.customers.rows}
-                empty="No customers match this search. Create one or import a CSV file."
-                columns={[
-                  { header: "Name", render: (customer) => <strong>{customer.name}</strong> },
-                  { header: "Code", render: (customer) => customer.code },
-                  {
-                    header: "Group",
-                    hideOnMobile: true,
-                    render: (customer) => customer.groupName ?? "-",
-                  },
-                  { header: "Phone", render: (customer) => customer.phone ?? "-" },
-                  { header: "Sales", align: "right", render: (customer) => customer.salesCount },
-                  {
-                    header: "Spent",
-                    align: "right",
-                    render: (customer) => formatMoney(customer.salesTotal),
-                  },
-                  {
-                    header: "Store credit",
-                    align: "right",
-                    render: (customer) =>
-                      customer.storeCredit > 0 ? (
-                        <Badge tone="success">{formatMoney(customer.storeCredit)}</Badge>
-                      ) : (
-                        "-"
-                      ),
-                  },
-                  {
-                    header: "Status",
-                    render: (customer) => (
-                      <Badge tone={customer.status === "ACTIVE" ? "success" : "neutral"}>
-                        {customer.status}
-                      </Badge>
+            <DataTable
+              caption="Customers"
+              kicker="Customer records"
+              search={{
+                value: search,
+                onChange: setSearch,
+                placeholder: "Search by name, code, phone or email",
+              }}
+              filters={
+                <SelectField
+                  label="Status"
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  value={statusFilter}
+                >
+                  <option value="">Every status</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                </SelectField>
+              }
+              chips={
+                statusFilter
+                  ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
+                  : []
+              }
+              toolbar={<Button onClick={() => setCreateOpen(true)}>New customer</Button>}
+              summary={`${data.customers.total} customer(s). Click a row to open the record.`}
+              getRowKey={(customer) => customer.id}
+              onRowSelect={(customer) => void openDetail(customer)}
+              rows={data.customers.rows}
+              empty="No customers match this search. Create one or import a CSV file."
+              columns={[
+                { header: "Name", render: (customer) => <strong>{customer.name}</strong> },
+                { header: "Code", render: (customer) => customer.code },
+                {
+                  header: "Group",
+                  hideOnMobile: true,
+                  render: (customer) => customer.groupName ?? "-",
+                },
+                { header: "Phone", render: (customer) => customer.phone ?? "-" },
+                { header: "Sales", align: "right", render: (customer) => customer.salesCount },
+                {
+                  header: "Spent",
+                  align: "right",
+                  render: (customer) => formatMoney(customer.salesTotal),
+                },
+                {
+                  header: "Store credit",
+                  align: "right",
+                  render: (customer) =>
+                    customer.storeCredit > 0 ? (
+                      <Badge tone="success">{formatMoney(customer.storeCredit)}</Badge>
+                    ) : (
+                      "-"
                     ),
-                  },
-                ]}
-              />
-            </Card>
+                },
+                {
+                  header: "Status",
+                  render: (customer) => (
+                    <Badge tone={customer.status === "ACTIVE" ? "success" : "neutral"}>
+                      {customer.status}
+                    </Badge>
+                  ),
+                },
+              ]}
+            />
           ) : null}
         </ResourceState>
       </Stack>

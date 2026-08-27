@@ -152,12 +152,8 @@ export default function InventoryPage() {
                       className="ui-scroll-panel"
                       toolbar={
                         <div className="ui-row">
-                          <Button onClick={() => setDialog("transfer")} size="quiet">
-                            Transfer
-                          </Button>
-                          <Button onClick={() => setDialog("reorder")} size="quiet">
-                            Reorder level
-                          </Button>
+                          <Button onClick={() => setDialog("transfer")}>Transfer</Button>
+                          <Button onClick={() => setDialog("reorder")}>Reorder level</Button>
                         </div>
                       }
                       empty="No stock has been posted yet. Start with an opening stock adjustment or receive a purchase order."
@@ -240,12 +236,8 @@ export default function InventoryPage() {
                       kicker="Purchasing"
                       toolbar={
                         <div className="ui-row">
-                          <Button onClick={() => setDialog("request")} size="quiet">
-                            Purchase request
-                          </Button>
-                          <Button onClick={() => setDialog("order")} size="quiet">
-                            Purchase order
-                          </Button>
+                          <Button onClick={() => setDialog("request")}>Purchase request</Button>
+                          <Button onClick={() => setDialog("order")}>Purchase order</Button>
                         </div>
                       }
                       empty="No purchase orders yet."
@@ -343,9 +335,7 @@ export default function InventoryPage() {
                   caption="Pick, pack and dispatch"
                   kicker="Fulfillment"
                   toolbar={
-                    <Button onClick={() => setDialog("fulfill")} size="quiet">
-                      New fulfillment order
-                    </Button>
+                    <Button onClick={() => setDialog("fulfill")}>New fulfillment order</Button>
                   }
                   empty="No fulfillment orders yet."
                   getRowKey={(row) => row.id}

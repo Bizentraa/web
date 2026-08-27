@@ -18,7 +18,6 @@ import {
   DataTable,
   DescriptionList,
   Field,
-  FilterBar,
   formatMoney,
   FormFooter,
   FormGrid,
@@ -387,82 +386,78 @@ export default function CatalogPage() {
 
               {tab === "items" ? (
                 <Stack>
-                  <FilterBar
-                    onSearchChange={setSearch}
-                    searchPlaceholder="Search by name, code or barcode"
-                    value={search}
-                    actions={
-                      <Button onClick={() => setDialog("item")} size="quiet">
-                        New item
-                      </Button>
+                  <DataTable
+                    caption="Items"
+                    kicker="Master data"
+                    search={{
+                      value: search,
+                      onChange: setSearch,
+                      placeholder: "Search by name, code or barcode",
+                    }}
+                    filters={
+                      <SelectField
+                        label="Status"
+                        onChange={(event) => setStatusFilter(event.target.value)}
+                        value={statusFilter}
+                      >
+                        <option value="">Every status</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="INACTIVE">Inactive</option>
+                      </SelectField>
                     }
                     chips={
                       statusFilter
                         ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
                         : []
                     }
-                  >
-                    <SelectField
-                      label="Status"
-                      onChange={(event) => setStatusFilter(event.target.value)}
-                      value={statusFilter}
-                    >
-                      <option value="">Every status</option>
-                      <option value="ACTIVE">Active</option>
-                      <option value="INACTIVE">Inactive</option>
-                    </SelectField>
-                  </FilterBar>
-
-                  <Card flush>
-                    <DataTable
-                      caption={`${data.items.total} item(s). Click a row to open the item.`}
-                      getRowKey={(item) => item.id}
-                      rows={data.items.rows}
-                      empty="No items match this search. Create an item or import a CSV file."
-                      footer={
-                        <>
-                          <span>
-                            Showing {data.items.rows.length} of {data.items.total}
-                          </span>
-                          <Link className="ui-button ui-button--quiet" href="/import">
-                            Import items
+                    toolbar={<Button onClick={() => setDialog("item")}>New item</Button>}
+                    summary={`${data.items.total} item(s). Click a row to open the item.`}
+                    getRowKey={(item) => item.id}
+                    rows={data.items.rows}
+                    empty="No items match this search. Create an item or import a CSV file."
+                    footer={
+                      <>
+                        <span>
+                          Showing {data.items.rows.length} of {data.items.total}
+                        </span>
+                        <Link className="ui-button ui-button--quiet" href="/import">
+                          Import items
+                        </Link>
+                      </>
+                    }
+                    columns={[
+                      {
+                        header: "Item",
+                        render: (item) => (
+                          <Link href={`/catalog/${item.id}`}>
+                            <strong>{item.name}</strong>
                           </Link>
-                        </>
-                      }
-                      columns={[
-                        {
-                          header: "Item",
-                          render: (item) => (
-                            <Link href={`/catalog/${item.id}`}>
-                              <strong>{item.name}</strong>
-                            </Link>
-                          ),
-                        },
-                        { header: "Code", render: (item) => item.code },
-                        { header: "Kind", hideOnMobile: true, render: (item) => item.kind },
-                        {
-                          header: "Category",
-                          hideOnMobile: true,
-                          render: (item) => item.categoryName ?? "-",
-                        },
-                        { header: "Unit", render: (item) => item.unitCode },
-                        {
-                          header: "Price",
-                          align: "right",
-                          render: (item) =>
-                            item.price === null ? "No price" : formatMoney(item.price),
-                        },
-                        {
-                          header: "Status",
-                          render: (item) => (
-                            <Badge tone={item.status === "ACTIVE" ? "success" : "neutral"}>
-                              {item.status}
-                            </Badge>
-                          ),
-                        },
-                      ]}
-                    />
-                  </Card>
+                        ),
+                      },
+                      { header: "Code", render: (item) => item.code },
+                      { header: "Kind", hideOnMobile: true, render: (item) => item.kind },
+                      {
+                        header: "Category",
+                        hideOnMobile: true,
+                        render: (item) => item.categoryName ?? "-",
+                      },
+                      { header: "Unit", render: (item) => item.unitCode },
+                      {
+                        header: "Price",
+                        align: "right",
+                        render: (item) =>
+                          item.price === null ? "No price" : formatMoney(item.price),
+                      },
+                      {
+                        header: "Status",
+                        render: (item) => (
+                          <Badge tone={item.status === "ACTIVE" ? "success" : "neutral"}>
+                            {item.status}
+                          </Badge>
+                        ),
+                      },
+                    ]}
+                  />
                 </Stack>
               ) : null}
 
@@ -484,11 +479,7 @@ export default function CatalogPage() {
                         key={section.value}
                         caption={section.label}
                         kicker={section.kicker}
-                        toolbar={
-                          <Button onClick={section.onAdd} size="quiet">
-                            Add
-                          </Button>
-                        }
+                        toolbar={<Button onClick={section.onAdd}>Add</Button>}
                         getRowKey={(row) => row.id}
                         rows={section.rows}
                         onRowSelect={setRecord}
@@ -540,9 +531,7 @@ export default function CatalogPage() {
                       summary="A customer group can point at its own price list, and a price can be set for one Branch or from a quantity break upward."
                       kicker="CC-P1-006"
                       toolbar={
-                        <Button onClick={() => setDialog("priceList")} size="quiet">
-                          New price list
-                        </Button>
+                        <Button onClick={() => setDialog("priceList")}>New price list</Button>
                       }
                       getRowKey={(priceList) => priceList.id}
                       rows={reference.priceLists}
@@ -598,9 +587,7 @@ export default function CatalogPage() {
                       summary="The POS applies the promotion that gives the customer the best price and explains any promotion it skipped."
                       kicker="CC-P1-007"
                       toolbar={
-                        <Button onClick={() => setDialog("promotion")} size="quiet">
-                          New promotion
-                        </Button>
+                        <Button onClick={() => setDialog("promotion")}>New promotion</Button>
                       }
                       getRowKey={(promotion) => promotion.id}
                       rows={data.promotions}
@@ -694,12 +681,10 @@ export default function CatalogPage() {
                       kicker="CC-P1-008"
                       toolbar={
                         <div className="ui-row">
-                          <Button onClick={() => setDialog("taxCategory")} size="quiet">
-                            New category
-                          </Button>
+                          <Button onClick={() => setDialog("taxCategory")}>New category</Button>
                           <Button
                             onClick={() => setDialog("taxRate")}
-                            size="quiet"
+
                             variant="secondary"
                           >
                             New rate

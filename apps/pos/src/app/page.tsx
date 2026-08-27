@@ -523,7 +523,7 @@ export default function PosPage() {
       ) : null}
 
       {shiftLoading ? (
-        <SkeletonScreen rows={5} />
+        <SkeletonScreen />
       ) : !shift ? (
         <Card>
           <CardHeader>

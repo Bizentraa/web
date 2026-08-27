@@ -48,10 +48,11 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `DescriptionList` | Label and value pairs on detail pages |
 | `Stack`, `Row`, `Grid`, `Split`, `Toolbar` | Layout helpers so screens do not invent their own spacing |
 | `Button` | Primary, secondary, ghost and danger, in quiet, normal and large sizes |
+| `Avatar` | Initials in a circle, derived from a name; there are no uploaded photographs, so it needs no network request and cannot fail to load |
 | `Badge`, `StatusChip` | State shown as text plus a semantic colour, never colour alone |
 | `Progress` | Accessible progress indicator |
 | `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text |
-| `FilterBar` | Search, extra controls, actions and clearable active-filter chips |
+| `FilterBar` | Superseded. `DataTable` now takes `search`, `filters` and `chips` directly, so a list's controls sit inside the table's own border. Kept exported for a future screen that filters something other than a table |
 | `DataTable` | Sticky header, optional kicker, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
 | `Timeline` | Business history on a record |
 | `MoneySummary` | Subtotal, discount, tax, paid and due in one aligned block |

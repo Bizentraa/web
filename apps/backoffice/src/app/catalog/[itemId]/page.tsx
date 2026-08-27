@@ -270,11 +270,7 @@ export default function ItemDetailPage() {
                   caption="Prices"
                   kicker="CC-P1-006"
                   summary="A Branch price beats a Business-wide price, and the highest quantity break the customer qualifies for wins."
-                  toolbar={
-                    <Button onClick={() => setDialog("price")} size="quiet">
-                      Add price
-                    </Button>
-                  }
+                  toolbar={<Button onClick={() => setDialog("price")}>Add price</Button>}
                   getRowKey={(price) => price.id}
                   rows={item.prices}
                   empty="This item has no price yet, so the POS cannot sell it."
@@ -318,11 +314,7 @@ export default function ItemDetailPage() {
                   caption="Barcodes and codes"
                   summary="A code can only belong to one item in the Business, so a scan is never ambiguous."
                   kicker="CC-P1-005"
-                  toolbar={
-                    <Button onClick={() => setDialog("identifier")} size="quiet">
-                      Add code
-                    </Button>
-                  }
+                  toolbar={<Button onClick={() => setDialog("identifier")}>Add code</Button>}
                   getRowKey={(identifier) => identifier.id}
                   rows={item.identifierRecords}
                   empty="Add a barcode so the POS can scan this item."
@@ -346,11 +338,7 @@ export default function ItemDetailPage() {
                   caption="Variants"
                   summary="Variants describe size, colour, storage, style or pack size while sharing the same item definition."
                   kicker="CC-P1-003"
-                  toolbar={
-                    <Button onClick={() => setDialog("variant")} size="quiet">
-                      Add variant
-                    </Button>
-                  }
+                  toolbar={<Button onClick={() => setDialog("variant")}>Add variant</Button>}
                   getRowKey={(variant) => variant.id}
                   rows={item.variants}
                   empty="This item has no variants."

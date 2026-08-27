@@ -216,16 +216,6 @@
   margin: 6px 0 0;
   max-width: 80ch;
 }
-.theme-back-link {
-  margin: 0 0 20px;
-  color: var(--color-primary);
-  font-weight: 700;
-}
-
-.theme-settings {
-  display: grid;
-  gap: 12px;
-}
 
 .surface-grid {
   display: grid;
@@ -441,7 +431,7 @@
 .theme-field input,
 .theme-field select {
   width: 100%;
-  min-height: 34px;
+  min-height: var(--ui-control-height);
   padding: 5px 10px;
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
@@ -516,7 +506,7 @@
 
 .theme-colour-input input {
   width: 52px;
-  height: 32px;
+  height: var(--ui-control-height);
   padding: 3px;
   border: 1px solid var(--color-border-strong);
   border-radius: 9px;
@@ -534,7 +524,7 @@
 }
 
 .theme-primary-button {
-  min-height: 34px;
+  min-height: var(--ui-control-height);
   padding: 6px 13px;
   border-radius: 9px;
   background: var(--color-primary);
@@ -740,7 +730,7 @@
 }
 
 .catalog-secondary-action {
-  min-height: 34px;
+  min-height: var(--ui-control-height);
   padding: 6px 11px;
 }
 
@@ -1117,5 +1107,344 @@
   .theme-save-actions .theme-primary-button,
   .theme-save-actions .theme-text-button {
     width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------- access screen */
+
+/* The invitation previewed as the row it will become in the people list. */
+.access-invite-preview {
+  align-items: center;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.access-invite-preview > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.access-invite-preview strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-invite-preview small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-invite-preview > :last-child {
+  margin-left: auto;
+}
+
+.access-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.access-choice > header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.access-choice > header div {
+  display: flex;
+  flex-direction: column;
+}
+
+.access-choice > header small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+/* ---------------------------------------------------------------- sidebar */
+
+/*
+ * The sidebar is shadcn's, so it is styled through its `data-slot` hooks rather than by editing
+ * the vendored component. Everything below is colour and motion; none of it changes layout, so a
+ * future `shadcn add sidebar` stays a drop-in.
+ */
+
+/* An accent bar on the active item, the same language as the tab indicators. */
+[data-slot="sidebar-menu-button"] {
+  position: relative;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+[data-slot="sidebar-menu-button"]::before {
+  background: var(--sidebar-primary);
+  border-radius: 0 3px 3px 0;
+  content: "";
+  height: 0;
+  /* Inside the button's own left padding: sidebar content scrolls, so a negative offset
+     would be clipped and could add a horizontal scrollbar. */
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: 3px;
+}
+
+[data-slot="sidebar-menu-button"][data-active="true"]::before {
+  height: 1.15rem;
+}
+
+/*
+ * shadcn maps both hover and active onto `--sidebar-accent`, so the current page looked exactly
+ * like whatever the pointer happened to be over - there was no way to tell where you were while
+ * reaching for somewhere else. Active is now the Business primary; hover stays neutral.
+ */
+[data-slot="sidebar-menu-button"][data-active="true"] {
+  background: color-mix(in srgb, var(--sidebar-primary) 12%, transparent);
+  color: var(--sidebar-primary);
+  font-weight: 650;
+}
+
+[data-slot="sidebar-menu-button"][data-active="true"]:hover {
+  background: color-mix(in srgb, var(--sidebar-primary) 18%, transparent);
+  color: var(--sidebar-primary);
+}
+
+[data-slot="sidebar-menu-button"][data-active="true"] svg {
+  color: var(--sidebar-primary);
+}
+
+/* Collapsed to icons there is no room beside the button, and the fill carries the state alone. */
+[data-collapsible="icon"] [data-slot="sidebar-menu-button"]::before {
+  display: none;
+}
+
+/* Groups read as blocks, with the label sitting closer to its own items than to the group above. */
+[data-slot="sidebar-group"] + [data-slot="sidebar-group"] {
+  margin-top: 2px;
+}
+
+[data-slot="sidebar-group-label"] {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  opacity: 0.62;
+  text-transform: uppercase;
+}
+
+/* The phase tag is metadata about the build, not a notification: quiet, and quieter still when
+   its row is active, where the accent bar is already doing the talking. */
+[data-slot="sidebar-menu-badge"] {
+  background: color-mix(in srgb, var(--sidebar-foreground) 8%, transparent);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+}
+
+[data-slot="sidebar-menu-button"][data-active="true"] ~ [data-slot="sidebar-menu-badge"] {
+  background: color-mix(in srgb, var(--sidebar-primary) 16%, transparent);
+  color: var(--sidebar-primary);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="sidebar-menu-button"]::before {
+    transition: none;
+  }
+}
+
+/*
+ * The sidebar scrolls, but it is a fixed chrome panel a person looks at constantly rather than
+ * reads through, so a permanent grey bar down its edge is noise. The thumb fades in when the
+ * pointer is over the sidebar and stays reachable by keyboard scrolling either way.
+ */
+[data-slot="sidebar-content"] {
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 200ms ease;
+}
+
+[data-slot="sidebar-inner"]:hover [data-slot="sidebar-content"],
+[data-slot="sidebar-content"]:focus-within {
+  scrollbar-color: color-mix(in srgb, var(--sidebar-foreground) 26%, transparent) transparent;
+}
+
+[data-slot="sidebar-content"]::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+[data-slot="sidebar-inner"]:hover [data-slot="sidebar-content"]::-webkit-scrollbar-thumb,
+[data-slot="sidebar-content"]:focus-within::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--sidebar-foreground) 26%, transparent);
+  background-clip: padding-box;
+}
+
+/*
+ * Theme preview.
+ *
+ * The wrapper receives the draft's resolved tokens as inline custom properties, so everything
+ * inside it paints with the unsaved theme while the surrounding page stays on the saved one. That
+ * is the whole trick: no iframe, no duplicated palette, just a scope where --color-* means
+ * something different.
+ */
+.theme-preview {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-primary);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  overflow: hidden;
+  padding: 10px;
+}
+
+.theme-preview-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.theme-preview-brand {
+  background: var(--color-primary);
+  border-radius: 7px;
+  height: 22px;
+}
+
+.theme-preview-nav {
+  background: var(--color-surface-secondary);
+  border-radius: 6px;
+  height: 14px;
+}
+
+.theme-preview-nav--active {
+  background: var(--color-primary-soft);
+  box-shadow: inset 2px 0 0 var(--color-primary);
+}
+
+.theme-preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.theme-preview-bar {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.theme-preview-bar > span {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+  height: 10px;
+  width: 10px;
+}
+
+.theme-preview-bar em {
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 650;
+}
+
+.theme-preview-card {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 10px;
+}
+
+.theme-preview-card strong {
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.theme-preview-card small {
+  color: var(--color-success);
+  font-size: 0.66rem;
+}
+
+.theme-preview-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.theme-preview-button {
+  background: var(--color-primary);
+  border-radius: 7px;
+  color: var(--color-primary-foreground);
+  font-size: 0.64rem;
+  font-weight: 650;
+  padding: 4px 8px;
+}
+
+.theme-preview-button--quiet {
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
+}
+
+.theme-preview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.theme-preview-chips span {
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.theme-preview-chips span[data-tone="success"] {
+  background: color-mix(in srgb, var(--color-success) 16%, transparent);
+  color: var(--color-success);
+}
+
+.theme-preview-chips span[data-tone="warning"] {
+  background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+  color: var(--color-warning);
+}
+
+.theme-preview-chips span[data-tone="danger"] {
+  background: color-mix(in srgb, var(--color-danger) 16%, transparent);
+  color: var(--color-danger);
+}
+
+.theme-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1120px) {
+  .ui-screen-grid > .ui-screen-main,
+  .ui-screen-grid > .ui-screen-side {
+    grid-column: span 12;
+  }
+
+  .ui-sticky-panel {
+    position: static;
   }
 }

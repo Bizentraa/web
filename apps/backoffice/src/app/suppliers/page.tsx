@@ -10,7 +10,6 @@ import {
   DescriptionList,
   EntityHeader,
   Field,
-  FilterBar,
   formatDateTime,
   formatMoney,
   FormFooter,
@@ -103,53 +102,48 @@ export default function SuppliersPage() {
       headerActions={<Button onClick={() => setCreateOpen(true)}>New supplier</Button>}
     >
       <Stack>
-        <FilterBar
-          onSearchChange={setSearch}
-          searchPlaceholder="Search by supplier name or code"
-          value={search}
-          actions={
-            <Button onClick={() => setCreateOpen(true)} size="quiet">
-              New supplier
-            </Button>
-          }
-        />
-
         <ResourceState error={error} onRetry={reload} state={state} title="Suppliers">
           {data ? (
-            <Card flush>
-              <DataTable
-                caption={`${data.suppliers.total} supplier(s). Click a row to open the record.`}
-                getRowKey={(supplier) => supplier.id}
-                onRowSelect={(supplier) => void openDetail(supplier)}
-                rows={data.suppliers.rows}
-                empty="No suppliers yet. Create one or import a CSV file."
-                columns={[
-                  { header: "Name", render: (supplier) => <strong>{supplier.name}</strong> },
-                  { header: "Code", render: (supplier) => supplier.code },
-                  { header: "Phone", render: (supplier) => supplier.phone ?? "-" },
-                  {
-                    header: "Terms",
-                    hideOnMobile: true,
-                    render: (supplier) => supplier.paymentTerms ?? "-",
-                  },
-                  {
-                    header: "Lead time",
-                    align: "right",
-                    render: (supplier) =>
-                      supplier.leadTimeDays === null ? "-" : `${supplier.leadTimeDays} day(s)`,
-                  },
-                  { header: "Items", align: "right", render: (supplier) => supplier.itemCount },
-                  {
-                    header: "Status",
-                    render: (supplier) => (
-                      <Badge tone={supplier.status === "ACTIVE" ? "success" : "neutral"}>
-                        {supplier.status}
-                      </Badge>
-                    ),
-                  },
-                ]}
-              />
-            </Card>
+            <DataTable
+              caption="Suppliers"
+              kicker="Supplier records"
+              search={{
+                value: search,
+                onChange: setSearch,
+                placeholder: "Search by supplier name or code",
+              }}
+              toolbar={<Button onClick={() => setCreateOpen(true)}>New supplier</Button>}
+              summary={`${data.suppliers.total} supplier(s). Click a row to open the record.`}
+              getRowKey={(supplier) => supplier.id}
+              onRowSelect={(supplier) => void openDetail(supplier)}
+              rows={data.suppliers.rows}
+              empty="No suppliers yet. Create one or import a CSV file."
+              columns={[
+                { header: "Name", render: (supplier) => <strong>{supplier.name}</strong> },
+                { header: "Code", render: (supplier) => supplier.code },
+                { header: "Phone", render: (supplier) => supplier.phone ?? "-" },
+                {
+                  header: "Terms",
+                  hideOnMobile: true,
+                  render: (supplier) => supplier.paymentTerms ?? "-",
+                },
+                {
+                  header: "Lead time",
+                  align: "right",
+                  render: (supplier) =>
+                    supplier.leadTimeDays === null ? "-" : `${supplier.leadTimeDays} day(s)`,
+                },
+                { header: "Items", align: "right", render: (supplier) => supplier.itemCount },
+                {
+                  header: "Status",
+                  render: (supplier) => (
+                    <Badge tone={supplier.status === "ACTIVE" ? "success" : "neutral"}>
+                      {supplier.status}
+                    </Badge>
+                  ),
+                },
+              ]}
+            />
           ) : null}
         </ResourceState>
       </Stack>
@@ -295,11 +289,7 @@ export default function SuppliersPage() {
               caption="Supplied items"
               summary="Each link keeps the supplier code, cost and lead time that purchasing will use."
               kicker="CC-P1-010"
-              toolbar={
-                <Button onClick={() => setLinkOpen(true)} size="quiet">
-                  Link item
-                </Button>
-              }
+              toolbar={<Button onClick={() => setLinkOpen(true)}>Link item</Button>}
               getRowKey={(supplierItem) => supplierItem.itemId}
               rows={detail.items}
               empty="No items are linked to this supplier yet."

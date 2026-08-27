@@ -96,7 +96,7 @@ export function Workspace({
       status={status}
       title={title}
     >
-      {identity ? children : <SkeletonScreen rows={5} />}
+      {identity ? children : <SkeletonScreen />}
     </BackOfficeShell>
   );
 }
@@ -183,7 +183,6 @@ export function ResourceState({
   error,
   onRetry,
   state,
-  title,
 }: {
   children: ReactNode;
   error: string | null;
@@ -192,7 +191,8 @@ export function ResourceState({
   title: string;
 }) {
   if (state === "loading" || state === "idle") {
-    return <SkeletonScreen rows={title === "Dashboard" ? 6 : 5} />;
+    /* Deliberately not varied by screen: the loading state should not change shape between them. */
+    return <SkeletonScreen />;
   }
 
   if (state === "permission") {

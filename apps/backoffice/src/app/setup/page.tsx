@@ -224,11 +224,7 @@ export default function SetupPage() {
                   caption="Branches"
                   summary="Stock and work Locations belong to a Branch and are used by inventory and operations later."
                   kicker="CC-P0-003"
-                  toolbar={
-                    <Button onClick={() => setBranchDialog(true)} size="quiet">
-                      New Branch
-                    </Button>
-                  }
+                  toolbar={<Button onClick={() => setBranchDialog(true)}>New Branch</Button>}
                   getRowKey={(branch) => branch.id}
                   rows={branches}
                   empty="Create the first Branch to start trading."

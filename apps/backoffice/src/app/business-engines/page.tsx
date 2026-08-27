@@ -412,17 +412,20 @@ function Screen({ children, form }: { children: ReactNode; form: ReactNode }) {
 function ReadOnlyPanel<T extends { id: string }>({
   columns,
   description,
+  kicker = "Read only",
   rows,
   title,
 }: {
   columns: Array<{ header: string; render: (row: T) => ReactNode }>;
   description: string;
+  kicker?: string;
   rows: T[];
   title: string;
 }) {
   return (
     <DataTable
       caption={title}
+      kicker={kicker}
       className="ui-scroll-panel"
       summary={description}
       empty="No records yet."

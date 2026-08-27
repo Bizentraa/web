@@ -1,16 +1,17 @@
 "use client";
 
 import {
-  BadgeDollarSign,
   Boxes,
   Building2,
-  ClipboardCheck,
+  CircleDollarSign,
   FileInput,
   Gauge,
   KeyRound,
+  ListOrdered,
+  MonitorSmartphone,
   PackageSearch,
+  Palette,
   ReceiptText,
-  Settings2,
   ShieldCheck,
   SlidersHorizontal,
   Store,
@@ -50,18 +51,23 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Access", href: "/access", icon: KeyRound },
       { title: "Controls", href: "/controls", icon: SlidersHorizontal },
       { title: "Inventory", href: "/inventory", icon: PackageSearch, badge: "P3" },
-      { title: "Finance", href: "/finance", icon: BadgeDollarSign, badge: "P4" },
+      { title: "Finance", href: "/finance", icon: CircleDollarSign, badge: "P4" },
     ],
   },
   {
     title: "Extend",
     items: [
       { title: "Business engines", href: "/business-engines", icon: Store, badge: "P5" },
-      { title: "Store reliability", href: "/store-reliability", icon: ClipboardCheck, badge: "P6" },
-      { title: "Reports", href: "/reporting-operations", icon: ShieldCheck, badge: "P7" },
+      {
+        title: "Store reliability",
+        href: "/store-reliability",
+        icon: MonitorSmartphone,
+        badge: "P6",
+      },
+      { title: "Reports", href: "/reporting-operations", icon: ListOrdered, badge: "P7" },
       { title: "Production", href: "/production-readiness", icon: ShieldCheck, badge: "P8" },
       { title: "Import", href: "/import", icon: FileInput },
-      { title: "Appearance", href: "/appearance", icon: Settings2 },
+      { title: "Appearance", href: "/appearance", icon: Palette },
     ],
   },
 ];

@@ -255,8 +255,353 @@ Two further props came out of the P5–P8 screens, where the tables sit in the t
 - Business engines' local `Screen` helper no longer draws a card header. It was printing the
   section title three times — as a kicker, as the card title, and again as the table's caption.
 
-Across the Back Office, 41 tables were unwrapped and 49 of 61 now carry a meaningful kicker
-instead of the word "Table".
+The four main list screens — Sales, Catalog, Customers, Suppliers — each wrapped their primary
+table in `<Card flush>`, which is `.ui-card` with its padding removed: a border, radius, background
+and shadow drawn immediately around `.ui-table-wrap`, which already has all four. Those wrappers
+are gone too.
+
+Those same four used the row count as the table's *title*: `caption={`${data.customers.total}
+customer(s). Click a row to open the record.`}` rendered as the bold heading. A caption is a title,
+so it is now the record type — "Sales", "Items", "Customers", "Suppliers" — with the count and the
+hint moved to `summary`, and the kicker carrying the section name the inner `PageHeader` used to
+show ("Selling activity", "Master data", "Customer records", "Supplier records").
+
+All 61 tables in the Back Office now carry a kicker, and no caption is a sentence.
+
+### Import: two tabs instead of one long page
+
+Import was the last screen with no section navigation — the wizard, the validation preview and the
+history of past runs all stacked on one scroll. Doing an import meant scrolling past the history;
+checking the history meant scrolling past the wizard.
+
+It now carries the same horizontal `Tabs` row every other screen uses:
+
+| Tab | Holds |
+|---|---|
+| Import | Step 1 choose a file, Step 2 the validation preview |
+| History | Past imports, badged with the run count |
+
+The two steps stay together because they are one task — validate then apply — and the preview is
+meaningless without the file that produced it. The history table's kicker changed from "History" to
+"Every run", since the tab above it already says History.
+
+### Tab icons
+
+`tabIcon` guessed an icon from keywords in the label and fell through to one generic grid badge for
+anything it did not recognise. Sixteen tabs shared that badge — Organization, Tax and preview,
+Locations, Features, Numbering, Fulfillment, Traceability, Warranty, Recipe / BOM, Routes,
+Messages / docs, Conflicts, Exports, Migration, Backup / DR, Privacy and Release.
+
+Tab labels are a closed set, so they are now mapped explicitly in `TAB_ICONS`. All 55 static tab
+labels across the Back Office have their own icon, and no icon repeats within a single tab row.
+The keyword pass survives only as the fallback for labels that come from data, such as the
+permission areas on the Access screen.
+
+`VerticalTabs` and `Tabs` share the resolver, so the rails and the rows draw from the same map.
+
+### Active tab animation
+
+There is **one** indicator per tab strip and it travels to the selected tab, rather than one
+underline per tab fading in and out in place.
+
+`useSlidingIndicator` measures the selected tab's `offsetLeft`/`offsetWidth` (or
+`offsetTop`/`offsetHeight` on the rail) and writes them as an inline `transform` and size; CSS
+animates the movement over 340ms on a slightly overshooting curve, so the bar settles the way a
+spring would. Only `transform` and one dimension change, both compositor-friendly, which matters on
+a till.
+
+Three details that are easy to get wrong:
+
+- The indicator stays at `opacity: 0` until the first measurement, so it never flashes at the left
+  edge during load.
+- `[data-travel]` is absent for that first placement, so the bar appears already in position
+  instead of sliding in from nowhere on every page load.
+- The tabs themselves are observed by the `ResizeObserver`, not just their container, because web
+  fonts land after first paint and change tab widths.
+
+No animation library is involved. A `framer-motion` version of this is a common pattern, but it
+would add a dependency the design system does not otherwise need, and its usual styling — a
+gradient pill with a blur glow — cannot follow a Business theme, which rule 2 of the component
+system requires. Colour here is `--color-primary` like everything else.
+
+Below 900px the rail becomes a horizontal row, so its indicator is hidden: a bar measured from
+`offsetTop` would sit in the wrong place, and the selected tab still reads from its filled
+background. Under `prefers-reduced-motion: reduce` both indicators keep the opacity fade and drop
+the movement.
+
+### Filters belong to the table
+
+Search, the status select and the "New …" button lived in a separate `FilterBar` card floating
+above the list, so a screen showed two bordered panels for one thing: a control that filters rows,
+and the rows it filters, in different boxes.
+
+`DataTable` now takes them directly:
+
+| Prop | Renders |
+|---|---|
+| `search` | `{ value, onChange, placeholder?, label? }` — the search field, first control in the row |
+| `filters` | Extra controls beside it, typically `SelectField`s |
+| `chips` | Clearable active-filter chips |
+| `toolbar` | The primary action, on the title row at full size |
+
+The action is deliberately **not** `size="quiet"`. A list's main action — New supplier, New item — is
+the primary action on that screen, and the quiet size made it read as an afterthought. Eight table
+actions across the Back Office were sized down that way and are now full size.
+
+Four screens used `FilterBar` — Sales, Catalog, Customers, Suppliers — and none do now.
+`FilterBar` stays exported for a future screen that filters something other than a table.
+
+No API or database change was needed for any of this: searching and filtering already happened
+through the existing list endpoints, and only where the controls are drawn changed.
+
+### Shifts as a table
+
+The Shifts tab rendered one `Card` per shift, each with its own description list and its own
+tenders table. Ten shifts meant ten stacked cards and ten small tables, with no way to compare a
+cash difference across them - the one thing that tab exists to answer.
+
+It is now a single table, one row per shift, with the columns a manager reconciles against: shift
+number, Branch, register, who opened it and when, sale count and total, expected cash, and the
+difference as a badge that turns amber the moment it is not zero. Selecting a row opens the full
+reconciliation in the drawer.
+
+It also has its own search and status filter, applied in the page over the list `listShifts`
+already returns rather than through a new request.
+
+**`cashMovements` was in `ShiftSummary` and rendered nowhere.** Pay-ins, pay-outs and drops are
+exactly what move expected cash away from "sales alone", so a difference could not be explained
+from the screen. The drawer now shows them as their own table beside the tenders.
+
+## One control height
+
+Six different heights had accumulated across buttons and form controls, because every rule
+hard-coded its own: 28px (quiet button), 30px (POS quantity stepper), 32px (colour swatch), 34px
+(button, field), 36px (filter bar, pagination), 38px (table search, and POS's own override), 40px
+(large button), 42px (POS scan input). A button never lined up with the field beside it.
+
+There is now one token, `--ui-control-height: 34px`, defined beside the font tokens in
+`styles.css` and used by every control in both applications. Fourteen rules read it; none carries
+its own number.
+
+POS no longer overrides it. It previously pushed buttons and fields to 38px for touch, so the same
+control was a different height in the two applications; it now inherits the token like everything
+else.
+
+Three heights are deliberately **not** on the token, because they are not form-row controls:
+
+| Selector | Height | Why |
+|---|---|---|
+| `.ui-section-nav a` | 46px | A tab, sized for its underline and label, not a control |
+| `.ui-data-tabs button` | 44px | Same |
+| `.ui-numberpad button` | 48px | A touch keypad for entering cash on a till. Shrinking it to 34px would be a real regression at the point of sale |
+
+Note that 34px is above the WCAG 2.5.8 minimum target size (24px) but below the 44px enhanced
+guidance, which is worth knowing for the POS surface specifically. Changing the value for one
+application is now a single line.
+
+## Managing people
+
+The Users tab listed name, email and a comma-joined string of Role names, and every change went
+through a Manage dialog. Changing one person's Role took four interactions.
+
+It now works the way a share-access panel does, in this application's idiom:
+
+- **A person cell** - `Avatar` initials beside the name, with the email beneath it, instead of two
+  separate columns.
+- **An inline Role control** - a `.ui-inline-select` in the row that calls
+  `updateMembership({ roleIds: [id] })` directly. It stays quiet until hovered so a column of them
+  does not read as a wall of form fields.
+- **Status actions that match the state** - Activate for an invited person, Suspend for an active
+  one, Restore for a suspended one. Suspend and Restore were reachable only through the dialog
+  before, though `updateMembership` has always accepted `status`.
+
+### The invite dialog
+
+Roles and Branches were `<select multiple size={5}>` with the hint *"Hold Ctrl or Cmd to choose
+more than one Role."* A native multi-select hides its state behind ctrl-click, drops the whole
+selection on one stray click, and is close to unusable on a touch screen. Both are now
+`.ui-choice-list` grids of `CheckField`s with a visible selected state
+(`.ui-check-field:has(input:checked)`), so what is chosen is simply visible and tappable.
+
+The rest of the dialog:
+
+- **A preview** at the top — avatar, name, email — showing the row this invitation will become in
+  the people list.
+- **The email first**, because it is the address the person signs in with; the name is second and
+  the email's local part fills its *placeholder* as a suggestion. It is a placeholder, not a value,
+  so the field can still be cleared.
+- **Controlled state and a guarded submit.** The form previously accepted an empty submission and
+  let the server reject it. `Send invitation` is disabled until there is a plausible email and a
+  name of at least two characters, which is what `inviteUserSchema` requires.
+- **A footer that states the consequence** — who joins, with how many Roles, and a warning in place
+  of it when no Role is selected, since a person with no Role can sign in and see nothing.
+- **Branches say "Every Branch"** when none are ticked. Previously an empty selection silently
+  meant "all", explained only in a hint under the control.
+
+### Viewing a person after they are invited
+
+The Manage drawer - what opens when you click into a person from the list - had the same two
+`<select multiple>` controls the invite dialog had, plus a bare status select. Inviting someone and
+then editing them were two different experiences of the same data.
+
+It now mirrors the invite dialog exactly: the same preview row at the top, the same
+`.ui-choice-list` Roles and Branches with the same "Every Branch" wording, the same guarded save,
+and the same consequence line in the footer.
+
+Two things the drawer gained that the dialog did not need:
+
+- The status select **explains what it means** — an invited person cannot sign in until activated,
+  a suspended one keeps their history but cannot sign in. The three values were previously offered
+  with no indication of their effect.
+- It opens from the membership's **current** values. It was `defaultValue` on uncontrolled inputs,
+  which is correct on first open but silently stale if the record changed underneath; `openUser`
+  now seeds the form state from the row being clicked.
+
+There is no `<select multiple>` left anywhere in the Back Office.
+
+### An account never administers itself
+
+The signed-in user's row shows "(you)", its Role control is disabled, and its actions read "Ask
+another administrator".
+
+This is not cosmetic. Without it an administrator can drop their own Role, or suspend themselves,
+and lock themselves out of the screen they are standing on - and the server accepts it, because
+each request is individually legitimate. The membership rules stop the *Business* losing its last
+Owner; nothing stopped a person removing their own access. The guard is `member.userId ===
+identity.userId`, checked in both the Role control and the actions cell.
+
+`Avatar` is new in the design system. It renders initials rather than an image: this product has
+no uploaded photographs, so an avatar is a derived label, which means no request to make and
+nothing to fail to load.
+
+## Sidebar polish
+
+Three things were wrong, and the first was the one that mattered.
+
+**Active and hover looked identical.** shadcn maps both onto `--sidebar-accent`, and the token
+bridge points that at `--color-hover-background`. So while the pointer was over any item, that item
+looked exactly like the current page, and there was no way to tell where you actually were.
+Active is now the Business primary at 12% with primary text and icon; hover stays neutral.
+
+**No indicator.** Active items now carry a 3px accent bar that grows to 1.15rem over 300ms - the
+same curve and language as the tab indicators, so selection reads the same way everywhere. The bar
+sits inside the button's own left padding, because `SidebarContent` is `overflow-auto` and a
+negative offset would be clipped or add a horizontal scrollbar. In icon-collapsed mode it is
+hidden, where the fill carries the state alone.
+
+**Two items shared an icon.** Reports and Production both used `ShieldCheck`, adjacent in the same
+group. Reports is now `ListOrdered`, matching the Reports tab; Store reliability took
+`MonitorSmartphone` from the Devices tab, Finance `CircleDollarSign` from the finance tabs, and
+Appearance `Palette` instead of a generic cog. Where a concept appears both in the sidebar and as a
+tab, the two now draw the same glyph.
+
+Group labels are quieter and more spaced, and the P0-P8 phase tags are dimmed to read as build
+metadata rather than as notification counts - except on the active row, where they take the accent.
+
+All of this is CSS against shadcn's `data-slot` hooks in `globals.css`, not edits to the vendored
+component, so a future `shadcn add sidebar` remains a drop-in. It is colour and motion only; no
+layout is changed.
+
+## Scrollbars
+
+### A stray vertical scrollbar on the tab row
+
+`.ui-section-nav` set `overflow-x: auto` and nothing for the other axis. CSS does not let the axes
+disagree: if one is not `visible`, the other computes to `auto`. The sliding indicator sat at
+`bottom: -1px`, one pixel outside the padding box, and that pixel was enough to raise a full
+vertical scrollbar on a 46px-tall row.
+
+Both axes are now stated - `overflow-x: auto; overflow-y: hidden` - and the indicator moved to
+`bottom: 0` so nothing hangs outside a box that now clips. `.ui-data-tabs` and the mobile vertical
+rail got the same treatment, since they are the same shape of element.
+
+`.ui-table-wrap` deliberately keeps only `overflow-x`. It is combined with `.ui-scroll-panel`
+(`overflow: auto`) on the P5-P8 screens, and pinning its vertical axis to `hidden` would stop those
+panels scrolling.
+
+### Themed scrollbars
+
+Windows and Linux draw classic scrollbars that occupy real layout width and sit there in grey
+whether or not anything is being scrolled, so every scroll area looked heavier than the same area
+on macOS. Scrollbars are now thin, themed from `--color-text-muted`, with a transparent track and
+a rounded thumb that darkens on hover.
+
+The sidebar goes further: its thumb is transparent until the pointer is over the sidebar, or
+something inside it takes focus. It is chrome a person looks at constantly rather than reads
+through, so a permanent bar down its edge is noise.
+
+They are styled, not removed. A scroll area with no visible affordance is a genuine accessibility
+problem for anyone who cannot tell the content continues, so `scrollbar-width: none` is used
+nowhere.
+
+## Appearance screen
+
+This screen predated the design system and never joined it: raw `<button className="theme-primary-button">`,
+raw `<select>` inside `label.theme-field`, its own panel, kicker, message and save-bar styles. It
+was the one screen that did not look like the product.
+
+It is now built from `Card`, `Field`, `SelectField`, `CheckField`, `Button`, `Badge` and `Kicker`
+like everything else, in the two-column `ui-screen-grid` the P5-P8 screens use: choices on the
+left, a sticky panel on the right.
+
+### The preview is the real thing
+
+The old "Live workspace preview" was three swatches and a mode label. The new one renders a small
+piece of the actual interface - rail, active nav item, top bar, a KPI card with two buttons, and a
+row of status chips - inside a wrapper carrying the draft's resolved tokens as inline custom
+properties. Nothing is duplicated and there is no iframe: the wrapper is simply a scope where
+`--color-*` means something different from the surrounding page.
+
+It calls `resolveTheme` and `themeTokensToCss`, the same functions the provider runs on every real
+theme change, so it shows the derived values - hover, soft fills, readable foreground on the chosen
+primary - that three swatches cannot. A light/dark toggle checks both, which matters because
+`allowUserModeChange` lets a terminal pick its own.
+
+### Saying what will happen
+
+- **Unsaved changes are visible.** The panel compares the draft with the saved settings, titles
+  itself "Unsaved changes" or "Saved", and Save is disabled when nothing has changed. Previously the
+  button was always live and there was no way to tell whether the screen matched the database.
+- **Status colours are stated as fixed**, in the preview where the claim can be checked, rather
+  than buried in body copy.
+- The development identity moved to its own panel at the bottom of the sidebar column instead of
+  leading the page with a raw UUID above the actual settings.
+
+## Dark borders
+
+Dark borders were louder than light ones rather than equivalent. Measured against their own
+surface:
+
+| | Surface | Border | Contrast |
+|---|---|---|---|
+| Light | `#FFFFFF` | `#E2E8F0` | 1.23:1 |
+| Dark, before | `#111827` | `#334155` | **1.71:1** |
+| Dark, after | `#111827` | `#26324A` | 1.38:1 |
+
+So every card, table and input read as *outlined* in dark where it read as merely *separated* in
+light. `borderStrong` moved from `#475569` (2.34:1) to `#334155` (1.71:1) on the same reasoning.
+
+They are not taken all the way down to light's 1.23:1: dark surfaces sit closer together
+perceptually, and a border much below this stops being visible at all. 1.38:1 is the point where
+the two modes feel like the same design.
+
+`THEME_CACHE_VERSION` went to 2 with this change. The boot script paints from cached tokens before
+React runs, so without the bump a returning device would show the old borders for a frame before
+the provider recomputed them.
+
+## One loading skeleton
+
+`SkeletonScreen` drew a title and description block — but the screen header renders immediately
+from static props, above wherever the skeleton appears, so that was a second ghost title beneath
+the real one. It is gone.
+
+What is left matches what actually loads: the metric row, the section tabs, and the table with its
+own header and filter row. The tab row is new; without it a screen appeared to *gain* a row of tabs
+at the moment it finished loading, which read as the layout jumping.
+
+Every screen now renders `<SkeletonScreen />` with no arguments. It previously took `rows={6}` on
+the dashboard and `rows={5}` elsewhere, so the loading state changed shape between screens for no
+reason a person could see. POS uses the same one.
 
 ## Responsive behaviour
 

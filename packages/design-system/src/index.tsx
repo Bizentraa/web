@@ -316,6 +316,31 @@ export function Button({
   );
 }
 
+/**
+ * Initials in a circle. There are no uploaded photographs in this product, so an avatar is a
+ * derived label rather than an image: it needs no network request and cannot fail to load.
+ */
+export function Avatar({
+  className,
+  name,
+  ...props
+}: HTMLAttributes<HTMLSpanElement> & { name: string }) {
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0] ?? "")
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  return (
+    <span aria-hidden="true" className={cn("ui-avatar", className)} {...props}>
+      {initials}
+    </span>
+  );
+}
+
 export function Badge({
   className,
   tone = "default",
@@ -574,23 +599,30 @@ export function Pagination({
  */
 export function DataTable<T>({
   caption,
+  chips,
   className,
   columns,
   empty,
+  filters,
   footer,
   getRowKey,
   kicker = "Table",
   onRowSelect,
+  search,
   selectable = false,
   rows,
   summary,
   toolbar,
 }: {
   caption: string;
+  /** Active filters, shown as clearable chips under the controls. */
+  chips?: Array<{ label: string; onClear?: () => void }>;
   /** Extra classes on the table wrapper, e.g. `ui-scroll-panel` inside a screen grid. */
   className?: string;
   columns: Array<DataTableColumn<T>>;
   empty?: ReactNode;
+  /** Extra controls beside the search box, typically `SelectField`s. */
+  filters?: ReactNode;
   footer?: ReactNode;
   getRowKey: (row: T) => string;
   /**
@@ -600,6 +632,16 @@ export function DataTable<T>({
    */
   kicker?: string;
   onRowSelect?: (row: T) => void;
+  /**
+   * Search for the rows of this table. It belongs to the table rather than to a separate bar
+   * above it, so the control and the rows it filters are one object on the screen.
+   */
+  search?: {
+    value: string;
+    onChange: (value: string) => void;
+    label?: string;
+    placeholder?: string;
+  };
   selectable?: boolean;
   rows: T[];
   summary?: string;
@@ -615,6 +657,40 @@ export function DataTable<T>({
           </div>
           {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
         </div>
+        {search || filters || chips?.length ? (
+          <div className="ui-data-table-filters">
+            {search ? (
+              <label className="ui-data-table-search">
+                <span>{search.label ?? "Search"}</span>
+                <input
+                  onChange={(event) => search.onChange(event.target.value)}
+                  placeholder={search.placeholder ?? "Search records"}
+                  type="search"
+                  value={search.value}
+                />
+              </label>
+            ) : null}
+            {filters ? <div className="ui-data-table-filter-controls">{filters}</div> : null}
+            {chips?.length ? (
+              <div className="ui-filter-chips">
+                {chips.map((chip) => (
+                  <span className="ui-filter-chip" key={chip.label}>
+                    {chip.label}
+                    {chip.onClear ? (
+                      <button
+                        aria-label={`Clear ${chip.label}`}
+                        onClick={chip.onClear}
+                        type="button"
+                      >
+                        x
+                      </button>
+                    ) : null}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="ui-data-table-empty">
           <StatePanel state="empty" title="No records found">
             {empty ?? "Create or import records, then they will appear in this list."}
@@ -639,6 +715,40 @@ export function DataTable<T>({
           </div>
           {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
         </div>
+        {search || filters || chips?.length ? (
+          <div className="ui-data-table-filters">
+            {search ? (
+              <label className="ui-data-table-search">
+                <span>{search.label ?? "Search"}</span>
+                <input
+                  onChange={(event) => search.onChange(event.target.value)}
+                  placeholder={search.placeholder ?? "Search records"}
+                  type="search"
+                  value={search.value}
+                />
+              </label>
+            ) : null}
+            {filters ? <div className="ui-data-table-filter-controls">{filters}</div> : null}
+            {chips?.length ? (
+              <div className="ui-filter-chips">
+                {chips.map((chip) => (
+                  <span className="ui-filter-chip" key={chip.label}>
+                    {chip.label}
+                    {chip.onClear ? (
+                      <button
+                        aria-label={`Clear ${chip.label}`}
+                        onClick={chip.onClear}
+                        type="button"
+                      >
+                        x
+                      </button>
+                    ) : null}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <table className="ui-data-table">
           <caption>{caption}</caption>
           <thead>
@@ -918,9 +1028,18 @@ export function SkeletonRows({ rows = 4 }: { rows?: number }) {
   );
 }
 
+/**
+ * The loading shape of a Back Office screen: metric row, section tabs, then the table with its own
+ * header and filter row.
+ *
+ * It deliberately does not draw a title block. The screen header renders immediately from static
+ * props, above wherever this appears, so a skeleton heading here was a second ghost title beneath
+ * the real one. Every screen uses the same shape and the same row count, so moving between screens
+ * while they load does not look like the layout is changing.
+ */
 export function SkeletonScreen({
   className,
-  rows = 6,
+  rows = 5,
 }: HTMLAttributes<HTMLElement> & { rows?: number }) {
   return (
     <section
@@ -928,10 +1047,6 @@ export function SkeletonScreen({
       aria-label="Loading content"
       className={cn("ui-skeleton-screen", className)}
     >
-      <div className="ui-skeleton-screen-header" aria-hidden="true">
-        <Skeleton />
-        <Skeleton />
-      </div>
       <div className="ui-skeleton-kpi-grid" aria-hidden="true">
         {Array.from({ length: 4 }).map((_, index) => (
           <div className="ui-skeleton-card" key={index}>
@@ -941,8 +1056,17 @@ export function SkeletonScreen({
           </div>
         ))}
       </div>
+      <div className="ui-skeleton-tabs" aria-hidden="true">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} />
+        ))}
+      </div>
       <div className="ui-skeleton-table" aria-hidden="true">
-        <div>
+        <div className="ui-skeleton-table-head">
+          <Skeleton />
+          <Skeleton />
+        </div>
+        <div className="ui-skeleton-table-filters">
           <Skeleton />
           <Skeleton />
         </div>

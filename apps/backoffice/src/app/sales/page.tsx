@@ -12,14 +12,12 @@ import {
   DescriptionList,
   EntityHeader,
   Field,
-  FilterBar,
   formatDateTime,
   formatMoney,
   formatQuantity,
   FormFooter,
   FormGrid,
   Grid,
-  Kicker,
   KpiCard,
   MoneySummary,
   ReceiptView,
@@ -72,6 +70,9 @@ export default function SalesPage() {
   const [tab, setTab] = useState("sales");
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<SaleDetail | null>(null);
+  const [shiftDetail, setShiftDetail] = useState<ShiftSummary | null>(null);
+  const [shiftSearch, setShiftSearch] = useState("");
+  const [shiftStatus, setShiftStatus] = useState("");
   const [returnOpen, setReturnOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<SaleDetail | null>(null);
   const [receipt, setReceipt] = useState<Awaited<
@@ -155,6 +156,16 @@ export default function SalesPage() {
   const sales = data?.sales;
   const shifts = data?.shifts ?? [];
   const openShifts = shifts.filter((shift) => shift.status === "OPEN");
+  /* Shifts arrive as one list; the screen filters them rather than asking the API again. */
+  const visibleShifts = shifts.filter((shift) => {
+    if (shiftStatus && shift.status !== shiftStatus) return false;
+    const term = shiftSearch.trim().toLowerCase();
+    if (!term) return true;
+    return [shift.number, shift.registerCode, shift.branchName, shift.openedBy]
+      .join(" ")
+      .toLowerCase()
+      .includes(term);
+  });
   const todayTotal = sales?.rows.reduce((sum, sale) => sum + sale.total, 0) ?? 0;
   const refunded = sales?.rows.reduce((sum, sale) => sum + sale.refundedTotal, 0) ?? 0;
 
@@ -209,69 +220,71 @@ export default function SalesPage() {
 
         {tab === "sales" ? (
           <Stack>
-            <FilterBar
-              onSearchChange={setSearch}
-              searchPlaceholder="Search by sale number, receipt number or customer"
-              value={search}
-              chips={
-                statusFilter
-                  ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
-                  : []
-              }
-            >
-              <SelectField
-                label="Status"
-                onChange={(event) => setStatusFilter(event.target.value)}
-                value={statusFilter}
-              >
-                <option value="">Every status</option>
-                {["CONFIRMED", "HELD", "PARTIALLY_RETURNED", "RETURNED", "VOIDED"].map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </SelectField>
-            </FilterBar>
-
             <ResourceState error={error} onRetry={reload} state={state} title="Sales">
               {sales ? (
-                <Card flush>
-                  <DataTable
-                    caption={`${sales.total} sale(s). Click a row to open the sale.`}
-                    getRowKey={(sale) => sale.id}
-                    onRowSelect={(sale) => void openSale(sale)}
-                    rows={sales.rows}
-                    empty="No sales match this filter. Sales appear here as soon as the POS confirms one."
-                    columns={[
-                      {
-                        header: "Number",
-                        render: (sale) => <strong>{sale.receiptNumber ?? sale.number}</strong>,
-                      },
-                      { header: "Branch", hideOnMobile: true, render: (sale) => sale.branchName },
-                      { header: "Customer", render: (sale) => sale.customerName ?? "Walk-in" },
-                      { header: "Lines", align: "right", render: (sale) => sale.lineCount },
-                      {
-                        header: "Total",
-                        align: "right",
-                        render: (sale) => formatMoney(sale.total, sale.currencyCode),
-                      },
-                      {
-                        header: "Due",
-                        align: "right",
-                        render: (sale) => formatMoney(sale.dueTotal),
-                      },
-                      {
-                        header: "Status",
-                        render: (sale) => <Badge tone={saleTone(sale.status)}>{sale.status}</Badge>,
-                      },
-                      {
-                        header: "When",
-                        hideOnMobile: true,
-                        render: (sale) => formatDateTime(sale.createdAt),
-                      },
-                    ]}
-                  />
-                </Card>
+                <DataTable
+                  caption="Sales"
+                  kicker="Selling activity"
+                  search={{
+                    value: search,
+                    onChange: setSearch,
+                    placeholder: "Search by sale number, receipt number or customer",
+                  }}
+                  filters={
+                    <SelectField
+                      label="Status"
+                      onChange={(event) => setStatusFilter(event.target.value)}
+                      value={statusFilter}
+                    >
+                      <option value="">Every status</option>
+                      {["CONFIRMED", "HELD", "PARTIALLY_RETURNED", "RETURNED", "VOIDED"].map(
+                        (status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ),
+                      )}
+                    </SelectField>
+                  }
+                  chips={
+                    statusFilter
+                      ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
+                      : []
+                  }
+                  summary={`${sales.total} sale(s). Click a row to open the sale.`}
+                  getRowKey={(sale) => sale.id}
+                  onRowSelect={(sale) => void openSale(sale)}
+                  rows={sales.rows}
+                  empty="No sales match this filter. Sales appear here as soon as the POS confirms one."
+                  columns={[
+                    {
+                      header: "Number",
+                      render: (sale) => <strong>{sale.receiptNumber ?? sale.number}</strong>,
+                    },
+                    { header: "Branch", hideOnMobile: true, render: (sale) => sale.branchName },
+                    { header: "Customer", render: (sale) => sale.customerName ?? "Walk-in" },
+                    { header: "Lines", align: "right", render: (sale) => sale.lineCount },
+                    {
+                      header: "Total",
+                      align: "right",
+                      render: (sale) => formatMoney(sale.total, sale.currencyCode),
+                    },
+                    {
+                      header: "Due",
+                      align: "right",
+                      render: (sale) => formatMoney(sale.dueTotal),
+                    },
+                    {
+                      header: "Status",
+                      render: (sale) => <Badge tone={saleTone(sale.status)}>{sale.status}</Badge>,
+                    },
+                    {
+                      header: "When",
+                      hideOnMobile: true,
+                      render: (sale) => formatDateTime(sale.createdAt),
+                    },
+                  ]}
+                />
               ) : null}
             </ResourceState>
           </Stack>
@@ -279,90 +292,197 @@ export default function SalesPage() {
 
         {tab === "shifts" ? (
           <ResourceState error={error} onRetry={reload} state={state} title="Shifts">
-            <Stack>
-              {shifts.map((shift) => (
-                <Card key={shift.id}>
-                  <CardHeader>
-                    <div>
-                      <Kicker>{shift.branchName}</Kicker>
-                      <CardTitle>
-                        <span className="ui-code">{shift.number}</span> · Register{" "}
-                        <span className="ui-code">{shift.registerCode}</span>
-                      </CardTitle>
-                    </div>
+            <DataTable
+              caption="Shifts"
+              kicker="Cash reconciliation"
+              search={{
+                value: shiftSearch,
+                onChange: setShiftSearch,
+                placeholder: "Search by shift number, register, Branch or cashier",
+              }}
+              filters={
+                <SelectField
+                  label="Status"
+                  onChange={(event) => setShiftStatus(event.target.value)}
+                  value={shiftStatus}
+                >
+                  <option value="">Every shift</option>
+                  <option value="OPEN">Open</option>
+                  <option value="CLOSED">Closed</option>
+                </SelectField>
+              }
+              chips={
+                shiftStatus
+                  ? [{ label: `Status: ${shiftStatus}`, onClear: () => setShiftStatus("") }]
+                  : []
+              }
+              summary={`${visibleShifts.length} of ${shifts.length} shift(s). Click a row to see the reconciliation.`}
+              getRowKey={(shift) => shift.id}
+              onRowSelect={setShiftDetail}
+              rows={visibleShifts}
+              empty="A shift is opened in the POS before selling starts, and closed with a counted cash reconciliation at the end of the day."
+              columns={[
+                {
+                  header: "Shift",
+                  render: (shift) => <span className="ui-code">{shift.number}</span>,
+                },
+                { header: "Branch", render: (shift) => shift.branchName },
+                {
+                  header: "Register",
+                  render: (shift) => <span className="ui-code">{shift.registerCode}</span>,
+                },
+                {
+                  header: "Opened",
+                  hideOnMobile: true,
+                  render: (shift) => `${shift.openedBy} · ${formatDateTime(shift.openedAt)}`,
+                },
+                { header: "Sales", align: "right", render: (shift) => shift.saleCount },
+                {
+                  header: "Sales total",
+                  align: "right",
+                  render: (shift) => formatMoney(shift.salesTotal),
+                },
+                {
+                  header: "Expected cash",
+                  align: "right",
+                  hideOnMobile: true,
+                  render: (shift) => formatMoney(shift.expectedCash),
+                },
+                {
+                  header: "Difference",
+                  align: "right",
+                  render: (shift) =>
+                    shift.cashVariance === null ? (
+                      "-"
+                    ) : (
+                      <Badge tone={shift.cashVariance === 0 ? "success" : "warning"}>
+                        {formatMoney(shift.cashVariance)}
+                      </Badge>
+                    ),
+                },
+                {
+                  header: "Status",
+                  render: (shift) => (
                     <StatusChip tone={shift.status === "OPEN" ? "success" : "neutral"}>
                       {shift.status}
                     </StatusChip>
-                  </CardHeader>
-                  <DescriptionList
-                    items={[
-                      {
-                        label: "Opened by",
-                        value: `${shift.openedBy} · ${formatDateTime(shift.openedAt)}`,
-                      },
-                      {
-                        label: "Closed by",
-                        value: shift.closedBy
-                          ? `${shift.closedBy} · ${formatDateTime(shift.closedAt)}`
-                          : "Still open",
-                      },
-                      { label: "Opening float", value: formatMoney(shift.openingFloat) },
-                      { label: "Expected cash", value: formatMoney(shift.expectedCash) },
-                      {
-                        label: "Counted cash",
-                        value: shift.countedCash === null ? "-" : formatMoney(shift.countedCash),
-                      },
-                      {
-                        label: "Difference",
-                        value:
-                          shift.cashVariance === null ? (
-                            "-"
-                          ) : (
-                            <Badge tone={shift.cashVariance === 0 ? "success" : "warning"}>
-                              {formatMoney(shift.cashVariance)}
-                            </Badge>
-                          ),
-                      },
-                      {
-                        label: "Sales",
-                        value: `${shift.saleCount} · ${formatMoney(shift.salesTotal)}`,
-                      },
-                      { label: "Refunds", value: formatMoney(shift.refundTotal) },
-                    ]}
-                  />
-                  {shift.varianceReason ? (
-                    <CardDescription>Reason given: {shift.varianceReason}</CardDescription>
-                  ) : null}
-                  <DataTable
-                    caption="Tenders taken during this shift."
-                    getRowKey={(tender) => tender.method}
-                    rows={shift.tenders}
-                    empty="No payments were taken in this shift."
-                    columns={[
-                      { header: "Method", render: (tender) => tender.method },
-                      { header: "Count", align: "right", render: (tender) => tender.count },
-                      {
-                        header: "Amount",
-                        align: "right",
-                        render: (tender) => formatMoney(tender.amount),
-                      },
-                    ]}
-                  />
-                </Card>
-              ))}
-              {!shifts.length ? (
-                <Card>
-                  <CardTitle>No shifts yet</CardTitle>
-                  <CardDescription>
-                    A shift is opened in the POS application before selling starts, and closed with
-                    a counted cash reconciliation at the end of the day.
-                  </CardDescription>
-                </Card>
-              ) : null}
-            </Stack>
+                  ),
+                },
+              ]}
+            />
           </ResourceState>
         ) : null}
       </Stack>
+
+      <Drawer
+        eyebrow="Shift"
+        onClose={() => setShiftDetail(null)}
+        open={shiftDetail !== null}
+        title={shiftDetail ? shiftDetail.number : "Shift"}
+      >
+        {shiftDetail ? (
+          <Stack>
+            <EntityHeader
+              eyebrow={`${shiftDetail.branchName} · Register ${shiftDetail.registerCode}`}
+              title={shiftDetail.number}
+              status={
+                <StatusChip tone={shiftDetail.status === "OPEN" ? "success" : "neutral"}>
+                  {shiftDetail.status}
+                </StatusChip>
+              }
+              meta={
+                <>
+                  <span>{shiftDetail.saleCount} sale(s)</span>
+                  <span>{formatMoney(shiftDetail.salesTotal)}</span>
+                  <span>Opened {formatDateTime(shiftDetail.openedAt)}</span>
+                </>
+              }
+            />
+
+            <DescriptionList
+              items={[
+                {
+                  label: "Opened by",
+                  value: `${shiftDetail.openedBy} · ${formatDateTime(shiftDetail.openedAt)}`,
+                },
+                {
+                  label: "Closed by",
+                  value: shiftDetail.closedBy
+                    ? `${shiftDetail.closedBy} · ${formatDateTime(shiftDetail.closedAt)}`
+                    : "Still open",
+                },
+                { label: "Opening float", value: formatMoney(shiftDetail.openingFloat) },
+                { label: "Expected cash", value: formatMoney(shiftDetail.expectedCash) },
+                {
+                  label: "Counted cash",
+                  value:
+                    shiftDetail.countedCash === null ? "-" : formatMoney(shiftDetail.countedCash),
+                },
+                {
+                  label: "Difference",
+                  value:
+                    shiftDetail.cashVariance === null ? (
+                      "-"
+                    ) : (
+                      <Badge tone={shiftDetail.cashVariance === 0 ? "success" : "warning"}>
+                        {formatMoney(shiftDetail.cashVariance)}
+                      </Badge>
+                    ),
+                },
+                { label: "Refunds", value: formatMoney(shiftDetail.refundTotal) },
+                {
+                  label: "Reason given",
+                  value: shiftDetail.varianceReason ?? "No difference to explain",
+                },
+              ]}
+            />
+
+            <DataTable
+              caption="Tenders"
+              kicker="Shift"
+              summary="What was taken, by payment method, during this shift."
+              getRowKey={(tender) => tender.method}
+              rows={shiftDetail.tenders}
+              empty="No payments were taken in this shift."
+              columns={[
+                { header: "Method", render: (tender) => tender.method },
+                { header: "Count", align: "right", render: (tender) => tender.count },
+                {
+                  header: "Amount",
+                  align: "right",
+                  render: (tender) => formatMoney(tender.amount),
+                },
+              ]}
+            />
+
+            <DataTable
+              caption="Cash movements"
+              kicker="Shift"
+              summary="Pay-ins, pay-outs and drops against the drawer. These are what move expected cash away from sales alone."
+              getRowKey={(movement) => movement.id}
+              rows={shiftDetail.cashMovements}
+              empty="No cash was moved in or out of the drawer during this shift."
+              columns={[
+                {
+                  header: "Kind",
+                  render: (movement) => movement.kind.replaceAll("_", " "),
+                },
+                { header: "Reason", render: (movement) => movement.reason },
+                {
+                  header: "Amount",
+                  align: "right",
+                  render: (movement) => formatMoney(movement.amount),
+                },
+                {
+                  header: "When",
+                  hideOnMobile: true,
+                  render: (movement) => formatDateTime(movement.createdAt),
+                },
+              ]}
+            />
+          </Stack>
+        ) : null}
+      </Drawer>
 
       <Drawer
         eyebrow="Sale"
@@ -403,7 +523,9 @@ export default function SalesPage() {
             <Card>
               <CardTitle>Lines</CardTitle>
               <DataTable
-                caption="What was sold, at what price and with what tax."
+                caption="Lines"
+                kicker="Sale"
+                summary="What was sold, at what price and with what tax."
                 getRowKey={(line) => line.id}
                 rows={detail.lines}
                 columns={[
@@ -456,7 +578,9 @@ export default function SalesPage() {
             <Card>
               <CardTitle>Tenders</CardTitle>
               <DataTable
-                caption="Every payment attempt against this sale."
+                caption="Payments"
+                kicker="Sale"
+                summary="Every payment attempt against this sale."
                 getRowKey={(payment) => payment.id}
                 rows={detail.payments}
                 empty="No payment has been taken yet."
@@ -507,7 +631,9 @@ export default function SalesPage() {
               <Card>
                 <CardTitle>Returns</CardTitle>
                 <DataTable
-                  caption="Returns accepted against this sale."
+                  caption="Returns"
+                  kicker="Sale"
+                  summary="Returns accepted against this sale."
                   getRowKey={(saleReturn) => saleReturn.id}
                   rows={detail.returns}
                   columns={[

@@ -1,26 +1,63 @@
 "use client";
 
 import {
-  BarChart3,
+  ArrowLeftRight,
+  ArrowRightLeft,
+  Award,
+  BadgeCheck,
+  Banknote,
   Bell,
+  BookOpen,
   Boxes,
   Building2,
+  Calculator,
+  CalendarDays,
+  CheckCheck,
   CircleDollarSign,
   ClipboardCheck,
+  Clock,
+  CloudOff,
+  DatabaseBackup,
+  Download,
+  Eye,
+  EyeOff,
   FileInput,
+  FolderTree,
   Gauge,
-  Grid2X2,
+  Gift,
+  HandCoins,
+  Hash,
   KeyRound,
-  Layers3,
+  Layers,
   ListChecks,
+  ListOrdered,
+  Lock,
+  MapPin,
+  MessageSquare,
+  MonitorSmartphone,
   PackageSearch,
+  Percent,
   ReceiptText,
+  Rocket,
+  Route,
+  Ruler,
+  ScanBarcode,
+  ScrollText,
   Settings2,
   ShieldCheck,
+  ShoppingCart,
   SlidersHorizontal,
   Store,
+  Tag,
+  Tags,
+  ToggleRight,
+  TriangleAlert,
   Truck,
+  Undo2,
   UsersRound,
+  Wallet,
+  Webhook,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -294,6 +331,55 @@ export function ConfirmDialog({
 /* Tabs                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Measures the selected tab so a single indicator can travel to it, rather than one underline
+ * switching off while another switches on.
+ *
+ * Position and size are written as inline transform/size and animated by CSS, so there is no
+ * animation library involved and the indicator's colour still comes from the Business theme.
+ * The first placement is deliberately not animated - otherwise the indicator would slide in from
+ * the left edge on every page load.
+ */
+function useSlidingIndicator(active: string, count: number, vertical: boolean) {
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const [box, setBox] = useState<{ start: number; size: number } | null>(null);
+  const [travel, setTravel] = useState(false);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const measure = () => {
+      const current = nav.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      if (!current) {
+        setBox(null);
+        return;
+      }
+      setBox(
+        vertical
+          ? { start: current.offsetTop, size: current.offsetHeight }
+          : { start: current.offsetLeft, size: current.offsetWidth },
+      );
+    };
+
+    measure();
+
+    /* Web fonts land after first paint and change tab widths, so the tabs are observed too. */
+    const observer = new ResizeObserver(measure);
+    observer.observe(nav);
+    nav.querySelectorAll('[role="tab"]').forEach((tab) => observer.observe(tab));
+    return () => observer.disconnect();
+  }, [active, count, vertical]);
+
+  useEffect(() => {
+    if (!box || travel) return;
+    const frame = window.requestAnimationFrame(() => setTravel(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [box, travel]);
+
+  return { box, navRef, travel };
+}
+
 export function Tabs({
   onChange,
   tabs,
@@ -303,8 +389,10 @@ export function Tabs({
   tabs: Array<{ value: string; label: string; badge?: string; icon?: LucideIcon }>;
   value: string;
 }) {
+  const { box, navRef, travel } = useSlidingIndicator(value, tabs.length, false);
+
   return (
-    <div className="ui-section-nav" role="tablist">
+    <div className="ui-section-nav" ref={navRef} role="tablist">
       {tabs.map((tab) => {
         const Icon = tab.icon ?? tabIcon(tab.value, tab.label);
         return (
@@ -321,6 +409,16 @@ export function Tabs({
           </button>
         );
       })}
+      <span
+        aria-hidden="true"
+        className="ui-section-nav-indicator"
+        data-travel={travel ? "true" : undefined}
+        style={
+          box
+            ? { opacity: 1, transform: `translateX(${box.start}px)`, width: `${box.size}px` }
+            : undefined
+        }
+      />
     </div>
   );
 }
@@ -374,12 +472,15 @@ export function VerticalTabs({
     rail.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
   };
 
+  const { box, navRef, travel } = useSlidingIndicator(value, tabs.length, true);
+
   return (
     <div className="ui-vertical-tabs">
       <div
         aria-orientation="vertical"
         className="ui-vertical-tabs-nav"
         onKeyDown={move}
+        ref={navRef}
         role="tablist"
       >
         {tabs.map((tab) => {
@@ -403,6 +504,16 @@ export function VerticalTabs({
             </button>
           );
         })}
+        <span
+          aria-hidden="true"
+          className="ui-vertical-tabs-indicator"
+          data-travel={travel ? "true" : undefined}
+          style={
+            box
+              ? { height: `${box.size}px`, opacity: 1, transform: `translateY(${box.start}px)` }
+              : undefined
+          }
+        />
       </div>
       <div className="ui-vertical-tabs-panel" role="tabpanel">
         {children}
@@ -411,34 +522,141 @@ export function VerticalTabs({
   );
 }
 
+/**
+ * Tab labels are a closed, known set, so they are mapped explicitly rather than guessed from
+ * keywords. The old heuristic silently fell through to one generic grid icon for anything it did
+ * not recognise, which is why Organization, Tax and preview, Locations, Features, Numbering,
+ * Fulfillment, Traceability, Warranty, Routes, Conflicts, Exports, Migration, Backup, Privacy and
+ * Release all wore the same badge.
+ *
+ * The keyword pass is kept only as the fallback for labels that come from data, such as the
+ * permission areas on the Access screen.
+ */
+const TAB_ICONS: Record<string, LucideIcon> = {
+  /* Sales */
+  sales: ReceiptText,
+  shifts: Clock,
+  returns: Undo2,
+
+  /* Catalog */
+  items: Boxes,
+  organization: FolderTree,
+  "prices and promotions": Percent,
+  "tax and preview": Calculator,
+  units: Ruler,
+  "unit conversions": ArrowLeftRight,
+  categories: FolderTree,
+  brands: Award,
+  tags: Tags,
+  "custom attributes": SlidersHorizontal,
+  "price lists": Tag,
+  promotions: Percent,
+  "tax categories": Calculator,
+  "price and tax preview": Eye,
+
+  /* Setup */
+  "business details": Building2,
+  branches: Store,
+  locations: MapPin,
+
+  /* Access */
+  users: UsersRound,
+  roles: KeyRound,
+  "permission catalogue": Lock,
+
+  /* Controls */
+  approvals: CheckCheck,
+  features: ToggleRight,
+  numbering: Hash,
+  audit: ScrollText,
+
+  /* Inventory */
+  "stock ledger": PackageSearch,
+  purchasing: ShoppingCart,
+  fulfillment: Truck,
+
+  /* Finance */
+  receivables: HandCoins,
+  payables: CircleDollarSign,
+  expenses: Wallet,
+  "cash / bank": Banknote,
+  loyalty: Gift,
+  "accounting events": BookOpen,
+
+  /* Business engines */
+  tickets: Wrench,
+  bookings: CalendarDays,
+  traceability: ScanBarcode,
+  warranty: BadgeCheck,
+  "recipe / bom": Layers,
+  routes: Route,
+  "messages / docs": MessageSquare,
+
+  /* Store reliability */
+  devices: MonitorSmartphone,
+  "offline queue": CloudOff,
+  conflicts: TriangleAlert,
+
+  /* Reporting and integrations */
+  reports: ListOrdered,
+  exports: Download,
+  webhooks: Webhook,
+  migration: ArrowRightLeft,
+
+  /* Production readiness */
+  security: ShieldCheck,
+  "backup / dr": DatabaseBackup,
+  checks: ListChecks,
+  privacy: EyeOff,
+  release: Rocket,
+
+  /* Item detail */
+  summary: ScrollText,
+  prices: Tag,
+  codes: ScanBarcode,
+  variants: Layers,
+  suppliers: Truck,
+  customers: UsersRound,
+
+  /* Import */
+  import: FileInput,
+  history: Clock,
+
+  /* Dashboard */
+  dashboard: Gauge,
+  overview: Gauge,
+  settings: Settings2,
+};
+
 function tabIcon(value: string, label: string): LucideIcon {
+  const exact = TAB_ICONS[label.trim().toLowerCase()] ?? TAB_ICONS[value.trim().toLowerCase()];
+  if (exact) return exact;
+
   const key = `${value} ${label}`.toLowerCase();
-  if (key.includes("analytics") || key.includes("report")) return BarChart3;
+  if (key.includes("report") || key.includes("analytics")) return ListOrdered;
   if (key.includes("approval") || key.includes("control")) return SlidersHorizontal;
-  if (key.includes("audit") || key.includes("history")) return ListChecks;
+  if (key.includes("audit") || key.includes("history")) return ScrollText;
   if (key.includes("business") || key.includes("branch") || key.includes("setup")) return Building2;
   if (key.includes("catalog") || key.includes("item") || key.includes("price")) return Boxes;
   if (key.includes("customer")) return UsersRound;
-  if (key.includes("engine") || key.includes("booking") || key.includes("ticket")) return Store;
+  if (key.includes("booking") || key.includes("ticket")) return Wrench;
   if (key.includes("finance") || key.includes("money") || key.includes("payment")) {
     return CircleDollarSign;
   }
-  if (key.includes("import")) return FileInput;
+  if (key.includes("import") || key.includes("export")) return FileInput;
   if (key.includes("inventory") || key.includes("stock")) return PackageSearch;
   if (key.includes("notification") || key.includes("alert")) return Bell;
   if (key.includes("permission") || key.includes("role") || key.includes("user")) return KeyRound;
-  if (key.includes("production") || key.includes("security") || key.includes("ready")) {
+  if (key.includes("security") || key.includes("ready") || key.includes("production")) {
     return ShieldCheck;
   }
   if (key.includes("sale") || key.includes("shift") || key.includes("return")) return ReceiptText;
-  if (key.includes("store") || key.includes("offline") || key.includes("device")) {
-    return ClipboardCheck;
-  }
+  if (key.includes("offline") || key.includes("device")) return ClipboardCheck;
   if (key.includes("supplier") || key.includes("purchase")) return Truck;
   if (key.includes("setting") || key.includes("configuration")) return Settings2;
-  if (key.includes("layer") || key.includes("variant")) return Layers3;
+  if (key.includes("variant") || key.includes("layer")) return Layers;
   if (key.includes("dashboard") || key.includes("overview")) return Gauge;
-  return Grid2X2;
+  return Boxes;
 }
 
 /* -------------------------------------------------------------------------- */

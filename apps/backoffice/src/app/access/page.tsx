@@ -1,9 +1,15 @@
 "use client";
 
-import type { AccessOverview, BusinessFoundationSummary } from "@bizentra/contracts";
+import type {
+  AccessOverview,
+  MembershipStatus,
+  BusinessFoundationSummary,
+} from "@bizentra/contracts";
 import {
+  Avatar,
   Badge,
   Button,
+  CheckField,
   Card,
   CardDescription,
   CardTitle,
@@ -24,6 +30,7 @@ import { readText } from "../lib/forms";
 import { errorMessage, ResourceState, useApi, useResource, Workspace } from "../lib/workspace";
 
 type PermissionRow = AccessOverview["permissionCatalog"][number];
+type PermissionAwareMember = AccessOverview["memberships"][number];
 
 interface AccessData {
   access: AccessOverview;
@@ -44,7 +51,15 @@ export default function AccessPage() {
   const [tab, setTab] = useState("users");
   const [busy, setBusy] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRoles, setInviteRoles] = useState<string[]>([]);
+  const [inviteBranches, setInviteBranches] = useState<string[]>([]);
   const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editStatus, setEditStatus] = useState<MembershipStatus>("ACTIVE");
+  const [editRoles, setEditRoles] = useState<string[]>([]);
+  const [editBranches, setEditBranches] = useState<string[]>([]);
   const [editingRole, setEditingRole] = useState<string | null>(null);
   const [newRoleOpen, setNewRoleOpen] = useState(false);
   const [permissionArea, setPermissionArea] = useState<string | null>(null);
@@ -69,42 +84,64 @@ export default function AccessPage() {
     }
   };
 
+  /** Derived only as a suggestion; the person still confirms the name that will be shown. */
+  const suggestedName = inviteEmail.includes("@")
+    ? (inviteEmail.split("@")[0] ?? "")
+        .replace(/[._-]+/g, " ")
+        .replace(/\b\w/g, (character) => character.toUpperCase())
+        .trim()
+    : "";
+  const inviteNameValue = inviteName || suggestedName;
+  const canInvite = /.+@.+\..+/.test(inviteEmail) && inviteNameValue.trim().length >= 2;
+
+  const closeInvite = () => {
+    setInviteOpen(false);
+    setInviteEmail("");
+    setInviteName("");
+    setInviteRoles([]);
+    setInviteBranches([]);
+  };
+
+  const toggle = (list: string[], id: string) =>
+    list.includes(id) ? list.filter((value) => value !== id) : [...list, id];
+
   const invite = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!api || !identity) return;
-    const form = new FormData(event.currentTarget);
+    if (!api || !identity || !canInvite) return;
     const ok = await run("Invitation created.", () =>
       api.inviteUser(identity.businessId, {
-        email: readText(form, "email"),
-        displayName: readText(form, "displayName"),
-        roleIds: form
-          .getAll("roleIds")
-          .filter((value): value is string => typeof value === "string"),
-        branchIds: form
-          .getAll("branchIds")
-          .filter((value): value is string => typeof value === "string"),
+        email: inviteEmail.trim(),
+        displayName: inviteNameValue.trim(),
+        roleIds: inviteRoles,
+        branchIds: inviteBranches,
       }),
     );
-    if (ok) setInviteOpen(false);
+    if (ok) closeInvite();
   };
+
+  /** Opens the drawer with the membership's current values, so the form starts from the truth. */
+  const openUser = (member: PermissionAwareMember) => {
+    setEditingUser(member.membershipId);
+    setEditName(member.displayName);
+    setEditStatus(member.status);
+    setEditRoles(member.roles.map((role) => role.id));
+    setEditBranches(member.branches.map((branch) => branch.id));
+  };
+
+  const closeUser = () => setEditingUser(null);
 
   const saveUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!api || !identity || !editingUser) return;
-    const form = new FormData(event.currentTarget);
+    if (!api || !identity || !editingUser || editName.trim().length < 2) return;
     const ok = await run("User updated.", () =>
       api.updateMembership(identity.businessId, editingUser, {
-        displayName: readText(form, "displayName"),
-        status: readText(form, "status", "ACTIVE") as "INVITED" | "ACTIVE" | "SUSPENDED",
-        roleIds: form
-          .getAll("roleIds")
-          .filter((value): value is string => typeof value === "string"),
-        branchIds: form
-          .getAll("branchIds")
-          .filter((value): value is string => typeof value === "string"),
+        displayName: editName.trim(),
+        status: editStatus,
+        roleIds: editRoles,
+        branchIds: editBranches,
       }),
     );
-    if (ok) setEditingUser(null);
+    if (ok) closeUser();
   };
 
   const createRole = async (event: FormEvent<HTMLFormElement>) => {
@@ -182,23 +219,61 @@ export default function AccessPage() {
                   caption="People with access"
                   summary="The Owner Role always keeps full access. Every other Role can be edited, and a Role in use cannot lose the Business its last Owner."
                   kicker="CC-P0-005"
-                  toolbar={
-                    <Button onClick={() => setInviteOpen(true)} size="quiet">
-                      Invite user
-                    </Button>
-                  }
+                  toolbar={<Button onClick={() => setInviteOpen(true)}>Invite user</Button>}
                   getRowKey={(member) => member.membershipId}
                   rows={memberships}
                   empty="Invite the people who will use the system."
                   columns={[
-                    { header: "Name", render: (member) => <strong>{member.displayName}</strong> },
-                    { header: "Email", render: (member) => member.email },
                     {
-                      header: "Roles",
-                      render: (member) =>
-                        member.roles.length
-                          ? member.roles.map((role) => role.name).join(", ")
-                          : "No Role yet",
+                      header: "Person",
+                      render: (member) => (
+                        <span className="ui-person">
+                          <Avatar name={member.displayName} />
+                          <div>
+                            <strong>
+                              {member.displayName}
+                              {member.userId === identity?.userId ? " (you)" : ""}
+                            </strong>
+                            <small>{member.email}</small>
+                          </div>
+                        </span>
+                      ),
+                    },
+                    {
+                      header: "Role",
+                      render: (member) => {
+                        /*
+                         * Nobody edits their own access. Without this an administrator can drop
+                         * their own Role and lock themselves out of the screen they are standing
+                         * on, and the server would accept it as a legitimate request.
+                         */
+                        const isSelf = member.userId === identity?.userId;
+                        return (
+                          <select
+                            aria-label={`Role for ${member.displayName}`}
+                            className="ui-inline-select"
+                            disabled={busy || isSelf || !api || !identity}
+                            onChange={(event) => {
+                              const roleId = event.target.value;
+                              if (!api || !identity || !roleId) return;
+                              void run("Role updated.", () =>
+                                api.updateMembership(identity.businessId, member.membershipId, {
+                                  roleIds: [roleId],
+                                }),
+                              );
+                            }}
+                            title={isSelf ? "You cannot change your own Role." : undefined}
+                            value={member.roles[0]?.id ?? ""}
+                          >
+                            <option value="">No Role yet</option>
+                            {roles.map((role) => (
+                              <option key={role.id} value={role.id}>
+                                {role.name}
+                              </option>
+                            ))}
+                          </select>
+                        );
+                      },
                     },
                     {
                       header: "Branches",
@@ -227,36 +302,77 @@ export default function AccessPage() {
                     {
                       header: "Actions",
                       align: "right",
-                      render: (member) => (
-                        <div className="ui-row">
-                          {member.status === "INVITED" ? (
-                            <Button
-                              disabled={busy}
-                              onClick={() =>
-                                api && identity
-                                  ? void run("User activated.", () =>
-                                      api.updateMembership(
-                                        identity.businessId,
-                                        member.membershipId,
-                                        { status: "ACTIVE" },
-                                      ),
-                                    )
-                                  : undefined
-                              }
-                              size="quiet"
-                            >
-                              Activate
+                      render: (member) => {
+                        const isSelf = member.userId === identity?.userId;
+                        if (isSelf) {
+                          /* Same rule as the Role control: an account never administers itself. */
+                          return (
+                            <span className="ui-card-description">Ask another administrator</span>
+                          );
+                        }
+                        return (
+                          <div className="ui-row">
+                            {member.status === "INVITED" ? (
+                              <Button
+                                disabled={busy}
+                                onClick={() =>
+                                  api && identity
+                                    ? void run("User activated.", () =>
+                                        api.updateMembership(
+                                          identity.businessId,
+                                          member.membershipId,
+                                          { status: "ACTIVE" },
+                                        ),
+                                      )
+                                    : undefined
+                                }
+                              >
+                                Activate
+                              </Button>
+                            ) : null}
+                            {member.status === "ACTIVE" ? (
+                              <Button
+                                disabled={busy}
+                                onClick={() =>
+                                  api && identity
+                                    ? void run("Access suspended.", () =>
+                                        api.updateMembership(
+                                          identity.businessId,
+                                          member.membershipId,
+                                          { status: "SUSPENDED" },
+                                        ),
+                                      )
+                                    : undefined
+                                }
+                                variant="ghost"
+                              >
+                                Suspend
+                              </Button>
+                            ) : null}
+                            {member.status === "SUSPENDED" ? (
+                              <Button
+                                disabled={busy}
+                                onClick={() =>
+                                  api && identity
+                                    ? void run("Access restored.", () =>
+                                        api.updateMembership(
+                                          identity.businessId,
+                                          member.membershipId,
+                                          { status: "ACTIVE" },
+                                        ),
+                                      )
+                                    : undefined
+                                }
+                              >
+                                Restore
+                              </Button>
+                            ) : null}
+                            <Button onClick={() => openUser(member)} variant="secondary">
+                              Manage
                             </Button>
-                          ) : null}
-                          <Button
-                            onClick={() => setEditingUser(member.membershipId)}
-                            size="quiet"
-                            variant="secondary"
-                          >
-                            Manage
-                          </Button>
-                        </div>
-                      ),
+                          </div>
+                        );
+                      },
                     },
                   ]}
                 />
@@ -266,11 +382,7 @@ export default function AccessPage() {
                 <DataTable
                   caption="Roles"
                   kicker="CC-P0-006"
-                  toolbar={
-                    <Button onClick={() => setNewRoleOpen(true)} size="quiet">
-                      New Role
-                    </Button>
-                  }
+                  toolbar={<Button onClick={() => setNewRoleOpen(true)}>New Role</Button>}
                   getRowKey={(role) => role.id}
                   rows={roles}
                   empty="Create a Role such as Cashier or Store Keeper."
@@ -366,101 +478,244 @@ export default function AccessPage() {
       </Stack>
 
       <Dialog
-        description="The person receives access as soon as an administrator activates the invitation."
-        onClose={() => setInviteOpen(false)}
+        description="Access is created immediately, but the person cannot sign in until an administrator activates the invitation."
+        onClose={closeInvite}
         open={inviteOpen}
         title="Invite a user"
+        wide
+        footer={
+          <>
+            <span className="ui-card-description">
+              {canInvite
+                ? `${inviteNameValue.trim()} will join with ${
+                    inviteRoles.length
+                      ? `${inviteRoles.length} Role(s)`
+                      : "no Role yet, so they will see nothing until one is given"
+                  }.`
+                : "An email address and a name are needed before an invitation can be sent."}
+            </span>
+            <div className="ui-row">
+              <Button onClick={closeInvite} variant="secondary">
+                Cancel
+              </Button>
+              <Button disabled={busy || !canInvite} form="invite-user" type="submit">
+                Send invitation
+              </Button>
+            </div>
+          </>
+        }
       >
-        <form className="ui-stack" onSubmit={(event) => void invite(event)}>
+        <form className="ui-stack" id="invite-user" onSubmit={(event) => void invite(event)}>
+          {/* Who is being invited, shown the way they will appear in the list afterwards. */}
+          <div className="access-invite-preview">
+            <Avatar name={inviteNameValue || "?"} />
+            <div>
+              <strong>{inviteNameValue.trim() || "New user"}</strong>
+              <small>{inviteEmail.trim() || "No email address yet"}</small>
+            </div>
+            <Badge tone={canInvite ? "success" : "neutral"}>
+              {canInvite ? "Ready to send" : "Incomplete"}
+            </Badge>
+          </div>
+
           <FormGrid>
-            <Field label="Full name" name="displayName" placeholder="Nimal Perera" required />
-            <Field label="Email" name="email" type="email" required />
+            <Field
+              autoComplete="email"
+              hint="This is the address they will sign in with."
+              label="Email"
+              onChange={(event) => setInviteEmail(event.target.value)}
+              placeholder="nimal@business.lk"
+              required
+              type="email"
+              value={inviteEmail}
+            />
+            <Field
+              hint={
+                suggestedName && !inviteName
+                  ? `Taken from the email address. Edit it if that is not their name.`
+                  : "The name shown on records this person touches."
+              }
+              label="Full name"
+              onChange={(event) => setInviteName(event.target.value)}
+              placeholder={suggestedName || "Nimal Perera"}
+              value={inviteName}
+            />
           </FormGrid>
-          <SelectField
-            hint="Hold Ctrl or Cmd to choose more than one Role."
-            label="Roles"
-            multiple
-            name="roleIds"
-            size={Math.min(roles.length || 1, 5)}
-          >
-            {roles.map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.name}
-              </option>
-            ))}
-          </SelectField>
-          <SelectField
-            hint="Leave empty to give access to every Branch."
-            label="Branches"
-            multiple
-            name="branchIds"
-            size={Math.min(branches.length || 1, 5)}
-          >
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </SelectField>
-          <FormFooter>
-            <Button onClick={() => setInviteOpen(false)} variant="secondary">
-              Cancel
-            </Button>
-            <Button disabled={busy} type="submit">
-              Send invitation
-            </Button>
-          </FormFooter>
+
+          <section className="access-choice">
+            <header>
+              <div>
+                <strong>Roles</strong>
+                <small>What this person is allowed to do. A Role can be changed later.</small>
+              </div>
+              <Badge tone={inviteRoles.length ? "information" : "warning"}>
+                {inviteRoles.length ? `${inviteRoles.length} selected` : "None yet"}
+              </Badge>
+            </header>
+            <div className="ui-choice-list">
+              {roles.map((role) => (
+                <CheckField
+                  checked={inviteRoles.includes(role.id)}
+                  description={
+                    role.description ??
+                    `${role.permissions.length} permission(s) · ${role.memberCount} member(s)`
+                  }
+                  key={role.id}
+                  label={role.name}
+                  onChange={() => setInviteRoles((current) => toggle(current, role.id))}
+                />
+              ))}
+              {!roles.length ? (
+                <p className="ui-card-description">
+                  No Role exists yet. Create one first, or invite the person and give them a Role
+                  afterwards.
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="access-choice">
+            <header>
+              <div>
+                <strong>Branches</strong>
+                <small>Which Branches this person can work in.</small>
+              </div>
+              <Badge tone={inviteBranches.length ? "information" : "success"}>
+                {inviteBranches.length ? `${inviteBranches.length} selected` : "Every Branch"}
+              </Badge>
+            </header>
+            <div className="ui-choice-list">
+              {branches.map((branch) => (
+                <CheckField
+                  checked={inviteBranches.includes(branch.id)}
+                  description={branch.code}
+                  key={branch.id}
+                  label={branch.name}
+                  onChange={() => setInviteBranches((current) => toggle(current, branch.id))}
+                />
+              ))}
+            </div>
+          </section>
         </form>
       </Dialog>
 
       <Drawer
         eyebrow="User"
-        onClose={() => setEditingUser(null)}
+        onClose={closeUser}
         open={editingUser !== null}
         title={activeUser?.displayName ?? "User"}
       >
         {activeUser ? (
           <form className="ui-stack" onSubmit={(event) => void saveUser(event)}>
-            <Field label="Full name" name="displayName" defaultValue={activeUser.displayName} />
-            <SelectField label="Status" name="status" defaultValue={activeUser.status}>
-              <option value="INVITED">Invited</option>
-              <option value="ACTIVE">Active</option>
-              <option value="SUSPENDED">Suspended</option>
-            </SelectField>
-            <SelectField
-              hint="A user with no Role cannot do anything."
-              label="Roles"
-              multiple
-              name="roleIds"
-              defaultValue={activeUser.roles.map((role) => role.id)}
-              size={Math.min(roles.length || 1, 6)}
-            >
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </SelectField>
-            <SelectField
-              label="Branches"
-              multiple
-              name="branchIds"
-              defaultValue={activeUser.branches.map((branch) => branch.id)}
-              size={Math.min(branches.length || 1, 6)}
-            >
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-            </SelectField>
+            {/* The same preview the invite dialog shows, so a person looks the same either way. */}
+            <div className="access-invite-preview">
+              <Avatar name={editName || activeUser.displayName} />
+              <div>
+                <strong>{editName.trim() || activeUser.displayName}</strong>
+                <small>{activeUser.email}</small>
+              </div>
+              <Badge
+                tone={
+                  editStatus === "ACTIVE"
+                    ? "success"
+                    : editStatus === "INVITED"
+                      ? "warning"
+                      : "neutral"
+                }
+              >
+                {editStatus}
+              </Badge>
+            </div>
+
+            <FormGrid>
+              <Field
+                hint="The name shown on records this person touches."
+                label="Full name"
+                onChange={(event) => setEditName(event.target.value)}
+                required
+                value={editName}
+              />
+              <SelectField
+                hint={
+                  editStatus === "SUSPENDED"
+                    ? "A suspended person keeps their history but cannot sign in."
+                    : editStatus === "INVITED"
+                      ? "An invited person cannot sign in until they are activated."
+                      : "This person can sign in and use their Roles."
+                }
+                label="Status"
+                onChange={(event) => setEditStatus(event.target.value as MembershipStatus)}
+                value={editStatus}
+              >
+                <option value="INVITED">Invited</option>
+                <option value="ACTIVE">Active</option>
+                <option value="SUSPENDED">Suspended</option>
+              </SelectField>
+            </FormGrid>
+
+            <section className="access-choice">
+              <header>
+                <div>
+                  <strong>Roles</strong>
+                  <small>What this person is allowed to do.</small>
+                </div>
+                <Badge tone={editRoles.length ? "information" : "warning"}>
+                  {editRoles.length ? `${editRoles.length} selected` : "None yet"}
+                </Badge>
+              </header>
+              <div className="ui-choice-list">
+                {roles.map((role) => (
+                  <CheckField
+                    checked={editRoles.includes(role.id)}
+                    description={
+                      role.description ??
+                      `${role.permissions.length} permission(s) · ${role.memberCount} member(s)`
+                    }
+                    key={role.id}
+                    label={role.name}
+                    onChange={() => setEditRoles((current) => toggle(current, role.id))}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section className="access-choice">
+              <header>
+                <div>
+                  <strong>Branches</strong>
+                  <small>Which Branches this person can work in.</small>
+                </div>
+                <Badge tone={editBranches.length ? "information" : "success"}>
+                  {editBranches.length ? `${editBranches.length} selected` : "Every Branch"}
+                </Badge>
+              </header>
+              <div className="ui-choice-list">
+                {branches.map((branch) => (
+                  <CheckField
+                    checked={editBranches.includes(branch.id)}
+                    description={branch.code}
+                    key={branch.id}
+                    label={branch.name}
+                    onChange={() => setEditBranches((current) => toggle(current, branch.id))}
+                  />
+                ))}
+              </div>
+            </section>
+
             <FormFooter>
-              <Button onClick={() => setEditingUser(null)} variant="secondary">
-                Cancel
-              </Button>
-              <Button disabled={busy} type="submit">
-                Save user
-              </Button>
+              <span className="ui-card-description">
+                {editRoles.length
+                  ? `Saved as ${editStatus.toLowerCase()} with ${editRoles.length} Role(s).`
+                  : "With no Role this person can sign in and see nothing."}
+              </span>
+              <div className="ui-row">
+                <Button onClick={closeUser} variant="secondary">
+                  Cancel
+                </Button>
+                <Button disabled={busy || editName.trim().length < 2} type="submit">
+                  Save user
+                </Button>
+              </div>
             </FormFooter>
           </form>
         ) : null}

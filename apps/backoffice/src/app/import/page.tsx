@@ -21,7 +21,7 @@ import {
   StatusChip,
   TextareaField,
 } from "@bizentra/design-system";
-import { ConfirmDialog, useToasts } from "@bizentra/design-system/client";
+import { ConfirmDialog, Tabs, useToasts } from "@bizentra/design-system/client";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 
 import { readText } from "../lib/forms";
@@ -51,6 +51,7 @@ export default function ImportPage() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [busy, setBusy] = useState(false);
   const [rollbackTarget, setRollbackTarget] = useState<ImportBatchSummary | null>(null);
+  const [tab, setTab] = useState("import");
 
   const template = async () => {
     if (!api || !identity) return;
@@ -176,189 +177,207 @@ export default function ImportPage() {
           />
         </Grid>
 
-        <Card>
-          <CardHeader>
-            <div>
-              <Kicker>Step 1</Kicker>
-              <CardTitle>Choose a file</CardTitle>
-            </div>
-            <Button onClick={() => void template()} size="quiet" variant="secondary">
-              Load template
-            </Button>
-          </CardHeader>
-          <CardDescription>
-            {ENTITY_KINDS.find((kind) => kind.value === entityKind)?.help}
-          </CardDescription>
-          <form className="ui-stack" onSubmit={(event) => void validate(event)}>
-            <div className="ui-form-grid">
-              <SelectField
-                label="What are you importing"
-                onChange={(event) => setEntityKind(event.target.value as ImportEntityKind)}
-                value={entityKind}
-              >
-                {ENTITY_KINDS.map((kind) => (
-                  <option key={kind.value} value={kind.value}>
-                    {kind.label}
-                  </option>
-                ))}
-              </SelectField>
-              <Field
-                label="File name"
-                name="fileName"
-                onChange={(event) => setFileName(event.target.value)}
-                value={fileName}
-              />
-              <SelectField label="Separator" name="delimiter" defaultValue=",">
-                <option value=",">Comma</option>
-                <option value=";">Semicolon</option>
-                <option value={"\t"}>Tab</option>
-              </SelectField>
-              <label className="ui-field">
-                <span>Upload a CSV file</span>
-                <input accept=".csv,.tsv,.txt" onChange={readFile} type="file" />
-                <small>The file is read in your browser and sent as text for validation.</small>
-              </label>
-            </div>
-            <TextareaField
-              hint="You can also paste rows directly from a spreadsheet."
-              label="File content"
-              onChange={(event) => setContent(event.target.value)}
-              rows={8}
-              value={content}
-            />
-            <FormFooter>
-              <span className="ui-card-description">
-                Validation never creates records. It only tells you what would happen.
-              </span>
-              <Button disabled={busy || !content.trim()} type="submit">
-                {busy ? "Checking..." : "Validate file"}
-              </Button>
-            </FormFooter>
-          </form>
-        </Card>
+        <Tabs
+          onChange={setTab}
+          value={tab}
+          tabs={[
+            { value: "import", label: "Import" },
+            { value: "history", label: "History", badge: String(batches.length) },
+          ]}
+        />
 
-        {preview ? (
-          <DataTable
-            caption="Preview"
-            kicker="Step 2"
-            toolbar={
-              <div className="ui-row">
-                <Badge tone="success">{preview.validRows} ready</Badge>
-                {preview.invalidRows ? (
-                  <Badge tone="danger">{preview.invalidRows} refused</Badge>
-                ) : null}
-                <Badge tone="neutral">{preview.status}</Badge>
-                <Button
-                  disabled={busy || preview.invalidRows > 0 || preview.status !== "VALIDATED"}
-                  onClick={() => void apply()}
-                  size="quiet"
-                >
-                  Apply
+        {tab === "import" ? (
+          <Stack>
+            <Card>
+              <CardHeader>
+                <div>
+                  <Kicker>Step 1</Kicker>
+                  <CardTitle>Choose a file</CardTitle>
+                </div>
+                <Button onClick={() => void template()} size="quiet" variant="secondary">
+                  Load template
                 </Button>
-              </div>
-            }
-            getRowKey={(row) => String(row.rowNumber)}
-            rows={preview.rows.slice(0, 100)}
-            empty="No rows were found in this file."
-            columns={[
-              { header: "Row", align: "right", render: (row) => row.rowNumber },
-              {
-                header: "Result",
-                render: (row) =>
-                  row.valid ? (
-                    <Badge tone="success">Will be created</Badge>
-                  ) : (
-                    <Badge tone="danger">Refused</Badge>
-                  ),
-              },
-              {
-                header: "Values",
-                render: (row) =>
-                  Object.entries(row.values)
-                    .filter(([, value]) => value)
-                    .slice(0, 4)
-                    .map(([key, value]) => `${key}: ${value}`)
-                    .join(" · "),
-              },
-              {
-                header: "Why refused",
-                render: (row) => (row.errors.length ? row.errors.join(" ") : "-"),
-              },
-            ]}
-          />
-        ) : (
-          <StatePanel state="empty" title="No file checked yet">
-            Load a template or paste a CSV export, then validate it. Nothing is written until you
-            apply the preview.
-          </StatePanel>
-        )}
-
-        <ResourceState error={error} onRetry={reload} state={state} title="Import history">
-          <DataTable
-            caption="Past imports"
-            kicker="History"
-            getRowKey={(batch) => batch.id}
-            rows={batches}
-            empty="No imports have been run yet."
-            columns={[
-              { header: "File", render: (batch) => <strong>{batch.fileName}</strong> },
-              { header: "Type", render: (batch) => batch.entityKind },
-              { header: "When", render: (batch) => formatDateTime(batch.createdAt) },
-              { header: "Rows", align: "right", render: (batch) => batch.totalRows },
-              { header: "Created", align: "right", render: (batch) => batch.appliedRows },
-              {
-                header: "Status",
-                render: (batch) => (
-                  <Badge
-                    tone={
-                      batch.status === "APPLIED"
-                        ? "success"
-                        : batch.status === "FAILED"
-                          ? "danger"
-                          : batch.status === "ROLLED_BACK"
-                            ? "warning"
-                            : "information"
-                    }
+              </CardHeader>
+              <CardDescription>
+                {ENTITY_KINDS.find((kind) => kind.value === entityKind)?.help}
+              </CardDescription>
+              <form className="ui-stack" onSubmit={(event) => void validate(event)}>
+                <div className="ui-form-grid">
+                  <SelectField
+                    label="What are you importing"
+                    onChange={(event) => setEntityKind(event.target.value as ImportEntityKind)}
+                    value={entityKind}
                   >
-                    {batch.status}
-                  </Badge>
-                ),
-              },
-              {
-                header: "Actions",
-                align: "right",
-                render: (batch) => (
+                    {ENTITY_KINDS.map((kind) => (
+                      <option key={kind.value} value={kind.value}>
+                        {kind.label}
+                      </option>
+                    ))}
+                  </SelectField>
+                  <Field
+                    label="File name"
+                    name="fileName"
+                    onChange={(event) => setFileName(event.target.value)}
+                    value={fileName}
+                  />
+                  <SelectField label="Separator" name="delimiter" defaultValue=",">
+                    <option value=",">Comma</option>
+                    <option value=";">Semicolon</option>
+                    <option value={"\t"}>Tab</option>
+                  </SelectField>
+                  <label className="ui-field">
+                    <span>Upload a CSV file</span>
+                    <input accept=".csv,.tsv,.txt" onChange={readFile} type="file" />
+                    <small>The file is read in your browser and sent as text for validation.</small>
+                  </label>
+                </div>
+                <TextareaField
+                  hint="You can also paste rows directly from a spreadsheet."
+                  label="File content"
+                  onChange={(event) => setContent(event.target.value)}
+                  rows={8}
+                  value={content}
+                />
+                <FormFooter>
+                  <span className="ui-card-description">
+                    Validation never creates records. It only tells you what would happen.
+                  </span>
+                  <Button disabled={busy || !content.trim()} type="submit">
+                    {busy ? "Checking..." : "Validate file"}
+                  </Button>
+                </FormFooter>
+              </form>
+            </Card>
+
+            {preview ? (
+              <DataTable
+                caption="Preview"
+                kicker="Step 2"
+                toolbar={
                   <div className="ui-row">
-                    <Button
-                      onClick={() => {
-                        if (!api || !identity) return;
-                        void api
-                          .getImportPreview(identity.businessId, batch.id)
-                          .then(setPreview)
-                          .catch((cause: unknown) =>
-                            toasts.push({
-                              title: "Preview not loaded",
-                              description: errorMessage(cause),
-                              tone: "danger",
-                            }),
-                          );
-                      }}
-                      size="quiet"
-                      variant="secondary"
-                    >
-                      Open
-                    </Button>
-                    {batch.status === "APPLIED" ? (
-                      <Button onClick={() => setRollbackTarget(batch)} size="quiet" variant="ghost">
-                        Roll back
-                      </Button>
+                    <Badge tone="success">{preview.validRows} ready</Badge>
+                    {preview.invalidRows ? (
+                      <Badge tone="danger">{preview.invalidRows} refused</Badge>
                     ) : null}
+                    <Badge tone="neutral">{preview.status}</Badge>
+                    <Button
+                      disabled={busy || preview.invalidRows > 0 || preview.status !== "VALIDATED"}
+                      onClick={() => void apply()}
+                    >
+                      Apply
+                    </Button>
                   </div>
-                ),
-              },
-            ]}
-          />
-        </ResourceState>
+                }
+                getRowKey={(row) => String(row.rowNumber)}
+                rows={preview.rows.slice(0, 100)}
+                empty="No rows were found in this file."
+                columns={[
+                  { header: "Row", align: "right", render: (row) => row.rowNumber },
+                  {
+                    header: "Result",
+                    render: (row) =>
+                      row.valid ? (
+                        <Badge tone="success">Will be created</Badge>
+                      ) : (
+                        <Badge tone="danger">Refused</Badge>
+                      ),
+                  },
+                  {
+                    header: "Values",
+                    render: (row) =>
+                      Object.entries(row.values)
+                        .filter(([, value]) => value)
+                        .slice(0, 4)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(" · "),
+                  },
+                  {
+                    header: "Why refused",
+                    render: (row) => (row.errors.length ? row.errors.join(" ") : "-"),
+                  },
+                ]}
+              />
+            ) : (
+              <StatePanel state="empty" title="No file checked yet">
+                Load a template or paste a CSV export, then validate it. Nothing is written until
+                you apply the preview.
+              </StatePanel>
+            )}
+          </Stack>
+        ) : null}
+
+        {tab === "history" ? (
+          <ResourceState error={error} onRetry={reload} state={state} title="Import history">
+            <DataTable
+              caption="Past imports"
+              kicker="Every run"
+              getRowKey={(batch) => batch.id}
+              rows={batches}
+              empty="No imports have been run yet."
+              columns={[
+                { header: "File", render: (batch) => <strong>{batch.fileName}</strong> },
+                { header: "Type", render: (batch) => batch.entityKind },
+                { header: "When", render: (batch) => formatDateTime(batch.createdAt) },
+                { header: "Rows", align: "right", render: (batch) => batch.totalRows },
+                { header: "Created", align: "right", render: (batch) => batch.appliedRows },
+                {
+                  header: "Status",
+                  render: (batch) => (
+                    <Badge
+                      tone={
+                        batch.status === "APPLIED"
+                          ? "success"
+                          : batch.status === "FAILED"
+                            ? "danger"
+                            : batch.status === "ROLLED_BACK"
+                              ? "warning"
+                              : "information"
+                      }
+                    >
+                      {batch.status}
+                    </Badge>
+                  ),
+                },
+                {
+                  header: "Actions",
+                  align: "right",
+                  render: (batch) => (
+                    <div className="ui-row">
+                      <Button
+                        onClick={() => {
+                          if (!api || !identity) return;
+                          void api
+                            .getImportPreview(identity.businessId, batch.id)
+                            .then(setPreview)
+                            .catch((cause: unknown) =>
+                              toasts.push({
+                                title: "Preview not loaded",
+                                description: errorMessage(cause),
+                                tone: "danger",
+                              }),
+                            );
+                        }}
+                        size="quiet"
+                        variant="secondary"
+                      >
+                        Open
+                      </Button>
+                      {batch.status === "APPLIED" ? (
+                        <Button
+                          onClick={() => setRollbackTarget(batch)}
+                          size="quiet"
+                          variant="ghost"
+                        >
+                          Roll back
+                        </Button>
+                      ) : null}
+                    </div>
+                  ),
+                },
+              ]}
+            />
+          </ResourceState>
+        ) : null}
       </Stack>
 
       <ConfirmDialog

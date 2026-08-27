@@ -165,12 +165,11 @@
   }
 }
 
-/* The POS is a distraction-free surface: no sidebar, and controls stay thumb-sized. */
-.ui-pos-shell .ui-button {
-  min-height: 38px;
-}
-
-.ui-pos-shell .ui-field input,
-.ui-pos-shell .ui-field select {
-  min-height: 38px;
-}
+/*
+ * The POS is a distraction-free surface: no sidebar.
+ *
+ * Control heights are no longer overridden here. Buttons and fields take
+ * `--ui-control-height` from the shared stylesheet, so a POS control is the same height as the
+ * same control in Back Office. The number pad keeps its own larger touch target, because entering
+ * a cash amount on a till is not a form-row interaction.
+ */

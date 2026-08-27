@@ -413,7 +413,12 @@ export const DEFAULT_BUSINESS_THEME: BusinessThemeSettings = {
   updatedAt: "1970-01-01T00:00:00.000Z",
 };
 
-export const THEME_CACHE_VERSION = 1;
+/*
+ * Bumped when the token values themselves change. The boot script paints from the cached tokens
+ * before React runs, so without this a returning device would flash the previous border colours
+ * for a frame before the provider recomputed them.
+ */
+export const THEME_CACHE_VERSION = 2;
 export const ACTIVE_THEME_CACHE_KEY = "bizentra.theme.active.v1";
 export const DEVELOPMENT_IDENTITY_CACHE_KEY = "bizentra.development.identity.v1";
 export const THEME_BOOTSTRAP_SCRIPT = `(function(){try{var c=JSON.parse(localStorage.getItem('${ACTIVE_THEME_CACHE_KEY}')||'null');if(!c||c.version!==${THEME_CACHE_VERSION}||!c.tokens)return;var r=document.documentElement;Object.keys(c.tokens).forEach(function(k){var v=c.tokens[k];if(k.indexOf('--color-')===0&&typeof v==='string'&&/^#[0-9A-Fa-f]{6}$/.test(v))r.style.setProperty(k,v)});if(c.mode==='LIGHT'||c.mode==='DARK'){r.dataset.colorMode=c.mode.toLowerCase();r.style.colorScheme=c.mode.toLowerCase()}}catch(e){}})();`;
@@ -537,8 +542,14 @@ const DARK_NEUTRAL = {
   textPrimary: "#F8FAFC",
   textSecondary: "#CBD5E1",
   textMuted: "#94A3B8",
-  border: "#334155",
-  borderStrong: "#475569",
+  /*
+   * Dark borders were louder than light ones, not equivalent: #334155 on the #111827 surface is
+   * 1.71:1, where light's #E2E8F0 on #FFFFFF is 1.23:1. Every card, table and input therefore read
+   * as outlined in dark and merely separated in light. These sit at 1.38:1 and 1.71:1 - softer
+   * than before, still above the point where a dark border stops being perceptible at all.
+   */
+  border: "#26324A",
+  borderStrong: "#334155",
   inputBackground: "#111827",
   hoverBackground: "#1E293B",
   disabledBackground: "#334155",

@@ -482,7 +482,9 @@ export default function ControlsPage() {
                       </SelectField>
                     </FormGrid>
                     <DataTable
-                      caption="Who changed what, and when."
+                      caption="Audit history"
+                      kicker="CC-P0-009"
+                      summary="Who changed what, and when. Records are append-only."
                       getRowKey={(row) => row.id}
                       onRowSelect={setAuditDetail}
                       rows={data.audit.rows}

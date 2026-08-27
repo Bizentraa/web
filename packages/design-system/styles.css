@@ -46,6 +46,13 @@ body {
   --ui-font-mono:
     var(--font-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     monospace;
+
+  /*
+   * One height for every control that sits on a form row - buttons, inputs, selects, the table's
+   * own search box, pagination. Six different values had accumulated (28, 34, 36, 38, 40, 42),
+   * because each rule hard-coded its own, so a button never lined up with the field beside it.
+   */
+  --ui-control-height: 34px;
 }
 
 body {
@@ -114,12 +121,57 @@ input[type="radio"] {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ui-section-nav-indicator[data-travel="true"],
+  .ui-vertical-tabs-indicator[data-travel="true"] {
+    transition: opacity 160ms ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   :root[data-theme-transition],
   :root[data-theme-transition] *,
   :root[data-theme-transition] *::before,
   :root[data-theme-transition] *::after {
     transition: none !important;
   }
+}
+
+/*
+ * Scrollbars.
+ *
+ * Windows and Linux draw classic scrollbars that take real layout width and sit there in grey
+ * whether or not anyone is scrolling, so a panel that scrolls looked heavier than the same panel
+ * on macOS. These are thin, themed and transparent-tracked, which keeps them legible without
+ * turning every scroll area into a bordered box.
+ *
+ * They are styled, not hidden: a scroll area with no visible affordance is a real accessibility
+ * problem for anyone who does not know the content continues.
+ */
+* {
+  scrollbar-color: color-mix(in srgb, var(--color-text-muted) 34%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-text-muted) 34%, transparent);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-text-muted) 55%, transparent);
+  background-clip: padding-box;
 }
 
 kbd {
@@ -468,9 +520,15 @@ kbd {
   border-bottom: 1px solid var(--color-border);
   display: flex;
   gap: 22px;
+  /*
+   * `overflow-x: auto` computes `overflow-y` to `auto` as well - the axes cannot disagree unless
+   * both are stated. The indicator is 1px tall in the vertical direction beyond nothing, but any
+   * overhang was enough to raise a vertical scrollbar on this one row. Stating both axes fixes it.
+   */
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 0 2px;
-  scrollbar-width: thin;
+  position: relative;
 }
 
 .ui-section-nav button,
@@ -487,17 +545,45 @@ kbd {
   line-height: 1.2;
   min-height: 46px;
   padding: 10px 0;
+  position: relative;
   text-decoration: none;
-  transition:
-    border-color 140ms ease,
-    color 140ms ease;
+  transition: color 200ms ease;
   white-space: nowrap;
 }
 
 .ui-section-nav [aria-selected="true"],
 .ui-section-nav [aria-current="page"] {
-  border-bottom-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+/*
+ * One underline that travels, rather than one per tab fading in and out. Its position and width
+ * are measured from the selected tab and written inline; only the movement lives here.
+ *
+ * `transform` and `width` are the two properties that change, and the easing overshoots very
+ * slightly so the bar settles the way a spring would without needing an animation library.
+ * Opacity stays 0 until the first measurement, so it never flashes at the left edge on load, and
+ * `[data-travel]` is absent for that first placement so the bar appears in position instead of
+ * sliding in from nowhere.
+ */
+.ui-section-nav-indicator {
+  background: var(--color-primary);
+  border-radius: 2px 2px 0 0;
+  /* Inside the padding box: `overflow-y: hidden` above would clip anything hanging below it. */
+  bottom: 0;
+  height: 2px;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 0;
+}
+
+.ui-section-nav-indicator[data-travel="true"] {
+  transition:
+    opacity 160ms ease,
+    transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ui-section-nav button:hover,
@@ -553,7 +639,7 @@ kbd {
   gap: 8px;
   justify-content: center;
   line-height: 1.2;
-  min-height: 34px;
+  min-height: var(--ui-control-height);
   padding: 0 12px;
   text-decoration: none;
   transition:
@@ -598,19 +684,91 @@ kbd {
   background: var(--color-surface-secondary);
   color: var(--color-text-primary);
   font-size: 0.78rem;
-  min-height: 28px;
-  padding: 0 8px;
+  min-height: var(--ui-control-height);
+  padding: 0 10px;
 }
 
 .ui-button--large {
   font-size: 0.92rem;
-  min-height: 40px;
+  min-height: var(--ui-control-height);
   padding: 0 16px;
 }
 
 .ui-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+/*
+ * A select that edits a value in place inside a table cell. It is a control, so it takes the
+ * shared control height, but it stays visually quiet until hovered or focused so a column of them
+ * does not read as a wall of form fields.
+ */
+.ui-inline-select {
+  background: var(--color-input-background);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: inherit;
+  max-width: 190px;
+  min-height: var(--ui-control-height);
+  padding: 0 8px;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+  width: 100%;
+}
+
+.ui-inline-select:hover:not(:disabled),
+.ui-inline-select:focus-visible {
+  border-color: var(--color-border-strong);
+}
+
+.ui-inline-select:disabled {
+  background: transparent;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.ui-avatar {
+  align-items: center;
+  background: var(--color-primary-soft);
+  border-radius: 999px;
+  color: var(--color-primary);
+  display: inline-flex;
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 750;
+  height: var(--ui-control-height);
+  justify-content: center;
+  letter-spacing: 0.02em;
+  width: var(--ui-control-height);
+}
+
+.ui-person {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ui-person > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ui-person strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-person small {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ui-badge {
@@ -725,7 +883,7 @@ kbd {
   background: var(--color-input-background);
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  min-height: 34px;
+  min-height: var(--ui-control-height);
   padding: 5px 10px;
   transition:
     border-color 120ms ease,
@@ -772,6 +930,41 @@ kbd {
 .ui-field-error {
   color: var(--color-danger);
   font-size: 0.76rem;
+}
+
+/*
+ * A list of choices, replacing `<select multiple>`. A native multi-select hides its state behind
+ * ctrl-click, loses the whole selection on a stray click, and is close to unusable on a touch
+ * screen; a grid of checkboxes shows what is chosen and can be tapped.
+ */
+.ui-choice-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px;
+}
+
+.ui-check-field:hover {
+  border-color: var(--color-border-strong);
+}
+
+.ui-check-field:has(input:checked) {
+  background: var(--color-primary-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 32%, transparent);
+}
+
+.ui-check-field:has(input:focus-visible) {
+  border-color: var(--color-focus);
+}
+
+@media (max-width: 760px) {
+  .ui-choice-list {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 190px;
+  }
 }
 
 .ui-check-field {
@@ -856,7 +1049,7 @@ kbd {
   background: var(--color-input-background);
   border: 1px solid var(--color-border-strong);
   border-radius: 10px;
-  min-height: 36px;
+  min-height: var(--ui-control-height);
   padding: 6px 11px;
   transition:
     border-color 120ms ease,
@@ -950,6 +1143,73 @@ kbd {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+/*
+ * Search, filters and the primary action belong to the table, not to a separate bar floating
+ * above it. The action sits on the title row at full size - a list's main action is not a quiet
+ * one - and the controls sit on their own row beneath it, inside the same border.
+ */
+.ui-data-table-filters {
+  align-items: flex-end;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 100%;
+  padding: 12px 18px;
+}
+
+.ui-data-table-search {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ui-data-table-search > span {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ui-data-table-search > input {
+  background: var(--color-input-background);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  color: var(--color-text-primary);
+  min-height: var(--ui-control-height);
+  padding: 0 12px;
+  width: 100%;
+}
+
+.ui-data-table-search > input:focus-visible {
+  border-color: var(--color-focus);
+}
+
+.ui-data-table-filter-controls {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ui-data-table-filter-controls .ui-field {
+  min-width: 170px;
+}
+
+@media (max-width: 760px) {
+  .ui-data-table-filters {
+    padding: 12px 14px;
+  }
+
+  .ui-data-table-filter-controls,
+  .ui-data-table-filter-controls .ui-field {
+    width: 100%;
+  }
 }
 
 .ui-data-table-empty {
@@ -1060,7 +1320,7 @@ kbd {
   display: inline-flex;
   font-size: 0.88rem;
   font-weight: 700;
-  height: 36px;
+  min-height: var(--ui-control-height);
   justify-content: center;
   min-width: 36px;
 }
@@ -1088,6 +1348,7 @@ kbd {
   display: flex;
   gap: 24px;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .ui-data-tabs button {
@@ -1273,6 +1534,7 @@ kbd {
 
 .ui-vertical-tabs-nav {
   display: flex;
+  position: relative;
   flex-direction: column;
   gap: 2px;
   position: sticky;
@@ -1281,6 +1543,7 @@ kbd {
 
 .ui-vertical-tabs-nav button {
   align-items: center;
+  position: relative;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -1304,6 +1567,26 @@ kbd {
   background: var(--color-primary-soft);
   border-color: color-mix(in srgb, var(--color-primary) 26%, transparent);
   color: var(--color-primary);
+}
+
+/* The rail's indicator travels vertically, mirroring the underline on the horizontal row. */
+.ui-vertical-tabs-indicator {
+  background: var(--color-primary);
+  border-radius: 0 3px 3px 0;
+  height: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 3px;
+}
+
+.ui-vertical-tabs-indicator[data-travel="true"] {
+  transition:
+    height 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms ease,
+    transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ui-vertical-tabs-nav button > svg {
@@ -1361,7 +1644,9 @@ kbd {
 
   .ui-vertical-tabs-nav {
     flex-direction: row;
+    /* A row here, so the same both-axes rule as the other horizontal strips applies. */
     overflow-x: auto;
+    overflow-y: hidden;
     position: static;
     padding-bottom: 4px;
     scrollbar-width: thin;
@@ -1372,6 +1657,14 @@ kbd {
   }
 
   .ui-vertical-tabs-nav button small {
+    display: none;
+  }
+
+  /*
+   * The rail is a horizontal row at this width, so a bar measured from offsetTop would sit in the
+   * wrong place. The selected tab still reads clearly from its filled background.
+   */
+  .ui-vertical-tabs-indicator {
     display: none;
   }
 }
@@ -1559,7 +1852,7 @@ kbd {
   border-radius: 12px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
   flex: 1;
-  min-height: 42px;
+  min-height: var(--ui-control-height);
   padding: 7px 13px;
   font-size: 0.96rem;
 }
@@ -1654,7 +1947,7 @@ kbd {
   border-radius: 9px;
   color: var(--color-text-secondary);
   font-weight: 800;
-  height: 30px;
+  height: var(--ui-control-height);
   width: 30px;
 }
 
@@ -1663,7 +1956,7 @@ kbd {
   border: 1px solid var(--color-border-strong);
   border-radius: 9px;
   font-variant-numeric: tabular-nums;
-  height: 30px;
+  height: var(--ui-control-height);
   text-align: center;
   width: 56px;
 }
@@ -1842,22 +2135,6 @@ kbd {
   gap: 14px;
 }
 
-.ui-skeleton-screen-header {
-  display: grid;
-  gap: 8px;
-  max-width: 560px;
-}
-
-.ui-skeleton-screen-header .ui-skeleton:first-child {
-  height: 18px;
-  width: min(260px, 70%);
-}
-
-.ui-skeleton-screen-header .ui-skeleton:last-child {
-  height: 12px;
-  width: min(520px, 94%);
-}
-
 .ui-skeleton-kpi-grid {
   display: grid;
   gap: 12px;
@@ -1897,21 +2174,58 @@ kbd {
   overflow: hidden;
 }
 
-.ui-skeleton-table > div:first-child {
+/* Section tabs, so a screen does not appear to gain a row of tabs the moment it finishes loading. */
+.ui-skeleton-tabs {
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 22px;
+  padding-bottom: 12px;
+}
+
+.ui-skeleton-tabs .ui-skeleton {
+  height: 13px;
+  width: 74px;
+}
+
+.ui-skeleton-tabs .ui-skeleton:first-child {
+  width: 92px;
+}
+
+.ui-skeleton-table-head {
   border-bottom: 1px solid var(--color-border);
   display: grid;
   gap: 8px;
   padding: 16px 18px;
 }
 
-.ui-skeleton-table > div:first-child .ui-skeleton:first-child {
+.ui-skeleton-table-head .ui-skeleton:first-child {
   height: 12px;
   width: 92px;
 }
 
-.ui-skeleton-table > div:first-child .ui-skeleton:last-child {
+.ui-skeleton-table-head .ui-skeleton:last-child {
   height: 18px;
   width: min(280px, 70%);
+}
+
+/* The search and filter row the tables carry inside their own border. */
+.ui-skeleton-table-filters {
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  gap: 12px;
+  padding: 12px 18px;
+}
+
+.ui-skeleton-table-filters .ui-skeleton:first-child {
+  flex: 1 1 260px;
+  height: var(--ui-control-height);
+  border-radius: 10px;
+}
+
+.ui-skeleton-table-filters .ui-skeleton:last-child {
+  border-radius: 10px;
+  flex: 0 0 170px;
+  height: var(--ui-control-height);
 }
 
 .ui-skeleton-table-row {
