@@ -165,6 +165,61 @@ export const P6_PERMISSIONS = [
   },
 ] as const satisfies readonly PermissionDefinition[];
 
+export const P7_PERMISSIONS = [
+  { code: "REPORT_VIEW", name: "View reports", area: "Reports" },
+  {
+    code: "REPORT_EXPORT",
+    name: "Export report data",
+    area: "Reports",
+    sensitive: true,
+  },
+  { code: "INTEGRATION_VIEW", name: "View integrations", area: "Integrations" },
+  {
+    code: "INTEGRATION_MANAGE",
+    name: "Manage integrations",
+    area: "Integrations",
+    sensitive: true,
+  },
+  { code: "MIGRATION_VIEW", name: "View migration validation", area: "Migration" },
+  {
+    code: "MIGRATION_MANAGE",
+    name: "Manage migration validation",
+    area: "Migration",
+    sensitive: true,
+  },
+] as const satisfies readonly PermissionDefinition[];
+
+export const P8_PERMISSIONS = [
+  { code: "SECURITY_VIEW", name: "View security events", area: "Security" },
+  {
+    code: "SECURITY_MANAGE",
+    name: "Manage security controls",
+    area: "Security",
+    sensitive: true,
+  },
+  { code: "OPERATIONS_VIEW", name: "View operations readiness", area: "Operations" },
+  {
+    code: "OPERATIONS_MANAGE",
+    name: "Manage operations readiness",
+    area: "Operations",
+    sensitive: true,
+  },
+  { code: "PRIVACY_VIEW", name: "View privacy requests", area: "Privacy" },
+  {
+    code: "PRIVACY_MANAGE",
+    name: "Manage privacy requests",
+    area: "Privacy",
+    sensitive: true,
+  },
+  { code: "RELEASE_VIEW", name: "View release readiness", area: "Release" },
+  {
+    code: "RELEASE_MANAGE",
+    name: "Manage release readiness",
+    area: "Release",
+    sensitive: true,
+  },
+] as const satisfies readonly PermissionDefinition[];
+
 export const PLATFORM_PERMISSIONS = [
   ...P0_PERMISSIONS,
   ...P1_PERMISSIONS,
@@ -173,6 +228,8 @@ export const PLATFORM_PERMISSIONS = [
   ...P4_PERMISSIONS,
   ...P5_PERMISSIONS,
   ...P6_PERMISSIONS,
+  ...P7_PERMISSIONS,
+  ...P8_PERMISSIONS,
 ] as const;
 
 export type P0PermissionCode = (typeof P0_PERMISSIONS)[number]["code"];
@@ -182,6 +239,8 @@ export type P3PermissionCode = (typeof P3_PERMISSIONS)[number]["code"];
 export type P4PermissionCode = (typeof P4_PERMISSIONS)[number]["code"];
 export type P5PermissionCode = (typeof P5_PERMISSIONS)[number]["code"];
 export type P6PermissionCode = (typeof P6_PERMISSIONS)[number]["code"];
+export type P7PermissionCode = (typeof P7_PERMISSIONS)[number]["code"];
+export type P8PermissionCode = (typeof P8_PERMISSIONS)[number]["code"];
 export type PlatformPermissionCode = (typeof PLATFORM_PERMISSIONS)[number]["code"];
 
 const PERMISSION_CODES = new Set<string>(
@@ -309,6 +368,14 @@ export const ROLE_TEMPLATES = [
       "DOCUMENT_MANAGE",
       "DEVICE_VIEW",
       "OFFLINE_VIEW",
+      "REPORT_VIEW",
+      "REPORT_EXPORT",
+      "INTEGRATION_VIEW",
+      "MIGRATION_VIEW",
+      "SECURITY_VIEW",
+      "OPERATIONS_VIEW",
+      "PRIVACY_VIEW",
+      "RELEASE_VIEW",
     ],
   },
   {
@@ -429,6 +496,34 @@ export const ROLE_TEMPLATES = [
       "ACCOUNTING_EVENT_VIEW",
       "AUDIT_VIEW",
       "NUMBERING_VIEW",
+      "REPORT_VIEW",
+      "REPORT_EXPORT",
+      "SECURITY_VIEW",
+      "OPERATIONS_VIEW",
+      "PRIVACY_VIEW",
+      "RELEASE_VIEW",
+    ],
+  },
+  {
+    code: "REPORTING_USER",
+    name: "Reporting / Integration User",
+    description: "Reviews reports, exports data and manages integration evidence.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "CATALOG_VIEW",
+      "CUSTOMER_VIEW",
+      "SUPPLIER_VIEW",
+      "SALE_VIEW",
+      "FINANCE_VIEW",
+      "INVENTORY_VIEW",
+      "REPORT_VIEW",
+      "REPORT_EXPORT",
+      "INTEGRATION_VIEW",
+      "INTEGRATION_MANAGE",
+      "MIGRATION_VIEW",
+      "MIGRATION_MANAGE",
+      "AUDIT_VIEW",
     ],
   },
   {
@@ -461,6 +556,7 @@ export const ROLE_TEMPLATES = [
       "DOCUMENT_MANAGE",
       "DEVICE_VIEW",
       "OFFLINE_VIEW",
+      "REPORT_VIEW",
     ],
   },
   {
@@ -476,6 +572,35 @@ export const ROLE_TEMPLATES = [
       "OFFLINE_VIEW",
       "OFFLINE_MANAGE",
       "AUDIT_VIEW",
+    ],
+  },
+  {
+    code: "OPERATIONS_ADMIN",
+    name: "Security / Operations Admin",
+    description: "Manages security, backup, privacy and release-readiness evidence.",
+    permissions: [
+      "BUSINESS_VIEW",
+      "BRANCH_VIEW",
+      "LOCATION_VIEW",
+      "USER_VIEW",
+      "ROLE_VIEW",
+      "APPROVAL_VIEW",
+      "FEATURE_VIEW",
+      "AUDIT_VIEW",
+      "REPORT_VIEW",
+      "REPORT_EXPORT",
+      "INTEGRATION_VIEW",
+      "INTEGRATION_MANAGE",
+      "MIGRATION_VIEW",
+      "MIGRATION_MANAGE",
+      "SECURITY_VIEW",
+      "SECURITY_MANAGE",
+      "OPERATIONS_VIEW",
+      "OPERATIONS_MANAGE",
+      "PRIVACY_VIEW",
+      "PRIVACY_MANAGE",
+      "RELEASE_VIEW",
+      "RELEASE_MANAGE",
     ],
   },
   {
@@ -523,6 +648,12 @@ export const ROLE_TEMPLATES = [
       "DOCUMENT_VIEW",
       "DEVICE_VIEW",
       "OFFLINE_VIEW",
+      "REPORT_VIEW",
+      "REPORT_EXPORT",
+      "SECURITY_VIEW",
+      "OPERATIONS_VIEW",
+      "PRIVACY_VIEW",
+      "RELEASE_VIEW",
     ],
   },
 ] as const satisfies readonly {
@@ -594,6 +725,21 @@ export const FEATURE_DEFINITIONS = [
     description: "Device registry, offline queue, sync conflicts and terminal health.",
     kind: "CORE",
     dependsOn: ["POS_SALES"],
+  },
+  {
+    key: "REPORTING_INTEGRATIONS",
+    name: "Reporting, integrations and migration",
+    description: "Reports, data exports, webhooks, integration delivery and migration validation.",
+    kind: "CORE",
+    dependsOn: ["POS_SALES", "INVENTORY_PURCHASING"],
+  },
+  {
+    key: "PRODUCTION_READINESS",
+    name: "Security, operations and production readiness",
+    description:
+      "Security events, backups, readiness checks, privacy requests and release controls.",
+    kind: "CORE",
+    dependsOn: ["COMMON_CORE"],
   },
   {
     key: "GROCERY_PACK",

@@ -206,6 +206,22 @@ const DEFAULT_NAVIGATION: ShellNavigationItem[] = [
     status: "ready",
   },
   {
+    href: "/reporting-operations",
+    label: "Reports and integrations",
+    description: "reports, exports, webhooks",
+    phase: "P7",
+    group: "Manage",
+    status: "ready",
+  },
+  {
+    href: "/production-readiness",
+    label: "Production readiness",
+    description: "security and go-live",
+    phase: "P8",
+    group: "Settings",
+    status: "ready",
+  },
+  {
     href: "/customers",
     label: "Customers",
     description: "people who buy",

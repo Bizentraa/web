@@ -251,6 +251,41 @@ export const offlineQueueStatusSchema = z.enum([
 
 export const syncConflictStatusSchema = z.enum(["OPEN", "RESOLVED", "IGNORED"]);
 
+export const dataExportStatusSchema = z.enum(["QUEUED", "READY", "FAILED", "EXPIRED"]);
+
+export const webhookSubscriptionStatusSchema = z.enum(["ACTIVE", "DISABLED"]);
+
+export const webhookDeliveryStatusSchema = z.enum(["PENDING", "SENT", "FAILED", "DEAD_LETTER"]);
+
+export const migrationValidationStatusSchema = z.enum([
+  "RECEIVED",
+  "VALIDATED",
+  "FAILED",
+  "APPROVED",
+]);
+
+export const securityEventSeveritySchema = z.enum(["INFO", "WARNING", "CRITICAL"]);
+
+export const backupRunStatusSchema = z.enum([
+  "SCHEDULED",
+  "RUNNING",
+  "COMPLETED",
+  "FAILED",
+  "RESTORE_TESTED",
+]);
+
+export const readinessCheckStatusSchema = z.enum(["PASS", "WARNING", "FAIL", "NOT_RUN"]);
+
+export const privacyRequestStatusSchema = z.enum(["OPEN", "COMPLETED", "REJECTED"]);
+
+export const releaseReadinessStatusSchema = z.enum([
+  "DRAFT",
+  "READY",
+  "BLOCKED",
+  "RELEASED",
+  "ROLLED_BACK",
+]);
+
 export const featureKindSchema = z.enum(["CORE", "BUSINESS_PACK", "OPTIONAL"]);
 
 export type RecordStatus = z.infer<typeof recordStatusSchema>;
@@ -298,6 +333,15 @@ export type DeviceKind = z.infer<typeof deviceKindSchema>;
 export type DeviceStatus = z.infer<typeof deviceStatusSchema>;
 export type OfflineQueueStatus = z.infer<typeof offlineQueueStatusSchema>;
 export type SyncConflictStatus = z.infer<typeof syncConflictStatusSchema>;
+export type DataExportStatus = z.infer<typeof dataExportStatusSchema>;
+export type WebhookSubscriptionStatus = z.infer<typeof webhookSubscriptionStatusSchema>;
+export type WebhookDeliveryStatus = z.infer<typeof webhookDeliveryStatusSchema>;
+export type MigrationValidationStatus = z.infer<typeof migrationValidationStatusSchema>;
+export type SecurityEventSeverity = z.infer<typeof securityEventSeveritySchema>;
+export type BackupRunStatus = z.infer<typeof backupRunStatusSchema>;
+export type ReadinessCheckStatus = z.infer<typeof readinessCheckStatusSchema>;
+export type PrivacyRequestStatus = z.infer<typeof privacyRequestStatusSchema>;
+export type ReleaseReadinessStatus = z.infer<typeof releaseReadinessStatusSchema>;
 export type FeatureKind = z.infer<typeof featureKindSchema>;
 
 /* -------------------------------------------------------------------------- */
@@ -1420,6 +1464,106 @@ export const resolveSyncConflictSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
+/* P7 - Reporting, integrations and migration                                 */
+/* -------------------------------------------------------------------------- */
+
+export const createSavedReportViewSchema = z.object({
+  code: shortCodeSchema,
+  name: z.string().trim().min(2).max(160),
+  reportType: z.string().trim().min(2).max(80),
+  filters: z.record(z.string(), z.unknown()).default({}),
+  columns: z.array(z.string().trim().min(1).max(80)).max(80).optional(),
+});
+
+export const requestDataExportSchema = z.object({
+  exportType: z.string().trim().min(2).max(80),
+  format: z.enum(["CSV", "XLSX", "JSON", "PDF"]).default("CSV"),
+  filters: optionalJsonRecordSchema,
+});
+
+export const createWebhookSubscriptionSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  endpointUrl: z.url().max(1000),
+  eventTypes: z.array(z.string().trim().min(2).max(120)).min(1).max(50),
+  secretHint: z.string().trim().max(120).optional(),
+});
+
+export const recordWebhookDeliverySchema = z.object({
+  subscriptionId: z.uuid(),
+  eventId: z.string().trim().min(2).max(120),
+  eventType: z.string().trim().min(2).max(120),
+  payload: z.record(z.string(), z.unknown()),
+  status: webhookDeliveryStatusSchema.default("PENDING"),
+  attempts: z.coerce.number().int().min(0).default(0),
+  lastError: z.string().trim().max(500).optional(),
+});
+
+export const createMigrationValidationSchema = z.object({
+  sourceName: z.string().trim().min(2).max(180),
+  entityKind: importEntityKindSchema,
+  totalRows: z.coerce.number().int().min(0),
+  validRows: z.coerce.number().int().min(0),
+  invalidRows: z.coerce.number().int().min(0),
+  warningRows: z.coerce.number().int().min(0).default(0),
+  errors: optionalJsonRecordSchema,
+  preview: optionalJsonRecordSchema,
+  reconciliation: optionalJsonRecordSchema,
+});
+
+/* -------------------------------------------------------------------------- */
+/* P8 - Security, operations and production readiness                          */
+/* -------------------------------------------------------------------------- */
+
+export const recordSecurityEventSchema = z.object({
+  eventType: z.string().trim().min(2).max(120),
+  severity: securityEventSeveritySchema.default("INFO"),
+  subjectType: z.string().trim().max(80).optional(),
+  subjectId: z.string().trim().max(80).optional(),
+  detail: z.string().trim().min(2).max(500),
+  metadata: optionalJsonRecordSchema,
+});
+
+export const recordBackupRunSchema = z.object({
+  scope: z.string().trim().min(2).max(120),
+  status: backupRunStatusSchema,
+  storageReference: z.string().trim().max(500).optional(),
+  sizeBytes: z.coerce.number().int().min(0).optional(),
+  recoveryPointObjective: z.string().trim().max(80).optional(),
+  recoveryTimeObjective: z.string().trim().max(80).optional(),
+  failureReason: z.string().trim().max(500).optional(),
+  restoreTested: z.boolean().default(false),
+});
+
+export const upsertReadinessCheckSchema = z.object({
+  area: z.string().trim().min(2).max(80),
+  name: z.string().trim().min(2).max(160),
+  status: readinessCheckStatusSchema,
+  target: z.string().trim().max(120).optional(),
+  measuredValue: z.string().trim().max(120).optional(),
+  notes: z.string().trim().max(500).optional(),
+});
+
+export const createPrivacyRequestSchema = z.object({
+  customerId: z.uuid().optional(),
+  requestType: z.string().trim().min(2).max(80),
+  requester: z.string().trim().min(2).max(180),
+  dueDate: z.iso.date().optional(),
+});
+
+export const resolvePrivacyRequestSchema = z.object({
+  status: privacyRequestStatusSchema.exclude(["OPEN"]),
+  resolution: z.string().trim().min(2).max(500),
+});
+
+export const createReleaseReadinessSchema = z.object({
+  version: z.string().trim().min(1).max(80),
+  status: releaseReadinessStatusSchema.default("DRAFT"),
+  checklist: z.record(z.string(), z.unknown()),
+  rollbackPlan: z.string().trim().min(2).max(1000),
+  migrationPlan: z.string().trim().max(1000).optional(),
+});
+
+/* -------------------------------------------------------------------------- */
 /* Input types                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -1531,6 +1675,17 @@ export type HeartbeatDeviceInput = z.output<typeof heartbeatDeviceSchema>;
 export type QueueOfflineOperationInput = z.output<typeof queueOfflineOperationSchema>;
 export type MarkOfflineQueueItemInput = z.output<typeof markOfflineQueueItemSchema>;
 export type ResolveSyncConflictInput = z.output<typeof resolveSyncConflictSchema>;
+export type CreateSavedReportViewInput = z.output<typeof createSavedReportViewSchema>;
+export type RequestDataExportInput = z.output<typeof requestDataExportSchema>;
+export type CreateWebhookSubscriptionInput = z.output<typeof createWebhookSubscriptionSchema>;
+export type RecordWebhookDeliveryInput = z.output<typeof recordWebhookDeliverySchema>;
+export type CreateMigrationValidationInput = z.output<typeof createMigrationValidationSchema>;
+export type RecordSecurityEventInput = z.output<typeof recordSecurityEventSchema>;
+export type RecordBackupRunInput = z.output<typeof recordBackupRunSchema>;
+export type UpsertReadinessCheckInput = z.output<typeof upsertReadinessCheckSchema>;
+export type CreatePrivacyRequestInput = z.output<typeof createPrivacyRequestSchema>;
+export type ResolvePrivacyRequestInput = z.output<typeof resolvePrivacyRequestSchema>;
+export type CreateReleaseReadinessInput = z.output<typeof createReleaseReadinessSchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Response contracts                                                          */
@@ -2453,6 +2608,167 @@ export interface StoreReliabilityOverview {
   conflicts: SyncConflictRow[];
 }
 
+export interface SavedReportViewRow {
+  id: string;
+  code: string;
+  name: string;
+  reportType: string;
+  createdAt: string;
+}
+
+export interface DataExportRequestRow {
+  id: string;
+  exportType: string;
+  format: string;
+  status: DataExportStatus;
+  requestedAt: string;
+  completedAt: string | null;
+  expiresAt: string | null;
+}
+
+export interface WebhookSubscriptionRow {
+  id: string;
+  name: string;
+  endpointUrl: string;
+  eventTypes: string[];
+  status: WebhookSubscriptionStatus;
+  createdAt: string;
+}
+
+export interface WebhookDeliveryRow {
+  id: string;
+  subscriptionName: string | null;
+  eventId: string;
+  eventType: string;
+  status: WebhookDeliveryStatus;
+  attempts: number;
+  lastError: string | null;
+  createdAt: string;
+  deliveredAt: string | null;
+}
+
+export interface MigrationValidationRow {
+  id: string;
+  sourceName: string;
+  entityKind: ImportEntityKind;
+  status: MigrationValidationStatus;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  warningRows: number;
+  createdAt: string;
+  approvedAt: string | null;
+}
+
+export interface ReportingOperationsOverview {
+  counts: {
+    sales: number;
+    stockBalances: number;
+    customerInvoices: number;
+    customers: number;
+    savedReportViews: number;
+    queuedExports: number;
+    activeWebhooks: number;
+    failedDeliveries: number;
+    migrationValidations: number;
+  };
+  salesSummary: {
+    totalSales: number;
+    totalRevenue: number;
+    totalTax: number;
+    currencyCode: string;
+  };
+  stockSummary: {
+    totalOnHand: number;
+    totalAvailable: number;
+    lowStockItems: number;
+  };
+  financeSummary: {
+    receivables: number;
+    payables: number;
+    expenses: number;
+    cashAndBank: number;
+  };
+  savedViews: SavedReportViewRow[];
+  exports: DataExportRequestRow[];
+  webhooks: WebhookSubscriptionRow[];
+  deliveries: WebhookDeliveryRow[];
+  migrations: MigrationValidationRow[];
+}
+
+export interface SecurityEventRow {
+  id: string;
+  eventType: string;
+  severity: SecurityEventSeverity;
+  subjectType: string | null;
+  subjectId: string | null;
+  detail: string;
+  occurredAt: string;
+}
+
+export interface BackupRunRow {
+  id: string;
+  scope: string;
+  status: BackupRunStatus;
+  storageReference: string | null;
+  sizeBytes: number | null;
+  recoveryPointObjective: string | null;
+  recoveryTimeObjective: string | null;
+  restoreTestedAt: string | null;
+  failureReason: string | null;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export interface ReadinessCheckRow {
+  id: string;
+  area: string;
+  name: string;
+  status: ReadinessCheckStatus;
+  target: string | null;
+  measuredValue: string | null;
+  notes: string | null;
+  checkedAt: string;
+}
+
+export interface PrivacyRequestRow {
+  id: string;
+  customerName: string | null;
+  requestType: string;
+  requester: string;
+  status: PrivacyRequestStatus;
+  dueDate: string | null;
+  resolution: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface ReleaseReadinessRow {
+  id: string;
+  version: string;
+  status: ReleaseReadinessStatus;
+  rollbackPlan: string;
+  migrationPlan: string | null;
+  createdAt: string;
+  releasedAt: string | null;
+}
+
+export interface ProductionReadinessOverview {
+  counts: {
+    criticalSecurityEvents: number;
+    failedBackups: number;
+    failedReadinessChecks: number;
+    openPrivacyRequests: number;
+    blockedReleases: number;
+    auditEvents: number;
+  };
+  securityEvents: SecurityEventRow[];
+  backupRuns: BackupRunRow[];
+  readinessChecks: ReadinessCheckRow[];
+  privacyRequests: PrivacyRequestRow[];
+  releases: ReleaseReadinessRow[];
+}
+
 export interface BusinessFoundationCreated {
   businessId: string;
   branchId: string;
@@ -2531,7 +2847,7 @@ export interface PermissionCatalogEntry {
   code: string;
   name: string;
   area: string;
-  phase: "P0" | "P1" | "P2" | "P3" | "P4" | "P5" | "P6";
+  phase: "P0" | "P1" | "P2" | "P3" | "P4" | "P5" | "P6" | "P7" | "P8";
   sensitive: boolean;
 }
 

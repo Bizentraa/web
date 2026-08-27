@@ -133,13 +133,15 @@ async function main() {
   const financeRole = access.roles.find((role) => role.code === "FINANCE_USER");
   const operationsRole = access.roles.find((role) => role.code === "OPERATIONS_USER");
   const deviceRole = access.roles.find((role) => role.code === "DEVICE_USER");
+  const reportingRole = access.roles.find((role) => role.code === "REPORTING_USER");
+  const operationsAdminRole = access.roles.find((role) => role.code === "OPERATIONS_ADMIN");
   check("Role templates were created with the Business", Boolean(cashierRole && adminRole));
   check(
     "Cashier Role cannot manage Roles",
     Boolean(cashierRole) && !cashierRole.permissions.includes("ROLE_MANAGE"),
   );
   check(
-    "Permission catalogue covers P0, P1, P2, P3, P4, P5 and P6",
+    "Permission catalogue covers P0 through P8",
     access.permissionCatalog.some((permission) => permission.code === "INVENTORY_VIEW") &&
       access.permissionCatalog.some((permission) => permission.phase === "P3") &&
       access.permissionCatalog.some((permission) => permission.code === "AR_MANAGE") &&
@@ -147,7 +149,11 @@ async function main() {
       access.permissionCatalog.some((permission) => permission.code === "WORK_TICKET_MANAGE") &&
       access.permissionCatalog.some((permission) => permission.phase === "P5") &&
       access.permissionCatalog.some((permission) => permission.code === "OFFLINE_MANAGE") &&
-      access.permissionCatalog.some((permission) => permission.phase === "P6"),
+      access.permissionCatalog.some((permission) => permission.phase === "P6") &&
+      access.permissionCatalog.some((permission) => permission.code === "REPORT_EXPORT") &&
+      access.permissionCatalog.some((permission) => permission.phase === "P7") &&
+      access.permissionCatalog.some((permission) => permission.code === "RELEASE_MANAGE") &&
+      access.permissionCatalog.some((permission) => permission.phase === "P8"),
   );
   check(
     "Business Administrator Role receives P3 permissions",
@@ -187,6 +193,20 @@ async function main() {
     Boolean(deviceRole) &&
       deviceRole.permissions.includes("DEVICE_MANAGE") &&
       deviceRole.permissions.includes("OFFLINE_MANAGE"),
+  );
+  check(
+    "Reporting User Role receives P7 permissions",
+    Boolean(reportingRole) &&
+      reportingRole.permissions.includes("REPORT_EXPORT") &&
+      reportingRole.permissions.includes("INTEGRATION_MANAGE") &&
+      reportingRole.permissions.includes("MIGRATION_MANAGE"),
+  );
+  check(
+    "Operations Admin Role receives P8 permissions",
+    Boolean(operationsAdminRole) &&
+      operationsAdminRole.permissions.includes("SECURITY_MANAGE") &&
+      operationsAdminRole.permissions.includes("OPERATIONS_MANAGE") &&
+      operationsAdminRole.permissions.includes("RELEASE_MANAGE"),
   );
 
   const manager = await call(`/businesses/${owner.businessId}/users`, {
@@ -1174,6 +1194,223 @@ async function main() {
   );
   check("Sync conflict can be resolved", true);
 
+  /* ------------------------------------------- P7 reporting and integrations */
+  console.log("\nP7 reporting, integrations and migration");
+  const initialReporting = await call(
+    `/businesses/${owner.businessId}/reporting-operations/overview`,
+    {
+      identity: owner,
+    },
+  );
+  check("Reporting overview loads for Business Owner", Boolean(initialReporting.counts));
+
+  const reportView = await call(
+    `/businesses/${owner.businessId}/reporting-operations/report-views`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        code: `DAILY${stamp.slice(-6)}`,
+        name: "Daily sales smoke view",
+        reportType: "SALES",
+        filters: { dateRange: "TODAY", branchId: mainBranchId },
+        columns: ["number", "total", "taxTotal"],
+      },
+    },
+  );
+  check("Saved report view can be created", Boolean(reportView.id));
+
+  const exportRequest = await call(`/businesses/${owner.businessId}/reporting-operations/exports`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      exportType: "SALES",
+      format: "CSV",
+      filters: { dateRange: "TODAY" },
+    },
+  });
+  check("Data export request can be queued", Boolean(exportRequest.id));
+
+  const webhook = await call(`/businesses/${owner.businessId}/reporting-operations/webhooks`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      name: "Smoke integration webhook",
+      endpointUrl: `https://example.com/webhooks/${stamp}`,
+      eventTypes: ["sale.confirmed", "stock.changed"],
+      secretHint: `hint-${stamp.slice(-4)}`,
+    },
+  });
+  check("Webhook subscription can be created", Boolean(webhook.id));
+
+  const webhookDelivery = await call(
+    `/businesses/${owner.businessId}/reporting-operations/webhook-deliveries`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        subscriptionId: webhook.id,
+        eventId: key("webhook-event"),
+        eventType: "sale.confirmed",
+        payload: { source: "smoke" },
+        status: "FAILED",
+        attempts: 3,
+        lastError: "Smoke delivery failure",
+      },
+    },
+  );
+  check("Webhook delivery failure can be recorded", Boolean(webhookDelivery.id));
+
+  const migrationValidation = await call(
+    `/businesses/${owner.businessId}/reporting-operations/migration-validations`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        sourceName: "Legacy item master",
+        entityKind: "ITEMS",
+        totalRows: 10,
+        validRows: 9,
+        invalidRows: 1,
+        warningRows: 2,
+        errors: { row10: "Missing barcode" },
+        preview: { sample: ["Milk", "Bread"] },
+        reconciliation: { expected: 10, accepted: 9 },
+      },
+    },
+  );
+  check("Migration validation can be recorded", Boolean(migrationValidation.id));
+
+  const reportingOverview = await call(
+    `/businesses/${owner.businessId}/reporting-operations/overview`,
+    {
+      identity: owner,
+    },
+  );
+  check(
+    "Reporting overview reports saved view, export, webhook and migration records",
+    reportingOverview.savedViews.some((row) => row.id === reportView.id) &&
+      reportingOverview.exports.some((row) => row.id === exportRequest.id) &&
+      reportingOverview.webhooks.some((row) => row.id === webhook.id) &&
+      reportingOverview.deliveries.some((row) => row.id === webhookDelivery.id) &&
+      reportingOverview.migrations.some((row) => row.id === migrationValidation.id),
+  );
+
+  /* ------------------------------------------- P8 production readiness */
+  console.log("\nP8 security, operations and production readiness");
+  const initialReadiness = await call(
+    `/businesses/${owner.businessId}/production-readiness/overview`,
+    {
+      identity: owner,
+    },
+  );
+  check("Production readiness overview loads for Business Owner", Boolean(initialReadiness.counts));
+
+  const securityEvent = await call(
+    `/businesses/${owner.businessId}/production-readiness/security-events`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        eventType: "MFA_REVIEW",
+        severity: "WARNING",
+        subjectType: "User",
+        subjectId: foundation.ownerUserId,
+        detail: "Smoke privileged account review",
+        metadata: { source: "smoke" },
+      },
+    },
+  );
+  check("Security event can be recorded", Boolean(securityEvent.id));
+
+  const backupRun = await call(`/businesses/${owner.businessId}/production-readiness/backup-runs`, {
+    method: "POST",
+    identity: owner,
+    body: {
+      scope: "Primary PostgreSQL",
+      status: "COMPLETED",
+      storageReference: `backup://${stamp}`,
+      sizeBytes: 1024,
+      recoveryPointObjective: "15 minutes",
+      recoveryTimeObjective: "2 hours",
+      restoreTested: true,
+    },
+  });
+  check("Backup and restore-test evidence can be recorded", Boolean(backupRun.id));
+
+  const readinessCheck = await call(
+    `/businesses/${owner.businessId}/production-readiness/readiness-checks`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        area: "Performance",
+        name: `POS smoke response ${stamp}`,
+        status: "PASS",
+        target: "Under 2 seconds",
+        measuredValue: "1.2 seconds",
+        notes: "Smoke evidence",
+      },
+    },
+  );
+  check("Readiness check can be saved", Boolean(readinessCheck.id));
+
+  const privacyRequest = await call(
+    `/businesses/${owner.businessId}/production-readiness/privacy-requests`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        customerId: customer.id,
+        requestType: "EXPORT",
+        requester: `customer-${stamp}@example.com`,
+        dueDate: "2026-12-31",
+      },
+    },
+  );
+  check("Privacy request can be opened", Boolean(privacyRequest.id));
+
+  await call(
+    `/businesses/${owner.businessId}/production-readiness/privacy-requests/${privacyRequest.id}`,
+    {
+      method: "PATCH",
+      identity: owner,
+      body: { status: "COMPLETED", resolution: "Smoke privacy export completed" },
+    },
+  );
+  check("Privacy request can be resolved", true);
+
+  const releaseReadiness = await call(
+    `/businesses/${owner.businessId}/production-readiness/releases`,
+    {
+      method: "POST",
+      identity: owner,
+      body: {
+        version: `smoke-${stamp}`,
+        status: "READY",
+        checklist: { tests: "PASS", migration: "PASS", backup: "PASS", rollback: "READY" },
+        rollbackPlan: "Restore previous application version and database backup.",
+        migrationPlan: "Apply migrations before enabling traffic.",
+      },
+    },
+  );
+  check("Release readiness can be saved", Boolean(releaseReadiness.id));
+
+  const readinessOverview = await call(
+    `/businesses/${owner.businessId}/production-readiness/overview`,
+    {
+      identity: owner,
+    },
+  );
+  check(
+    "Production readiness overview reports security, backup, readiness, privacy and release records",
+    readinessOverview.securityEvents.some((row) => row.id === securityEvent.id) &&
+      readinessOverview.backupRuns.some((row) => row.id === backupRun.id) &&
+      readinessOverview.readinessChecks.some((row) => row.id === readinessCheck.id) &&
+      readinessOverview.privacyRequests.some((row) => row.id === privacyRequest.id) &&
+      readinessOverview.releases.some((row) => row.id === releaseReadiness.id),
+  );
+
   /* ------------------------------------------------------------ P2 selling */
   console.log("\nP2 shift, sale, payment and receipt");
   const shift = await call(`/businesses/${owner.businessId}/pos/shifts`, {
@@ -1546,8 +1783,14 @@ async function main() {
   const audit = await call(`/businesses/${owner.businessId}/audit?pageSize=100`, {
     identity: owner,
   });
+  const setupAudit = await call(
+    `/businesses/${owner.businessId}/audit?entityType=BusinessFoundation&pageSize=10`,
+    {
+      identity: owner,
+    },
+  );
   const actions = new Set(audit.rows.map((row) => row.entityType));
-  check("Audit records cover the Business setup", actions.has("BusinessFoundation"));
+  check("Audit records cover the Business setup", setupAudit.rows.length > 0);
   check("Audit records cover selling", actions.has("Sale") && actions.has("SaleReturn"));
   check("Audit records cover approvals", actions.has("ApprovalRequest"));
   check(
@@ -1574,6 +1817,21 @@ async function main() {
   check(
     "Audit records cover store reliability",
     actions.has("StoreDevice") && actions.has("OfflineQueueItem") && actions.has("SyncConflict"),
+  );
+  check(
+    "Audit records cover reporting and integration operations",
+    actions.has("SavedReportView") &&
+      actions.has("DataExportRequest") &&
+      actions.has("WebhookSubscription") &&
+      actions.has("MigrationValidation"),
+  );
+  check(
+    "Audit records cover production readiness",
+    actions.has("SecurityEvent") &&
+      actions.has("BackupRun") &&
+      actions.has("ReadinessCheck") &&
+      actions.has("PrivacyRequest") &&
+      actions.has("ReleaseReadiness"),
   );
 
   const sequences = await call(`/businesses/${owner.businessId}/document-numbers`, {

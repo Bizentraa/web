@@ -42,14 +42,18 @@ import type {
   CreateItemTagInput,
   CreateItemVariantInput,
   CreateLocationInput,
+  CreateMigrationValidationInput,
   CreateNotificationEventInput,
   CreatePriceListInput,
+  CreatePrivacyRequestInput,
   CreatePromotionInput,
   CreatePurchaseOrderInput,
   CreatePurchaseRequestInput,
+  CreateReleaseReadinessInput,
   CreateReturnInput,
   CreateRoleInput,
   CreateSaleInput,
+  CreateSavedReportViewInput,
   CreateSupplierBillInput,
   CreateSupplierInput,
   CreateTaxCategoryInput,
@@ -58,6 +62,7 @@ import type {
   CreateUnitConversionInput,
   CreateUnitInput,
   CreateWarrantyClaimInput,
+  CreateWebhookSubscriptionInput,
   CreateWorkflowStatusInput,
   CreateWorkflowTransitionInput,
   CreateWorkTicketInput,
@@ -91,12 +96,19 @@ import type {
   PostMaterialConsumptionInput,
   QueueOfflineOperationInput,
   PromotionRow,
+  ProductionReadinessOverview,
   QuoteSaleInput,
   ReceiptDocument,
   RegisterDeviceInput,
   ReceivePurchaseOrderInput,
+  RecordBackupRunInput,
+  RecordSecurityEventInput,
+  RecordWebhookDeliveryInput,
+  ReportingOperationsOverview,
+  RequestDataExportInput,
   ReorderSettingInput,
   ResolvePaymentInput,
+  ResolvePrivacyRequestInput,
   ResolveSyncConflictInput,
   ReturnResult,
   SaleDetail,
@@ -134,6 +146,7 @@ import type {
   UpdateTaxRateInput,
   UpdateUnitInput,
   UpdateWorkTicketStatusInput,
+  UpsertReadinessCheckInput,
   UpsertApprovalPolicyInput,
   UpsertDocumentSequenceInput,
   UpsertItemPriceInput,
@@ -573,6 +586,68 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
         `/businesses/${businessId}/store-reliability/sync-conflicts/${conflictId}`,
         input,
       ),
+
+    /* -------------------------------- P7 reporting, integrations and migration */
+    getReportingOperationsOverview: (businessId: string) =>
+      request<ReportingOperationsOverview>(
+        `/businesses/${businessId}/reporting-operations/overview`,
+      ),
+    createSavedReportView: (businessId: string, input: CreateSavedReportViewInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/reporting-operations/report-views`,
+        input,
+      ),
+    requestDataExport: (businessId: string, input: RequestDataExportInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/reporting-operations/exports`, input),
+    createWebhookSubscription: (businessId: string, input: CreateWebhookSubscriptionInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/reporting-operations/webhooks`, input),
+    recordWebhookDelivery: (businessId: string, input: RecordWebhookDeliveryInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/reporting-operations/webhook-deliveries`,
+        input,
+      ),
+    createMigrationValidation: (businessId: string, input: CreateMigrationValidationInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/reporting-operations/migration-validations`,
+        input,
+      ),
+
+    /* ------------------------------- P8 security and production readiness */
+    getProductionReadinessOverview: (businessId: string) =>
+      request<ProductionReadinessOverview>(
+        `/businesses/${businessId}/production-readiness/overview`,
+      ),
+    recordSecurityEvent: (businessId: string, input: RecordSecurityEventInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/production-readiness/security-events`,
+        input,
+      ),
+    recordBackupRun: (businessId: string, input: RecordBackupRunInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/production-readiness/backup-runs`,
+        input,
+      ),
+    upsertReadinessCheck: (businessId: string, input: UpsertReadinessCheckInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/production-readiness/readiness-checks`,
+        input,
+      ),
+    createPrivacyRequest: (businessId: string, input: CreatePrivacyRequestInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/production-readiness/privacy-requests`,
+        input,
+      ),
+    resolvePrivacyRequest: (
+      businessId: string,
+      privacyRequestId: string,
+      input: ResolvePrivacyRequestInput,
+    ) =>
+      patch<CatalogRecordCreated>(
+        `/businesses/${businessId}/production-readiness/privacy-requests/${privacyRequestId}`,
+        input,
+      ),
+    createReleaseReadiness: (businessId: string, input: CreateReleaseReadinessInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/production-readiness/releases`, input),
 
     /* ------------------------------------------------------------- P2 POS */
     openShift: (businessId: string, input: OpenShiftInput) =>

@@ -416,6 +416,67 @@ enum SyncConflictStatus {
   IGNORED
 }
 
+enum DataExportStatus {
+  QUEUED
+  READY
+  FAILED
+  EXPIRED
+}
+
+enum WebhookSubscriptionStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum WebhookDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  DEAD_LETTER
+}
+
+enum MigrationValidationStatus {
+  RECEIVED
+  VALIDATED
+  FAILED
+  APPROVED
+}
+
+enum SecurityEventSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum BackupRunStatus {
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  FAILED
+  RESTORE_TESTED
+}
+
+enum ReadinessCheckStatus {
+  PASS
+  WARNING
+  FAIL
+  NOT_RUN
+}
+
+enum PrivacyRequestStatus {
+  OPEN
+  COMPLETED
+  REJECTED
+}
+
+enum ReleaseReadinessStatus {
+  DRAFT
+  READY
+  BLOCKED
+  RELEASED
+  ROLLED_BACK
+}
+
 model Business {
   id              String       @id @default(uuid()) @db.Uuid
   slug            String       @unique @db.VarChar(80)
@@ -493,6 +554,16 @@ model Business {
   devices              StoreDevice[]
   offlineQueueItems    OfflineQueueItem[]
   syncConflicts        SyncConflict[]
+  savedReportViews     SavedReportView[]
+  dataExports          DataExportRequest[]
+  webhookSubscriptions WebhookSubscription[]
+  webhookDeliveries    WebhookDelivery[]
+  migrationValidations MigrationValidation[]
+  securityEvents       SecurityEvent[]
+  backupRuns           BackupRun[]
+  readinessChecks      ReadinessCheck[]
+  privacyRequests      PrivacyRequest[]
+  releaseReadiness     ReleaseReadiness[]
 
   @@map("businesses")
 }
@@ -872,17 +943,18 @@ model Customer {
   createdAt      DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
 
-  business       Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  group          CustomerGroup?       @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
-  sales          Sale[]
-  storeCredit    StoreCreditAccount?
-  invoices       CustomerInvoice[]
-  collections    CustomerCollection[]
-  loyalty        LoyaltyAccount?
-  loyaltyEntries LoyaltyEntry[]
-  assets         CustomerAsset[]
-  bookings       Booking[]
-  warrantyClaims WarrantyClaim[]
+  business        Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  group           CustomerGroup?       @relation(fields: [groupId, businessId], references: [id, businessId], onDelete: Restrict)
+  sales           Sale[]
+  storeCredit     StoreCreditAccount?
+  invoices        CustomerInvoice[]
+  collections     CustomerCollection[]
+  loyalty         LoyaltyAccount?
+  loyaltyEntries  LoyaltyEntry[]
+  assets          CustomerAsset[]
+  bookings        Booking[]
+  warrantyClaims  WarrantyClaim[]
+  privacyRequests PrivacyRequest[]
 
   @@unique([businessId, code])
   @@unique([id, businessId])
@@ -1123,6 +1195,15 @@ model BusinessMembership {
   devices              StoreDevice[]         @relation("DeviceRegisteredBy")
   offlineQueueItems    OfflineQueueItem[]    @relation("OfflineQueueCreatedBy")
   resolvedConflicts    SyncConflict[]        @relation("SyncConflictResolvedBy")
+  savedReportViews     SavedReportView[]     @relation("ReportViewCreatedBy")
+  dataExports          DataExportRequest[]   @relation("DataExportRequestedBy")
+  migrationValidations MigrationValidation[] @relation("MigrationValidationCreatedBy")
+  securityEvents       SecurityEvent[]       @relation("SecurityEventRecordedBy")
+  backupRuns           BackupRun[]           @relation("BackupRunRecordedBy")
+  readinessChecks      ReadinessCheck[]      @relation("ReadinessCheckRecordedBy")
+  privacyRequests      PrivacyRequest[]      @relation("PrivacyRequestCreatedBy")
+  resolvedPrivacy      PrivacyRequest[]      @relation("PrivacyRequestResolvedBy")
+  releaseReadiness     ReleaseReadiness[]    @relation("ReleaseReadinessCreatedBy")
 
   @@unique([businessId, userId])
   @@unique([id, businessId])
@@ -2677,4 +2758,233 @@ model SyncConflict {
   @@unique([id, businessId])
   @@index([businessId, status, createdAt])
   @@map("sync_conflicts")
+}
+
+/// CC-P7-001 to CC-P7-005: saved report views store reusable filters without mutating source records.
+model SavedReportView {
+  id                    String   @id @default(uuid()) @db.Uuid
+  businessId            String   @db.Uuid
+  code                  String   @db.VarChar(80)
+  name                  String   @db.VarChar(160)
+  reportType            String   @db.VarChar(80)
+  filters               Json
+  columns               Json?
+  createdByMembershipId String   @db.Uuid
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  createdBy BusinessMembership @relation("ReportViewCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, code])
+  @@unique([id, businessId])
+  @@index([businessId, reportType])
+  @@map("saved_report_views")
+}
+
+/// CC-P7-009: export requests are auditable and separate from report calculation.
+model DataExportRequest {
+  id                      String           @id @default(uuid()) @db.Uuid
+  businessId              String           @db.Uuid
+  exportType              String           @db.VarChar(80)
+  format                  String           @db.VarChar(20)
+  filters                 Json?
+  status                  DataExportStatus @default(QUEUED)
+  fileUrl                 String?          @db.VarChar(1000)
+  failureReason           String?          @db.VarChar(500)
+  requestedByMembershipId String           @db.Uuid
+  requestedAt             DateTime         @default(now()) @db.Timestamptz(3)
+  completedAt             DateTime?        @db.Timestamptz(3)
+  expiresAt               DateTime?        @db.Timestamptz(3)
+
+  business    Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  requestedBy BusinessMembership @relation("DataExportRequestedBy", fields: [requestedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, exportType, status])
+  @@map("data_export_requests")
+}
+
+/// CC-P7-007: webhook subscriptions define signed event delivery targets.
+model WebhookSubscription {
+  id          String                    @id @default(uuid()) @db.Uuid
+  businessId  String                    @db.Uuid
+  name        String                    @db.VarChar(160)
+  endpointUrl String                    @db.VarChar(1000)
+  eventTypes  Json
+  secretHint  String?                   @db.VarChar(120)
+  status      WebhookSubscriptionStatus @default(ACTIVE)
+  createdAt   DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime                  @updatedAt @db.Timestamptz(3)
+
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  deliveries WebhookDelivery[]
+
+  @@unique([id, businessId])
+  @@index([businessId, status])
+  @@map("webhook_subscriptions")
+}
+
+/// CC-P7-008: webhook delivery attempts are retryable and can become operator-visible failures.
+model WebhookDelivery {
+  id             String                @id @default(uuid()) @db.Uuid
+  businessId     String                @db.Uuid
+  subscriptionId String                @db.Uuid
+  eventId        String                @db.VarChar(120)
+  eventType      String                @db.VarChar(120)
+  payload        Json
+  status         WebhookDeliveryStatus @default(PENDING)
+  attempts       Int                   @default(0)
+  nextAttemptAt  DateTime?             @db.Timestamptz(3)
+  lastError      String?               @db.VarChar(500)
+  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
+  deliveredAt    DateTime?             @db.Timestamptz(3)
+
+  business     Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  subscription WebhookSubscription @relation(fields: [subscriptionId, businessId], references: [id, businessId], onDelete: Cascade)
+
+  @@unique([businessId, subscriptionId, eventId])
+  @@unique([id, businessId])
+  @@index([businessId, status, nextAttemptAt])
+  @@map("webhook_deliveries")
+}
+
+/// CC-P7-010: migration validation previews totals/errors before any final import commit.
+model MigrationValidation {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  businessId            String                    @db.Uuid
+  sourceName            String                    @db.VarChar(180)
+  entityKind            ImportEntityKind
+  status                MigrationValidationStatus @default(RECEIVED)
+  totalRows             Int                       @default(0)
+  validRows             Int                       @default(0)
+  invalidRows           Int                       @default(0)
+  warningRows           Int                       @default(0)
+  errors                Json?
+  preview               Json?
+  reconciliation        Json?
+  createdByMembershipId String                    @db.Uuid
+  createdAt             DateTime                  @default(now()) @db.Timestamptz(3)
+  approvedAt            DateTime?                 @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  createdBy BusinessMembership @relation("MigrationValidationCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, entityKind, status])
+  @@map("migration_validations")
+}
+
+/// CC-P8-001 to CC-P8-003: security events make sensitive activity visible to operators.
+model SecurityEvent {
+  id                     String                @id @default(uuid()) @db.Uuid
+  businessId             String                @db.Uuid
+  eventType              String                @db.VarChar(120)
+  severity               SecurityEventSeverity @default(INFO)
+  subjectType            String?               @db.VarChar(80)
+  subjectId              String?               @db.VarChar(80)
+  detail                 String                @db.VarChar(500)
+  metadata               Json?
+  recordedByMembershipId String?               @db.Uuid
+  occurredAt             DateTime              @default(now()) @db.Timestamptz(3)
+
+  business   Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  recordedBy BusinessMembership? @relation("SecurityEventRecordedBy", fields: [recordedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, severity, occurredAt])
+  @@map("security_events")
+}
+
+/// CC-P8-004 and CC-P8-005: backup records and restore-test evidence.
+model BackupRun {
+  id                     String          @id @default(uuid()) @db.Uuid
+  businessId             String          @db.Uuid
+  scope                  String          @db.VarChar(120)
+  status                 BackupRunStatus @default(SCHEDULED)
+  storageReference       String?         @db.VarChar(500)
+  sizeBytes              BigInt?
+  recoveryPointObjective String?         @db.VarChar(80)
+  recoveryTimeObjective  String?         @db.VarChar(80)
+  restoreTestedAt        DateTime?       @db.Timestamptz(3)
+  failureReason          String?         @db.VarChar(500)
+  recordedByMembershipId String?         @db.Uuid
+  startedAt              DateTime        @default(now()) @db.Timestamptz(3)
+  completedAt            DateTime?       @db.Timestamptz(3)
+
+  business   Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  recordedBy BusinessMembership? @relation("BackupRunRecordedBy", fields: [recordedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, status, startedAt])
+  @@map("backup_runs")
+}
+
+/// CC-P8-006 to CC-P8-008 and CC-P8-010: operational checks for go-live readiness.
+model ReadinessCheck {
+  id                     String               @id @default(uuid()) @db.Uuid
+  businessId             String               @db.Uuid
+  area                   String               @db.VarChar(80)
+  name                   String               @db.VarChar(160)
+  status                 ReadinessCheckStatus @default(NOT_RUN)
+  target                 String?              @db.VarChar(120)
+  measuredValue          String?              @db.VarChar(120)
+  notes                  String?              @db.VarChar(500)
+  recordedByMembershipId String?              @db.Uuid
+  checkedAt              DateTime             @default(now()) @db.Timestamptz(3)
+
+  business   Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  recordedBy BusinessMembership? @relation("ReadinessCheckRecordedBy", fields: [recordedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, area, name])
+  @@unique([id, businessId])
+  @@index([businessId, status, checkedAt])
+  @@map("readiness_checks")
+}
+
+/// CC-P8-009: privacy requests track customer-data access, export, retention or deletion work.
+model PrivacyRequest {
+  id                     String               @id @default(uuid()) @db.Uuid
+  businessId             String               @db.Uuid
+  customerId             String?              @db.Uuid
+  requestType            String               @db.VarChar(80)
+  requester              String               @db.VarChar(180)
+  status                 PrivacyRequestStatus @default(OPEN)
+  dueDate                DateTime?            @db.Date
+  resolution             String?              @db.VarChar(500)
+  createdByMembershipId  String               @db.Uuid
+  resolvedByMembershipId String?              @db.Uuid
+  createdAt              DateTime             @default(now()) @db.Timestamptz(3)
+  resolvedAt             DateTime?            @db.Timestamptz(3)
+
+  business   Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  customer   Customer?           @relation(fields: [customerId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy  BusinessMembership  @relation("PrivacyRequestCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  resolvedBy BusinessMembership? @relation("PrivacyRequestResolvedBy", fields: [resolvedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([id, businessId])
+  @@index([businessId, status, dueDate])
+  @@map("privacy_requests")
+}
+
+/// CC-P8-010: release readiness records evidence before a production release.
+model ReleaseReadiness {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  businessId            String                 @db.Uuid
+  version               String                 @db.VarChar(80)
+  status                ReleaseReadinessStatus @default(DRAFT)
+  checklist             Json
+  rollbackPlan          String                 @db.VarChar(1000)
+  migrationPlan         String?                @db.VarChar(1000)
+  createdByMembershipId String                 @db.Uuid
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  releasedAt            DateTime?              @db.Timestamptz(3)
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  createdBy BusinessMembership @relation("ReleaseReadinessCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, version])
+  @@unique([id, businessId])
+  @@index([businessId, status, createdAt])
+  @@map("release_readiness")
 }

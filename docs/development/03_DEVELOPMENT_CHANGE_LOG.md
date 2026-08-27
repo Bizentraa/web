@@ -82,6 +82,18 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P6 device/offline foundation scope | `CC-P6-001` to `CC-P6-008`, `CC-US-015` | `715fe73 feat: add common core P5 P6 engines and reliability` | Added store device registry, device heartbeat, offline queue idempotency, queue status updates, sync conflicts, conflict resolution, P6 permissions/role sync, API/client contracts, Back Office `/store-reliability` workspace and live smoke coverage. |
 
+### Common Core P7 Reporting, Integrations and Migration
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-27 | Implemented for current P7 reporting/integration/migration foundation scope | `CC-P7-001` to `CC-P7-010`, `CC-US-016`, `CC-US-017` | Uncommitted | Added reporting summaries from source records, saved report views, data export requests, webhook subscriptions/deliveries, migration validation records, P7 permissions/role sync, API/client contracts, Back Office `/reporting-operations` workspace and smoke coverage. |
+
+### Common Core P8 Security, Operations and Production Readiness
+
+| Date | Status | SRS mapping | Commit | Summary |
+|---|---|---|---|---|
+| 2026-08-27 | Implemented for current P8 production-readiness evidence foundation scope | `CC-P8-001` to `CC-P8-010`, `CC-US-018` | Uncommitted | Added security event, backup run, readiness check, privacy request and release-readiness evidence records, P8 permissions/role sync, API/client contracts, Back Office `/production-readiness` workspace and smoke coverage. |
+
 ### Common UI/UX System
 
 | Date | Status | SRS mapping | Commit | Summary |
@@ -288,6 +300,32 @@ Each change entry should include:
 | Commit | `715fe73 feat: add common core P5 P6 engines and reliability` |
 | Remaining work | P6 still needs real POS browser offline storage/replay, always-visible POS offline banner, sync queue drawer, payment-provider-specific offline risk restrictions, printer/scanner/cash-drawer adapters, conflict comparison UI and device pairing/revocation/lost-device lockout. |
 
+### 2026-08-27 - Common Core P7 Reporting, Integrations and Migration
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P7 reporting, integrations and migration foundation |
+| Status | Implemented for current P7 foundation scope |
+| SRS mapping | `CC-P7-001` Sales Reports; `CC-P7-002` Stock Reports; `CC-P7-003` Finance Reports; `CC-P7-004` Customer Reports; `CC-P7-005` Workforce Reports; `CC-P7-006` API; `CC-P7-007` Webhooks; `CC-P7-008` Integration Failure; `CC-P7-009` Data Export; `CC-P7-010` Migration Validation; `CC-US-016`; `CC-US-017` |
+| What changed | Added P7 database models for saved report views, data export requests, webhook subscriptions, webhook deliveries and migration validations. Added reporting overview summaries from existing sales, stock, finance and customer source records. Added P7 permissions, Reporting / Integration User role template and additive existing-role sync. Added API routes, API-client methods, Back Office `/reporting-operations` workspace and live smoke coverage. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260827100101_p7_p8_reporting_readiness/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/reporting-operations.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/reporting-operations.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/reporting-operations/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/13_P7_IMPLEMENTATION_STATUS.md` |
+| Verification | Prisma schema formatted and generated; database build passed; migration `20260827100101_p7_p8_reporting_readiness` applied with deploy mode; focused contracts, domain-business-access, API client, API and Back Office checks passed. |
+| Commit | Uncommitted |
+| Remaining work | P7 still needs real drill-down report pages, export file generation and secure download links, webhook signing-secret storage and worker delivery runtime, retry/dead-letter operator actions, migration validation wizard with approval/final commit/rollback linkage, saved filter management and data-freshness labels. |
+
+### 2026-08-27 - Common Core P8 Security, Operations and Production Readiness
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P8 security, operations and production-readiness evidence foundation |
+| Status | Implemented for current P8 foundation scope |
+| SRS mapping | `CC-P8-001` Security; `CC-P8-002` Authentication; `CC-P8-003` Audit Integrity; `CC-P8-004` Backup; `CC-P8-005` Disaster Recovery; `CC-P8-006` Observability; `CC-P8-007` Performance; `CC-P8-008` Scalability; `CC-P8-009` Privacy; `CC-P8-010` Release; `CC-US-018` |
+| What changed | Added P8 database models for security events, backup runs, readiness checks, privacy requests and release-readiness records. Added P8 permissions, Security / Operations Admin role template and additive existing-role sync. Added Production Readiness service rules for evidence capture, privacy request resolution and release-readiness upsert. Added API routes, API-client methods, Back Office `/production-readiness` workspace and live smoke coverage. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260827100101_p7_p8_reporting_readiness/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/production-readiness.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/production-readiness.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/production-readiness/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/14_P8_IMPLEMENTATION_STATUS.md` |
+| Verification | Prisma schema formatted and generated; database build passed; migration `20260827100101_p7_p8_reporting_readiness` applied with deploy mode; focused contracts, domain-business-access, API client, API and Back Office checks passed. |
+| Commit | Uncommitted |
+| Remaining work | P8 still needs production OIDC/session/MFA enforcement, infrastructure backup scheduler and restore automation, logs/metrics/traces dashboards, load tests and POS response targets, customer-data export/delete execution and retention enforcement, deployment pipeline gates, release approvals, rollback automation and database-level immutable audit tests. |
+
 ## 5. Consolidated Remaining Work Register
 
 This section lists remaining work that must be considered before a phase or UI/UX capability is treated as complete. It combines gaps from the SRS, UI/UX plan and the detailed change entries above.
@@ -380,20 +418,20 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| Reports | Sales, stock, finance, customer and workforce reports with drill-down to source records and no mutation from reports. |
-| APIs/webhooks | Authenticated APIs; signed/idempotent event webhooks; retry and dead-letter/error queue. |
-| Export/migration | Authorized data export; migration/import validation, preview, totals and reconciliation. |
-| UI/UX | Reporting dashboards, saved views, filters, export controls, data-freshness labels, integration state and migration workflow UI. |
+| Reports | Implemented for current scope: sales, stock, finance and customer source summaries plus saved report-view records. Remaining: real drill-down report pages, workforce metrics, date/Branch/user/channel filters and data-freshness labels. |
+| APIs/webhooks | Implemented for current scope: authenticated P7 API routes, webhook subscriptions and delivery/error records. Remaining: API key/OAuth model, signing-secret storage, worker delivery, retry scheduler and operator retry/skip actions. |
+| Export/migration | Implemented for current scope: authorized export request records and migration validation totals/errors/preview/reconciliation. Remaining: actual export file generation, secure download/expiry cleanup and migration approval/final commit/rollback linkage. |
+| UI/UX | Implemented for current scope: Back Office `/reporting-operations` workspace with KPI cards, report/export/webhook/migration tabs, tables and quick-create forms. Remaining: saved filter management, charting, drill-downs and migration wizard. |
 
 ### P8 - Security, Operations and Production Readiness
 
 | Area | Remaining work |
 |---|---|
-| Security/privacy | Encrypted transport, protected secrets, session controls, optional MFA, customer-data access/export/deletion/retention controls. |
-| Audit integrity | Broader immutable audit protection for critical financial/stock actions and auditor workflows. |
-| Backup/DR | Monitored backups, restore testing and defined recovery targets. |
-| Observability/performance | Logs, metrics, traces, business operation health, POS response-time targets and load testing. |
-| Release readiness | Automated tests, security checks, migration checks, backup readiness, rollback plan, accessibility QA and visual regression. |
+| Security/privacy | Implemented for current scope: security event records and privacy request lifecycle records. Remaining: encrypted transport/security headers, secret-vault integration, production OIDC/session/MFA controls, customer-data export/delete execution and retention enforcement. |
+| Audit integrity | Implemented for current scope: P8 overview includes audit count and security/readiness evidence. Remaining: broader immutable audit protection and automated database-level immutability tests. |
+| Backup/DR | Implemented for current scope: backup run evidence with RPO/RTO and restore-tested flag. Remaining: scheduler integration, restore-test automation and failure alerts. |
+| Observability/performance | Implemented for current scope: readiness checks can record observability, performance and scalability targets/measurements. Remaining: logs/metrics/traces dashboards, load tests and POS response-time thresholds. |
+| Release readiness | Implemented for current scope: release-readiness records with checklist, migration plan and rollback plan. Remaining: deployment pipeline gates, release approvals, rollback automation, accessibility QA and visual regression. |
 
 ### Shared UI/UX and Frontend Architecture
 

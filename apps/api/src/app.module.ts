@@ -11,7 +11,9 @@ import {
   importProvider,
   inventoryProvider,
   posProvider,
+  productionReadinessProvider,
   pricingProvider,
+  reportingOperationsProvider,
   storeReliabilityProvider,
 } from "./composition/providers.js";
 import { BusinessEnginesController } from "./controllers/business-engines.controller.js";
@@ -20,6 +22,8 @@ import { CatalogController } from "./controllers/catalog.controller.js";
 import { FinanceController } from "./controllers/finance.controller.js";
 import { ImportController, PosController } from "./controllers/pos.controller.js";
 import { InventoryController } from "./controllers/inventory.controller.js";
+import { ProductionReadinessController } from "./controllers/production-readiness.controller.js";
+import { ReportingOperationsController } from "./controllers/reporting-operations.controller.js";
 import { StoreReliabilityController } from "./controllers/store-reliability.controller.js";
 import { HealthController } from "./health/health.controller.js";
 
@@ -39,6 +43,8 @@ import { HealthController } from "./health/health.controller.js";
     FinanceController,
     InventoryController,
     PosController,
+    ProductionReadinessController,
+    ReportingOperationsController,
     StoreReliabilityController,
   ],
   providers: [
@@ -49,6 +55,8 @@ import { HealthController } from "./health/health.controller.js";
     financeProvider,
     importProvider,
     inventoryProvider,
+    productionReadinessProvider,
+    reportingOperationsProvider,
     pricingProvider,
     posProvider,
     storeReliabilityProvider,

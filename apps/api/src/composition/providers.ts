@@ -7,6 +7,8 @@ import {
   FinanceService,
   ImportService,
   InventoryService,
+  ProductionReadinessService,
+  ReportingOperationsService,
   StoreReliabilityService,
 } from "@bizentra/domain-business-access";
 import { PosService, PricingService } from "@bizentra/domain-commerce";
@@ -53,6 +55,18 @@ export const inventoryProvider: Provider = {
   provide: InventoryService,
   inject: [DATABASE],
   useFactory: (database: DatabaseClient) => new InventoryService(database),
+};
+
+export const productionReadinessProvider: Provider = {
+  provide: ProductionReadinessService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new ProductionReadinessService(database),
+};
+
+export const reportingOperationsProvider: Provider = {
+  provide: ReportingOperationsService,
+  inject: [DATABASE],
+  useFactory: (database: DatabaseClient) => new ReportingOperationsService(database),
 };
 
 export const storeReliabilityProvider: Provider = {
