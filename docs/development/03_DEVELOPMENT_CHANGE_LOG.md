@@ -86,13 +86,13 @@ Each change entry should include:
 
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
-| 2026-08-27 | Implemented for current P7 reporting/integration/migration foundation scope | `CC-P7-001` to `CC-P7-010`, `CC-US-016`, `CC-US-017` | Uncommitted | Added reporting summaries from source records, saved report views, data export requests, webhook subscriptions/deliveries, migration validation records, P7 permissions/role sync, API/client contracts, Back Office `/reporting-operations` workspace and smoke coverage. |
+| 2026-08-27 | Implemented for current P7 reporting/integration/migration foundation scope | `CC-P7-001` to `CC-P7-010`, `CC-US-016`, `CC-US-017` | `a7232fa feat: add common core P7 P8 reporting and readiness` | Added reporting summaries from source records, saved report views, data export requests, webhook subscriptions/deliveries, migration validation records, P7 permissions/role sync, API/client contracts, Back Office `/reporting-operations` workspace and smoke coverage. |
 
 ### Common Core P8 Security, Operations and Production Readiness
 
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
-| 2026-08-27 | Implemented for current P8 production-readiness evidence foundation scope | `CC-P8-001` to `CC-P8-010`, `CC-US-018` | Uncommitted | Added security event, backup run, readiness check, privacy request and release-readiness evidence records, P8 permissions/role sync, API/client contracts, Back Office `/production-readiness` workspace and smoke coverage. |
+| 2026-08-27 | Implemented for current P8 production-readiness evidence foundation scope | `CC-P8-001` to `CC-P8-010`, `CC-US-018` | `a7232fa feat: add common core P7 P8 reporting and readiness` | Added security event, backup run, readiness check, privacy request and release-readiness evidence records, P8 permissions/role sync, API/client contracts, Back Office `/production-readiness` workspace and smoke coverage. |
 
 ### Common UI/UX System
 
@@ -310,7 +310,7 @@ Each change entry should include:
 | What changed | Added P7 database models for saved report views, data export requests, webhook subscriptions, webhook deliveries and migration validations. Added reporting overview summaries from existing sales, stock, finance and customer source records. Added P7 permissions, Reporting / Integration User role template and additive existing-role sync. Added API routes, API-client methods, Back Office `/reporting-operations` workspace and live smoke coverage. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260827100101_p7_p8_reporting_readiness/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/reporting-operations.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/reporting-operations.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/reporting-operations/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/13_P7_IMPLEMENTATION_STATUS.md` |
 | Verification | Prisma schema formatted and generated; database build passed; migration `20260827100101_p7_p8_reporting_readiness` applied with deploy mode; focused contracts, domain-business-access, API client, API and Back Office checks passed. |
-| Commit | Uncommitted |
+| Commit | `a7232fa feat: add common core P7 P8 reporting and readiness` |
 | Remaining work | P7 still needs real drill-down report pages, export file generation and secure download links, webhook signing-secret storage and worker delivery runtime, retry/dead-letter operator actions, migration validation wizard with approval/final commit/rollback linkage, saved filter management and data-freshness labels. |
 
 ### 2026-08-27 - Common Core P8 Security, Operations and Production Readiness
@@ -323,7 +323,7 @@ Each change entry should include:
 | What changed | Added P8 database models for security events, backup runs, readiness checks, privacy requests and release-readiness records. Added P8 permissions, Security / Operations Admin role template and additive existing-role sync. Added Production Readiness service rules for evidence capture, privacy request resolution and release-readiness upsert. Added API routes, API-client methods, Back Office `/production-readiness` workspace and live smoke coverage. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260827100101_p7_p8_reporting_readiness/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/production-readiness.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/production-readiness.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/production-readiness/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/14_P8_IMPLEMENTATION_STATUS.md` |
 | Verification | Prisma schema formatted and generated; database build passed; migration `20260827100101_p7_p8_reporting_readiness` applied with deploy mode; focused contracts, domain-business-access, API client, API and Back Office checks passed. |
-| Commit | Uncommitted |
+| Commit | `a7232fa feat: add common core P7 P8 reporting and readiness` |
 | Remaining work | P8 still needs production OIDC/session/MFA enforcement, infrastructure backup scheduler and restore automation, logs/metrics/traces dashboards, load tests and POS response targets, customer-data export/delete execution and retention enforcement, deployment pipeline gates, release approvals, rollback automation and database-level immutable audit tests. |
 
 ## 5. Consolidated Remaining Work Register
