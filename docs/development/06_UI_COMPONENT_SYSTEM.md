@@ -53,7 +53,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `Progress` | Accessible progress indicator |
 | `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text. Numeric fields select their existing value on focus/click so typing replaces it immediately |
 | `FilterBar` | Superseded. `DataTable` now takes `search`, `filters` and `chips` directly, so a list's controls sit inside the table's own border. Kept exported for a future screen that filters something other than a table |
-| `DataTable` | Sticky header, caption, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
+| `DataTable` | Sticky header, accessible caption, optional hidden visible title, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
 | `Timeline` | Business history on a record |
 | `MoneySummary` | Subtotal, discount, tax, paid and due in one aligned block |
 | `StockBadge` | On-hand quantity with a semantic tone |
@@ -97,6 +97,7 @@ bottom sheet on phones.
 7. Numeric inputs (`type="number"`, `inputMode="numeric"` or `inputMode="decimal"`) select the full existing value whenever they receive focus or are clicked. Do not make a cashier or operator delete `98` before typing `100`.
 8. Operator-facing screens use product language such as Sales, Catalog, Shift, Stock and Payment. Internal requirement IDs, phase IDs and story IDs stay in development records, not in navigation, page headers, kickers or table labels.
 9. Do not duplicate the same primary action in both `Workspace headerActions` and a `DataTable toolbar`. If the action creates the main record for the screen, keep it in the Workspace header. Use the table toolbar for actions that only make sense inside that table, tab or record detail.
+10. When a screen's `Workspace title` and its primary table `caption` are the same, keep the table's accessible caption but hide the visible table title with `hideHeaderTitle`.
 
 ## Remaining work
 

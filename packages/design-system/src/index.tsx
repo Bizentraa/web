@@ -638,6 +638,7 @@ export function DataTable<T>({
   filters,
   footer,
   getRowKey,
+  hideHeaderTitle = false,
   onRowSelect,
   search,
   selectable = false,
@@ -656,6 +657,11 @@ export function DataTable<T>({
   filters?: ReactNode;
   footer?: ReactNode;
   getRowKey: (row: T) => string;
+  /**
+   * Hides the visible table title while keeping the native table caption for assistive technology.
+   * Use when the surrounding screen already names the same list.
+   */
+  hideHeaderTitle?: boolean;
   onRowSelect?: (row: T) => void;
   /**
    * Search for the rows of this table. It belongs to the table rather than to a separate bar
@@ -672,15 +678,22 @@ export function DataTable<T>({
   summary?: string;
   toolbar?: ReactNode;
 }) {
-  if (!rows.length) {
-    return (
-      <div className={cn("ui-table-wrap", "ui-table-wrap--empty", className)}>
-        <div className="ui-data-table-header">
+  const header =
+    !hideHeaderTitle || toolbar ? (
+      <div className="ui-data-table-header">
+        {!hideHeaderTitle ? (
           <div>
             <strong>{caption}</strong>
           </div>
-          {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
-        </div>
+        ) : null}
+        {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
+      </div>
+    ) : null;
+
+  if (!rows.length) {
+    return (
+      <div className={cn("ui-table-wrap", "ui-table-wrap--empty", className)}>
+        {header}
         {search || filters || chips?.length ? (
           <div className="ui-data-table-filters">
             {search ? (
@@ -732,12 +745,7 @@ export function DataTable<T>({
   return (
     <>
       <div className={cn("ui-table-wrap", className)}>
-        <div className="ui-data-table-header">
-          <div>
-            <strong>{caption}</strong>
-          </div>
-          {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
-        </div>
+        {header}
         {search || filters || chips?.length ? (
           <div className="ui-data-table-filters">
             {search ? (

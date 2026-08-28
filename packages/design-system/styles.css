@@ -1146,9 +1146,9 @@ kbd {
 }
 
 /*
- * Search, filters and the primary action belong to the table, not to a separate bar floating
- * above it. The action sits on the title row at full size - a list's main action is not a quiet
- * one - and the controls sit on their own row beneath it, inside the same border.
+ * Search, filters and table-scoped actions belong to the table, not to a separate bar floating
+ * above it. The action sits on the title row at full size, and the controls sit on their own row
+ * beneath it, inside the same border.
  */
 .ui-data-table-filters {
   align-items: flex-end;

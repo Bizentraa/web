@@ -157,6 +157,7 @@ export default function CustomersPage() {
           {data ? (
             <DataTable
               caption="Customers"
+              hideHeaderTitle
               search={{
                 value: search,
                 onChange: setSearch,

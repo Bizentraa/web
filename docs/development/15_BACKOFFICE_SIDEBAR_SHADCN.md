@@ -249,6 +249,12 @@ The later cleanup removed `DataTable`'s `kicker` prop entirely. The table header
 label, its caption, which keeps tables from carrying a second small label that repeats the screen
 or record type. Nine now-unused `Card*` and `Kicker` imports were dropped with the wrappers.
 
+If a primary list repeats the screen title exactly, the visible table title is hidden with
+`hideHeaderTitle` while the native table caption stays in place for assistive technology. Customers
+and Suppliers use this because the page heading already says the same word directly above the
+table. Other tables keep their visible caption when it adds a more specific list name, such as
+"People with access", "Branches" or "Recent sales".
+
 `Card` is still right for a section that holds a form, a grid of tiles, or several things at once —
 this only unwraps the cards whose entire content was one table. Three kept theirs deliberately:
 Controls' audit history (a filter grid above the table), Sales' shift records (a description list,

@@ -104,6 +104,7 @@ export default function SuppliersPage() {
           {data ? (
             <DataTable
               caption="Suppliers"
+              hideHeaderTitle
               search={{
                 value: search,
                 onChange: setSearch,
