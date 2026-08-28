@@ -74,6 +74,7 @@ export class PricingService {
           businessId,
           status: "ACTIVE",
           sellable: true,
+          ...(query.categoryId ? { categoryId: query.categoryId } : {}),
           ...(term
             ? {
                 OR: [
@@ -88,6 +89,7 @@ export class PricingService {
         take: query.limit,
         include: {
           baseUnit: true,
+          category: true,
           identifiers: true,
           taxCategory: { include: { rates: true } },
           prices: { include: { priceList: true } },
@@ -116,6 +118,8 @@ export class PricingService {
           name: item.name,
           unitCode: item.baseUnit.code,
           kind: item.kind,
+          categoryId: item.categoryId,
+          categoryName: item.category?.name ?? null,
           unitPrice: price ? toNumber(price.unitPrice) : 0,
           taxRatePercent: rate ? toNumber(rate.rate) : 0,
           stockTracked: item.stockTracked,

@@ -705,7 +705,240 @@ the bound Branch and register, and re-binding is:
 Re-binding clears the terminal's saved selection, which drops it back to the open-shift form where
 a Branch and register are chosen again. Nothing already recorded is altered.
 
-#
+### The selling screen
+
+The till was rebuilt on 2026-08-28. The shell, the two panels and the money block were already
+there; what changed is what each one is allowed to hold, and the order a cashier reads them in.
+
+**One instrument, three rules.** Nothing scrolls except the two lists a cashier actually reads -
+the product grid and the ticket lines. `ui-pos-shell` is `height: 100dvh; overflow: hidden`
+(`dvh`, not `vh`: a mobile browser shrinks the viewport when the address bar appears), and every
+descendant carries `min-height: 0` so a long list scrolls inside its panel instead of pushing the
+scan field or the pay button off the screen. Money is always the largest thing on screen, always
+tabular, always in the same place. Anything the shell shows *instead* of the selling layout - the
+shift form, the skeleton, the missing-identity panel - goes in `ui-pos-fallback`, which owns the
+scroll the shell refuses.
+
+**The header answers four questions and offers no fifth.** `PosTopbar` is shared by selling and
+returns so both carry the identical bar: which register am I, is a shift open, am I online, what
+time is it. Selling and Returns are a two-stop segmented control rather than a menu, because a
+cashier reaches for them without reading. The clock is not decoration - a receipt dispute is
+always about a time.
+
+**Full view.** The `Maximize2` control sits next to the scan field, not in the header, for the
+obvious reason that the header is the thing it hides. It sets `data-focus="true"` on the shell,
+which drops `ui-pos-topbar` entirely, and asks the browser for real fullscreen so a wall-mounted
+terminal loses its address bar too. That request can be refused - it needs a user gesture, and
+kiosk builds disable it - so the layout change stands on its own and a `fullscreenchange`
+listener brings the header back when fullscreen ends by Escape or a system gesture.
+
+**Products.** The grid now shows the catalogue by default rather than only after a search:
+`searchSellableItems` already returned rows for an empty term, so the empty state was self-imposed.
+Category chips filter it, which needed `categoryId` on `PosCatalogEntry` and on
+`catalogSearchSchema`, applied in the Prisma query so the result limit stays honest. A tile
+already in the ticket carries its quantity and a tinted border, so a cashier does not double-add
+by accident.
+
+**The ticket.** Customer, discount and coupon used to sit below the cart, between the lines and
+the totals, which put setup in the middle of money. The customer is now a single row at the top of
+the panel; discount and coupon collapse into `ui-pos-options`. What is left is a straight run from
+lines to totals to amount due to Pay - the only sequence read under pressure. Each line gained a
+stepper and its own remove control instead of relying on stepping the quantity down to zero.
+
+### Taking the money
+
+`PaymentDrawer` replaces the payment sheet. The sheet asked a cashier to fill in a form: pick a
+method from a select, type an amount, type a reference, press a button. A till does the opposite -
+it starts with the answer. The amount is pre-loaded with what is still due, so one tender for the
+exact total is a single press, and the pad is only touched when the customer hands over something
+else. Cash is treated as the special case it is: the notes a customer is likely to be holding
+(the next 5, 10, 20, 50, 100) are offered as one-press amounts and the change is computed live and
+shown beside the amount, so it is read off the screen rather than worked out while a queue waits.
+A reference field appears only for the methods that have one to record.
+
+The design system's `NumberPad` had been shipped and never used in this flow; it is the pad here
+and in the close-shift drawer. `Drawer` gained a `wide` prop so the pad can sit beside the tender
+list, and collapses to one column below 1200px.
+
+### Closing the drawer
+
+The old dialog pre-filled counted cash with the expected figure, which quietly invites accepting
+it without counting: the one number the close exists to capture was already filled in. The field
+now starts empty, the count is entered on the pad, and the difference is named the moment it stops
+being zero - **balanced**, **over** or **short**, each with its own tone - so nobody works it out
+in their head and nobody discovers it the next morning. A difference always carries a reason, and
+the button says which step is missing rather than failing on submit.
+
+### Returns
+
+The screen follows the counter conversation: find the sale, agree what is coming back, agree what
+the customer gets. Lines are chosen with the same stepper the ticket uses, capped at what is still
+returnable, and the disposition select appears only on a line that has something coming back. The
+refund is priced line by line from what was actually paid (`lineTotal / quantity x returned`) and
+shown before anything is committed, labelled an estimate because the server settles promotions,
+tax and rounding. Refunding more than is left on the sale, and store credit on a walk-in, are both
+caught on screen instead of by a rejected request.
+
+### Every device
+
+| Width | Layout |
+|---|---|
+| 1440px and wider | Products beside a 360px+ ticket column |
+| 1024px to 1439px | Same, narrower ticket |
+| 1199px and below | Payment pad drops below the tender list |
+| 1023px and below | One column; the ticket becomes a bottom sheet summoned by a fixed cart bar |
+| 767px and below | Two-up tiles, icon-only navigation, no clock, tighter panels |
+
+Below 1023px the ticket is summoned rather than always shown, because a till at that width is held
+rather than sat at: `ui-pos-cartbar` carries the two numbers that matter and the button that opens
+the sheet, `ui-pos-scrim` and `ui-pos-ticket-close` close it. The sheet is rendered at every width
+and only transformed off-screen, so its state, focus order and the quote it is displaying survive
+a rotation. Z-order is cart bar 40, scrim 44, sheet 45, below the shared `ui-overlay` at 60, so a
+dialog always wins.
+
+One touch-specific rule: `useScanFocus` is switched off behind `useMediaQuery("(pointer: coarse)")`.
+A hardware scanner types into whatever holds focus, so on a desktop till the scan field claims it;
+on a tablet that same claim throws the on-screen keyboard over the product grid every time a
+dialog closes.
+
+### Six things the first pass got wrong
+
+Screens from a real till at four widths turned up six defects, all of them in the same family:
+a control that moves, or a control that is somewhere the screen cannot show it.
+
+**The navigation drifted between screens.** The header spaced its three groups apart with
+`justify-content: space-between`, so Sell/Returns sat wherever the side groups left room - and
+selling carries Held carts and Close shift while returns carries neither. The one control a
+cashier reaches for without looking was never twice in the same place. The bar is now a grid,
+`minmax(0, 1fr) auto minmax(0, 1fr)`, with named areas: two equal side tracks pin the centre track
+to the middle of the bar whatever the sides hold. Measured at 1280px, 1023px and 768px, the nav's
+centre is within a pixel of the viewport's on both screens.
+
+**The terminal menu opened off the left edge.** The register bar is the leftmost control on the
+header and its menu was `align="end"`, which anchors a menu's right edge to the trigger's - so it
+extended left, past the viewport. It is `align="start"` now.
+
+**Accept return sat under the bottom of the screen.** The returns detail put lines, refund method,
+reason, totals and the estimate in one unbounded column; the only control the screen exists for
+was pushed past the panel. The form is now `ui-pos-form`, a flex column that fills the panel, with
+everything above the action row in `ui-pos-scrollbody` and the action row pinned as the last
+child. The lines inside it use `ui-pos-lines`, which does not scroll, because a scroll region
+nested inside a scroll region is a trap.
+
+**The whole returns screen was clipped on a narrow till.** Below the ticket breakpoint the layout
+collapses to one column, and returns has two in-flow panels where selling has one - the ticket is
+`position: fixed`. The second panel simply ran off the bottom of a shell that is
+`overflow: hidden`. The summoned-sheet behaviour is now a class of its own, `ui-pos-summoned`,
+shared by the selling ticket and the returns detail: choosing a sale opens the sheet, the scrim
+and the chevron close it. `ui-pos-shell[data-cartbar="true"]` scopes the 76px of bottom room to
+the screen that actually has a cart bar, and only once a shift is open.
+
+**The phone header wrapped into three ragged rows.** Register, shift, status, actions and the
+navigation cannot share 375px. The header is two rows there - `"start end"` over `"nav nav"` -
+which costs 38px, buys back the navigation's labels, and turns the two destinations into
+thumb-sized halves of the screen. Above that, the header folds rather than wraps: the clock goes
+at 1279px, then the words on the action buttons, each of which keeps its icon and its accessible
+name. The shift chip drops to its serial at 1023px, which is what would otherwise tip a tablet's
+single-row bar over the edge.
+
+**The shift code was set as a heading.** "Close shift COLA2-SHIFT-000003" made the code the
+hardest thing on the panel to read back over a counter, in a face where 0/O and 1/l are the whole
+point. The heading says what the panel does; the code sits under it as a `ui-pos-shift-id` chip in
+the mono face the rest of the product uses for identifiers. The uncounted drawer reads as an
+em dash rather than two hyphens.
+
+Verified in a real browser rather than by inspection: at 1280, 1023, 768 and 375px, on both
+screens, `document.documentElement.scrollWidth` equals the viewport width and the shell's height
+equals the viewport's - nothing overflows in either axis at any of them.
+
+### State that outlives the screens
+
+Selling and returns are two routes, and a route change unmounts the page component. With every
+piece of state inside the pages, stepping across to check a refund threw the whole terminal away:
+the open ticket, the product grid, the reference data, the current shift and the offline queue all
+reset, six requests re-ran, and the header flashed "Register not set" and "No shift" on the way
+back. A cashier saw the till reboot every time they touched the navigation.
+
+A layout is **not** unmounted when its children change, so `PosWorkspaceProvider` is rendered in
+`app/layout.tsx` and holds everything: the terminal binding, the shift, the offline queue, the
+reference data and customer list, the catalogue search and its results, the ticket with its quote
+and tenders, the full-view mode, and the returns search, list and open sale. The pages read from
+`usePosWorkspace()` and own only their event handlers.
+
+Two consequences worth stating. The ticket now survives a trip to Returns, which is the behaviour
+a counter actually needs - a customer asks about a refund halfway through a sale. And the requests
+are keyed to what they genuinely depend on, so the catalogue refetches when the Business, the
+bound register, the search term, the category or the customer changes, and at no other time.
+
+Verified in the browser: text typed into the returns search survives Returns → Sell → Returns as
+soft navigations, and three route changes in a row issue no API request at all.
+
+### Loading looks like the thing that is coming
+
+`pos-skeletons.tsx` holds the till's loading shapes, each one the real component with its text
+removed: the same grid, the same row height, the same number of items, reusing the shared
+`.ui-skeleton` shimmer so a POS placeholder animates in step with a Back Office one. The catalogue
+gets a grid of tile skeletons, the returns list gets rows, an opening sale gets its lines, held
+carts get rows, and the first moment of the selling screen gets both panels at once.
+
+One rule about when they show: only on the **first** fill. Once the product grid holds something,
+refining a search leaves it on screen and swaps the rows underneath, because blanking a grid a
+cashier is reading is worse than a moment of slightly stale prices.
+
+### The shift moved into the terminal menu
+
+A chip wide enough to read "Shift COLA2-SHIFT-000003" spent the left half of the header on
+something a cashier checks perhaps twice a day - and in the second before the terminal had asked,
+it read as an alarm: "No shift" in warning orange, on a till that was merely still loading.
+
+The register control carries a dot instead, lit green when a shift is open. The menu behind it
+holds the rest: the shift number in the mono face, when it opened, how many sales have gone
+through it, what it has taken and what the drawer should hold. Whether a shift is open is now
+answered by a glance at the dot; everything else is one click away, which is the right cost for
+something read twice a day. A terminal with no Business configured gets one centred card with the
+single instruction that fixes it, rather than a full-width bordered panel that read as a fault.
+
+### The tickets that hold a shift open
+
+`PosService.closeShift` counts sales on the shift whose status is `DRAFT` or `HELD` and refuses
+the close if there are any:
+
+> 3 held sale(s) are still open on this shift. Finish or discard them before closing.
+
+That rule is right, and the way it reached a cashier was not: a red toast, after the drawer was
+counted and the reason typed, naming a number with nothing to act on and no clue which tickets
+were meant. Everything below moves that rule forward in time and gives it hands.
+
+**The workspace tracks the blockers, not just their count.** `refreshHolds()` asks
+`listSales({ shiftId, pageSize: 50 })` and keeps the rows whose status is `HELD` or `DRAFT` -
+deliberately the same predicate the server applies, so the screen can never disagree with it. It
+is keyed to the shift, so a hold carried over from an earlier shift is somebody else's problem and
+does not block this one. It re-runs when the shift changes and after anything that creates or
+clears a blocker: holding a cart, resuming one, discarding one, completing a sale.
+
+**The close-shift drawer states the blockage before the count.** The tickets are listed at the top
+with their number, customer, line count and total, each with the only two ways it can end - Resume
+takes it back into the ticket panel to be paid, Discard voids it. The close button is disabled and
+says what is in the way: *Finish or discard 3 open tickets*, in the same style as the two
+conditions already stated there ("Enter the counted cash", "Add a reason to close"). Nothing fails
+on press any more.
+
+**Discarding is voiding, and it carries a reason.** It goes through `voidSale`, so the record
+survives, marked void, with the reason attached - a shift that closed having discarded three
+tickets can still say what they were. The shared `ConfirmDialog` collects the reason and enforces
+the three-character minimum that `reasonSchema` requires, and the consequence text names the
+ticket, its lines and its value before anything happens. The server refuses outright if money has
+already been taken against the sale, which is what stops this becoming a way to make a payment
+disappear.
+
+**The count is on the header.** The Held carts button carries the number of open tickets on this
+shift, so a cashier meets the fact at the start of the close rather than at the end of it.
+
+`HeldSaleRow` is shared by the close-shift drawer and the held-carts dialog, because they ask the
+same question at different moments. It also fixed a smaller fault in the dialog: the row was
+itself a button, so there was nowhere to put a second action without nesting one button inside
+another.
+
 ## POS install
 
 ```bash

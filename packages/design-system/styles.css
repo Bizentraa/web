@@ -1707,6 +1707,10 @@ kbd {
   width: 100%;
 }
 
+.ui-drawer--wide {
+  max-width: 780px;
+}
+
 .ui-sheet {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -1784,12 +1788,27 @@ kbd {
 
 /* ------------------------------------------------------------------- 8 POS */
 
+/*
+ * The till is not a document, it is an instrument. Three rules shape everything below.
+ *
+ *   1. Nothing scrolls except the two lists a cashier reads: the product grid and the ticket
+ *      lines. The shell is locked to the viewport so the scan field, the amount due and the pay
+ *      button never move while the queue is waiting.
+ *   2. Money is always the largest thing on screen, tabular, and in the same place.
+ *   3. Every target a finger uses is at least 44px. `--ui-control-height` (34px) governs form
+ *      rows shared with Back Office; till-specific targets deliberately opt out of it.
+ *
+ * Focus mode (`[data-focus="true"]`) drops the header entirely so the selling area owns the
+ * screen; every control the header carried has a home inside the panels, so nothing is lost.
+ */
+
 .ui-pos-shell {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 100vh;
-  max-height: 100vh;
+  /* dvh, not vh: mobile browsers shrink the viewport when the address bar shows. */
+  height: 100dvh;
+  max-height: 100dvh;
   overflow: hidden;
   padding: 12px;
   background:
@@ -1801,6 +1820,25 @@ kbd {
     var(--color-background);
 }
 
+.ui-pos-shell[data-focus="true"] {
+  gap: 8px;
+  padding: 8px;
+}
+
+.ui-pos-shell[data-focus="true"] .ui-pos-topbar {
+  display: none;
+}
+
+/* --------------------------------------------------------------- top bar */
+
+/*
+ * A grid, not `justify-content: space-between`.
+ *
+ * Spacing the three groups apart moved the Sell/Returns control every time the side groups
+ * changed width - selling carries Held carts and Close shift, returns carries neither - so the
+ * one control a cashier reaches for without looking was never twice in the same place. Two equal
+ * side tracks and an auto centre track pin it to the middle of the bar on every screen.
+ */
 .ui-pos-topbar {
   align-items: center;
   background: color-mix(in srgb, var(--color-surface-elevated) 94%, transparent);
@@ -1808,16 +1846,188 @@ kbd {
   border: 1px solid var(--color-border);
   border-radius: 16px;
   box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  justify-content: space-between;
-  min-height: 52px;
-  padding: 8px 14px;
+  display: grid;
+  gap: 8px 12px;
+  grid-template-areas: "start nav end";
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  min-height: 56px;
+  padding: 8px 12px;
 }
 
 .ui-pos-topbar strong {
   font-size: 0.95rem;
+}
+
+.ui-pos-topbar-group {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ui-pos-topbar-group--start {
+  grid-area: start;
+}
+
+.ui-pos-topbar-group--end {
+  grid-area: end;
+  justify-content: flex-end;
+}
+
+/*
+ * A label that folds away before its control does.
+ *
+ * Every header control keeps its icon and its accessible name at every width; only the visible
+ * word is dropped, and it is dropped early enough that the bar never has to wrap.
+ */
+.ui-pos-label {
+  white-space: nowrap;
+}
+
+/* A lit dot on the register control: the shift is open. Everything else about it is in the menu. */
+.ui-pos-terminal-dot {
+  background: var(--color-text-muted);
+  border-radius: 999px;
+  flex: none;
+  height: 8px;
+  width: 8px;
+}
+
+.ui-pos-terminal-dot[data-open="true"] {
+  background: var(--color-success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 20%, transparent);
+}
+
+/* The clock earns its place: a receipt dispute is always about a time. */
+.ui-pos-clock {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  gap: 6px;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.ui-pos-clock strong {
+  color: var(--color-text-primary);
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+/* Two or three destinations only. A segmented control, not a menu. */
+.ui-pos-nav {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  gap: 2px;
+  grid-area: nav;
+  padding: 3px;
+}
+
+.ui-pos-nav a {
+  align-items: center;
+  border-radius: 9px;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 600;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  text-decoration: none;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+  white-space: nowrap;
+}
+
+.ui-pos-nav a:hover {
+  color: var(--color-text-primary);
+}
+
+.ui-pos-nav a[aria-current="page"] {
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
+  color: var(--color-primary);
+}
+
+/* An icon-only control that still meets the touch target, used for focus mode and print. */
+.ui-pos-icon-button {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  height: var(--ui-control-height);
+  justify-content: center;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+  width: var(--ui-control-height);
+}
+
+.ui-pos-icon-button:hover {
+  background: var(--color-hover-background);
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+.ui-pos-icon-button[data-active="true"] {
+  background: var(--color-primary-soft);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------- layout */
+
+/*
+ * Everything the shell shows instead of the selling layout - the shift form, the loading
+ * skeleton, the missing-identity panel. The shell itself never scrolls, so these get their own
+ * scroll region rather than being clipped on a short screen.
+ */
+.ui-pos-fallback {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/*
+ * A form that fills its panel: everything above the action row scrolls, the action row does not.
+ *
+ * The returns detail is the case that needs it - lines, refund method, reason, totals and the
+ * estimate together are taller than any till screen - and pushing "Accept return" off the bottom
+ * edge hides the only control the screen exists for.
+ */
+.ui-pos-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.ui-pos-scrollbody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* A list that is already inside a scroll region, so it must not open a second one. */
+.ui-pos-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .ui-pos-layout {
@@ -1825,7 +2035,7 @@ kbd {
   min-height: 0;
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(0, 1.75fr) minmax(330px, 0.85fr);
+  grid-template-columns: minmax(0, 1.72fr) minmax(360px, 0.88fr);
   align-items: stretch;
 }
 
@@ -1837,31 +2047,146 @@ kbd {
   box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text-primary) 4%, transparent);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: 10px;
+  padding: 12px;
 }
+
+.ui-pos-panel-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ui-pos-panel-title {
+  align-items: center;
+  display: flex;
+  font-size: 0.98rem;
+  font-weight: 700;
+  gap: 8px;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.ui-pos-panel-title small {
+  background: var(--color-surface-secondary);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+}
+
+/* ---------------------------------------------------------- scan and find */
 
 .ui-pos-scan {
   display: flex;
   gap: 8px;
 }
 
-.ui-pos-scan input {
+.ui-pos-scan-field {
+  align-items: center;
   background: var(--color-input-background);
   border: 1px solid color-mix(in srgb, var(--color-primary) 54%, var(--color-border-strong));
   border-radius: 12px;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  display: flex;
   flex: 1;
-  min-height: var(--ui-control-height);
-  padding: 7px 13px;
-  font-size: 0.96rem;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 10px;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
+.ui-pos-scan-field:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 76%, var(--color-border-strong));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+.ui-pos-scan-field svg {
+  color: var(--color-primary);
+  flex: none;
+}
+
+.ui-pos-scan-field input {
+  background: none;
+  border: none;
+  flex: 1;
+  font-size: 0.96rem;
+  min-height: 42px;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+}
+
+.ui-pos-scan-clear {
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  flex: none;
+  padding: 4px;
+}
+
+.ui-pos-scan-clear:hover {
+  color: var(--color-text-primary);
+}
+
+/* Category quick filters. One row, scrolls sideways, never grows the panel. */
+.ui-pos-chips {
+  display: flex;
+  gap: 6px;
+  /* Stating both axes: `overflow-x: auto` alone computes `overflow-y` to `auto` too, which is
+     what produced the stray vertical scrollbars elsewhere in this stylesheet. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.ui-pos-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.ui-pos-chip {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  flex: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-height: 32px;
+  padding: 0 12px;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+  white-space: nowrap;
+}
+
+.ui-pos-chip:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+.ui-pos-chip[data-active="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* ------------------------------------------------------------ product grid */
+
 .ui-pos-results {
+  align-content: start;
   display: grid;
+  flex: 1;
   gap: 10px;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  max-height: none;
+  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -1872,9 +2197,10 @@ kbd {
   border-radius: 14px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  min-height: 82px;
-  padding: 11px;
+  gap: 4px;
+  min-height: 96px;
+  padding: 10px 11px;
+  position: relative;
   text-align: left;
   transition:
     background 140ms ease,
@@ -1890,27 +2216,97 @@ kbd {
   transform: translateY(-1px);
 }
 
+.ui-pos-tile:active {
+  transform: translateY(0) scale(0.985);
+}
+
+/* A tile already in the ticket says so, so a cashier does not double-add by accident. */
+.ui-pos-tile[data-in-cart="true"] {
+  background: color-mix(in srgb, var(--color-primary-soft) 42%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border));
+}
+
+/* Two classes deep on purpose: `.ui-pos-tile span` below is (0,1,1) and would otherwise take
+   this badge's colour and size back to the muted code line. */
+.ui-pos-tile .ui-pos-tile-count {
+  background: var(--color-primary);
+  border-radius: 999px;
+  color: var(--color-primary-foreground);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 7px;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+
 .ui-pos-tile strong {
+  display: -webkit-box;
   font-size: 0.88rem;
+  line-height: 1.25;
+  overflow: hidden;
+  padding-right: 22px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .ui-pos-tile span {
   color: var(--color-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ui-pos-tile b {
+  color: var(--color-text-primary);
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   margin-top: auto;
+}
+
+/* --------------------------------------------------------------- ticket */
+
+.ui-pos-ticket {
+  gap: 10px;
+}
+
+.ui-pos-ticket-customer {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-secondary) 60%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+}
+
+.ui-pos-ticket-customer svg {
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+.ui-pos-ticket-customer select {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  min-width: 0;
+  outline: none;
+  padding: 4px 0;
 }
 
 .ui-pos-cart {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
-  min-height: 120px;
-  max-height: none;
+  min-height: 96px;
+  overflow-x: hidden;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -1921,44 +2317,175 @@ kbd {
   border: 1px solid var(--color-border);
   border-radius: 14px;
   display: grid;
-  gap: 8px;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  padding: 9px 10px;
+  gap: 4px 8px;
+  grid-template-areas:
+    "name name amount"
+    "qty  unit remove";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 8px 8px 8px 10px;
 }
 
 .ui-pos-cart-line strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  grid-area: name;
+  line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ui-pos-cart-line small {
+  align-self: center;
   color: var(--color-text-muted);
+  font-size: 0.75rem;
+  grid-area: unit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-pos-cart-line .ui-money {
+  align-self: center;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  grid-area: amount;
+  text-align: right;
 }
 
 .ui-pos-qty {
   align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
   display: flex;
-  gap: 4px;
+  grid-area: qty;
+  overflow: hidden;
 }
 
 .ui-pos-qty button {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
+  align-items: center;
+  background: none;
+  border: none;
   color: var(--color-text-secondary);
+  display: flex;
   font-weight: 800;
-  height: var(--ui-control-height);
+  height: 32px;
+  justify-content: center;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
   width: 30px;
 }
 
+.ui-pos-qty button:hover {
+  background: var(--color-hover-background);
+  color: var(--color-text-primary);
+}
+
 .ui-pos-qty input {
-  background: var(--color-input-background);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 9px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  font-size: 0.88rem;
   font-variant-numeric: tabular-nums;
-  height: var(--ui-control-height);
+  font-weight: 700;
+  height: 32px;
+  outline: none;
   text-align: center;
-  width: 56px;
+  width: 44px;
+}
+
+.ui-pos-line-remove {
+  align-items: center;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  display: flex;
+  grid-area: remove;
+  height: 32px;
+  justify-content: center;
+  justify-self: end;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+  width: 32px;
+}
+
+.ui-pos-line-remove:hover {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+/* Discount and coupon are setup, not totals. They collapse so the money block stays adjacent
+   to the pay button, which is the only pair a cashier reads under pressure. */
+.ui-pos-options {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ui-pos-options > summary {
+  align-items: center;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.84rem;
+  font-weight: 600;
+  gap: 8px;
+  list-style: none;
+  min-height: 38px;
+  padding: 0 10px;
+  user-select: none;
+}
+
+.ui-pos-options > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ui-pos-options > summary:hover {
+  background: var(--color-hover-background);
+}
+
+.ui-pos-options > summary svg:last-child {
+  margin-left: auto;
+  transition: transform 180ms ease;
+}
+
+.ui-pos-options[open] > summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+.ui-pos-options-body {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  padding: 10px;
+}
+
+.ui-pos-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ui-pos-totals div {
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: 0.85rem;
+  justify-content: space-between;
+}
+
+.ui-pos-totals div b {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ui-pos-totals div[data-tone="saving"] b {
+  color: var(--color-success);
 }
 
 .ui-pos-due {
@@ -1968,20 +2495,200 @@ kbd {
   border-radius: 16px;
   display: flex;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 10px 14px;
+}
+
+.ui-pos-due span {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .ui-pos-due strong {
   color: var(--color-primary);
-  font-size: clamp(1.6rem, 3.6vw, 2.25rem);
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
-.ui-tender-grid {
+/* Pay is the widest and the last thing in the reading order, every time. */
+.ui-pos-actions {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ui-pos-actions .ui-pos-pay {
+  grid-column: 1 / -1;
+  min-height: 52px;
+  font-size: 1.02rem;
+}
+
+/* --------------------------------------------------- compact cart bar */
+
+/* All three belong to the sheet layout and are switched on together in section 10. */
+.ui-pos-cartbar {
+  display: none;
+}
+
+.ui-pos-scrim {
+  display: none;
+}
+
+.ui-pos-ticket-close {
+  display: none;
+}
+
+/* ----------------------------------------------------------- payment */
+
+.ui-pay {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 240px);
+  align-items: start;
+}
+
+.ui-pay-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ui-pay-methods {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+}
+
+.ui-pay-method {
+  align-items: center;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  font-weight: 600;
+  gap: 5px;
+  min-height: 62px;
+  justify-content: center;
+  padding: 8px 6px;
+  text-align: center;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.ui-pay-method:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+.ui-pay-method[data-active="true"] {
+  background: color-mix(in srgb, var(--color-primary-soft) 60%, var(--color-surface));
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* The amount being entered, shown the size a cashier can read across a counter. */
+.ui-pay-amount {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+}
+
+.ui-pay-amount span {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ui-pay-amount strong {
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.ui-pay-amount small {
+  color: var(--color-success);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ui-pay-quick {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+}
+
+.ui-pay-quick button {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-height: 38px;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.ui-pay-quick button:hover {
+  background: var(--color-hover-background);
+  border-color: var(--color-border-strong);
+}
+
+.ui-pay-tenders {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ui-pos-tender-row {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-secondary) 62%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  gap: 8px;
+  padding: 7px 8px 7px 10px;
+}
+
+.ui-pos-tender-row > svg {
+  color: var(--color-text-muted);
+  flex: none;
+}
+
+.ui-pos-tender-row div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ui-pos-tender-row strong {
+  font-size: 0.86rem;
+}
+
+.ui-pos-tender-row small {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+}
+
+.ui-pos-tender-row .ui-money {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .ui-numberpad {
@@ -1995,7 +2702,435 @@ kbd {
   border: 1px solid var(--color-border);
   border-radius: 10px;
   font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
   min-height: 48px;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.ui-numberpad button:hover {
+  background: var(--color-hover-background);
+  border-color: var(--color-border-strong);
+}
+
+/* ------------------------------------------------------- shift and drawer */
+
+/*
+ * An identifier reads as an identifier.
+ *
+ * "Close shift COLA2-SHIFT-000003" set as one sans-serif heading made the code the hardest thing
+ * on the panel to read back over a counter, and 0/O and 1/l are exactly what a shift code is
+ * checked on. The heading now says what the panel does and the code sits under it in the mono
+ * face the rest of the product uses for codes.
+ */
+.ui-pos-shift-id {
+  align-items: center;
+  align-self: flex-start;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 600;
+  gap: 8px;
+  padding: 6px 11px;
+}
+
+/* Expected against counted, with the difference stated rather than left to be worked out. */
+.ui-pos-variance {
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface-secondary);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+
+.ui-pos-variance div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ui-pos-variance span {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ui-pos-variance strong {
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.ui-pos-variance[data-tone="over"] {
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-warning) 34%, var(--color-border));
+}
+
+.ui-pos-variance[data-tone="over"] strong {
+  color: var(--color-warning);
+}
+
+.ui-pos-variance[data-tone="short"] {
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-danger) 34%, var(--color-border));
+}
+
+.ui-pos-variance[data-tone="short"] strong {
+  color: var(--color-danger);
+}
+
+.ui-pos-variance[data-tone="balanced"] {
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-success) 34%, var(--color-border));
+}
+
+.ui-pos-variance[data-tone="balanced"] strong {
+  color: var(--color-success);
+}
+
+.ui-pos-tender-breakdown {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+}
+
+.ui-pos-tender-breakdown div {
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+}
+
+.ui-pos-tender-breakdown span {
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.ui-pos-tender-breakdown strong {
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * What is standing between this shift and its close.
+ *
+ * The server refuses to close a shift while a ticket is still open on it, and used to say so as a
+ * red toast after the drawer was already filled in - a rule stated only at the moment it was
+ * broken, naming a count and no way to act on it. The same fact is now on screen before the count
+ * is entered, as the tickets themselves, each with the two ways out: finish it or discard it.
+ */
+.ui-pos-blockers {
+  background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, var(--color-warning) 32%, var(--color-border));
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.ui-pos-blockers-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 9px;
+}
+
+.ui-pos-blockers-head svg {
+  color: var(--color-warning);
+  flex: none;
+  margin-top: 1px;
+}
+
+.ui-pos-blockers-head strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.ui-pos-blockers-head p {
+  color: var(--color-text-secondary);
+  font-size: 0.84rem;
+  margin: 2px 0 0;
+}
+
+.ui-pos-blocker-row {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 4px 10px;
+  grid-template-areas:
+    "name amount"
+    "meta actions";
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 9px 10px;
+}
+
+.ui-pos-blocker-row > strong:first-child {
+  font-size: 0.9rem;
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-pos-blocker-row .ui-money {
+  font-variant-numeric: tabular-nums;
+  grid-area: amount;
+  text-align: right;
+}
+
+.ui-pos-blocker-row small {
+  align-self: center;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  grid-area: meta;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-pos-blocker-actions {
+  display: flex;
+  gap: 6px;
+  grid-area: actions;
+  justify-self: end;
+}
+
+/*
+ * A terminal with nothing to show yet.
+ *
+ * The bordered full-width state panel read as a broken screen. A till that is not set up should
+ * look like a till waiting, so this is one centred card with the single instruction that fixes it.
+ */
+.ui-pos-blank {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-height: 0;
+  padding: 20px;
+}
+
+.ui-pos-blank-card {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--color-text-primary) 7%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 430px;
+  padding: 28px 26px;
+  text-align: center;
+}
+
+.ui-pos-blank-card > svg {
+  background: color-mix(in srgb, var(--color-primary-soft) 62%, var(--color-surface));
+  border-radius: 16px;
+  color: var(--color-primary);
+  height: 48px;
+  padding: 12px;
+  width: 48px;
+}
+
+.ui-pos-blank-card h1 {
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  margin: 2px 0 0;
+}
+
+.ui-pos-blank-card p {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- skeletons */
+
+/*
+ * The till's loading shapes: the real component with its text taken out.
+ *
+ * They reuse the shared `.ui-skeleton` shimmer, so a POS placeholder animates in step with a Back
+ * Office one, and they sit in the real containers - `.ui-pos-results`, `.ui-pos-list` - so the
+ * grid geometry is identical before and after the data lands and nothing jumps.
+ */
+.ui-pos-skeleton-tile {
+  background: color-mix(in srgb, var(--color-surface-secondary) 70%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 96px;
+  padding: 12px 11px;
+}
+
+.ui-pos-skeleton-row {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-secondary) 60%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  display: grid;
+  gap: 7px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 11px;
+}
+
+.ui-pos-skeleton-row .ui-skeleton:nth-child(2) {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+}
+
+.ui-pos-skeleton-line {
+  background: color-mix(in srgb, var(--color-surface-secondary) 62%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  display: grid;
+  gap: 7px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 10px;
+}
+
+.ui-pos-skeleton-field {
+  border-radius: 12px;
+  flex: 1;
+  height: 44px;
+}
+
+/* ---------------------------------------------------------------- returns */
+
+.ui-pos-return-line {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-secondary) 62%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  display: grid;
+  gap: 6px 10px;
+  grid-template-areas:
+    "name name amount"
+    "qty  stock stock";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 9px 10px;
+}
+
+.ui-pos-return-line[data-selected="true"] {
+  background: color-mix(in srgb, var(--color-primary-soft) 40%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+}
+
+.ui-pos-return-line strong {
+  font-size: 0.9rem;
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-pos-return-line .ui-money {
+  font-variant-numeric: tabular-nums;
+  grid-area: amount;
+  text-align: right;
+}
+
+.ui-pos-return-line .ui-pos-qty {
+  grid-area: qty;
+}
+
+.ui-pos-return-line-stock {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  grid-area: stock;
+  min-width: 0;
+}
+
+.ui-pos-return-line-stock small {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.ui-pos-return-line-stock select {
+  background: var(--color-input-background);
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  color: var(--color-text-secondary);
+  font-size: 0.78rem;
+  margin-left: auto;
+  max-width: 150px;
+  min-height: 30px;
+  padding: 0 8px;
+}
+
+.ui-pos-sale-row {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-secondary) 60%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  display: grid;
+  gap: 2px 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 9px 11px;
+  text-align: left;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+  width: 100%;
+}
+
+.ui-pos-sale-row:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+}
+
+.ui-pos-sale-row[data-active="true"] {
+  background: color-mix(in srgb, var(--color-primary-soft) 42%, var(--color-surface));
+  border-color: var(--color-primary);
+}
+
+.ui-pos-sale-row strong {
+  font-size: 0.9rem;
+}
+
+.ui-pos-sale-row small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.ui-pos-sale-row .ui-money {
+  font-variant-numeric: tabular-nums;
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+}
+
+.ui-pos-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 6px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .ui-receipt {
@@ -2287,29 +3422,216 @@ kbd {
 
 /* ------------------------------------------------------------ 10 responsive */
 
+@media (max-width: 1439px) {
+  .ui-pos-layout {
+    grid-template-columns: minmax(0, 1.5fr) minmax(330px, 1fr);
+  }
+}
+
+/*
+ * The header folds before it wraps.
+ *
+ * A wrapped till header is worse than a terse one: every control below the fold moves, and the
+ * selling area loses a row. So the clock goes first, then the words on the action buttons, each
+ * of which keeps its icon and its accessible name.
+ */
+@media (max-width: 1279px) {
+  .ui-pos-clock {
+    display: none;
+  }
+
+  .ui-pos-topbar .ui-button .ui-pos-label,
+  .ui-pos-topbar .ui-status-chip .ui-pos-label {
+    display: none;
+  }
+
+  .ui-pos-topbar .ui-button {
+    padding: 0 10px;
+  }
+}
+
+/* The payment pad stops sitting beside the tender list before the drawer would squeeze either. */
 @media (max-width: 1199px) {
   .ui-split {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .ui-pay {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ui-pay-numberpad {
+    max-width: 320px;
+  }
+}
+
+/*
+ * Tablet and below: one column of products, and the ticket becomes a bottom sheet.
+ *
+ * A till in this width is held, not sat at, so the ticket is summoned rather than always shown:
+ * the cart bar carries the two numbers that matter (count and total) and the button that opens
+ * it. The sheet is rendered at all widths and only transformed off-screen here, so its state,
+ * focus order and the quote it displays survive a rotation.
+ */
+@media (max-width: 1023px) {
   .ui-pos-layout {
     grid-template-columns: minmax(0, 1fr);
-    overflow: auto;
+  }
+
+  /* Only the selling screen has a cart bar to leave room for. */
+  .ui-pos-shell[data-cartbar="true"] {
+    padding-bottom: 76px;
+  }
+
+  /*
+   * A panel that is summoned rather than always shown: the selling ticket, and the returns
+   * detail. Both are rendered at every width and only transformed off-screen here, so their
+   * state, focus order and the figures they display survive a rotation. Without this the second
+   * panel simply stacked below the first and was clipped by the shell, which is why the accept
+   * button on returns sat under the bottom edge of the screen.
+   */
+  .ui-pos-summoned {
+    border-radius: 18px 18px 0 0;
+    overflow: hidden;
+    bottom: 0;
+    box-shadow: 0 -18px 40px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+    left: 0;
+    max-height: 86dvh;
+    position: fixed;
+    right: 0;
+    transform: translateY(101%);
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 45;
+  }
+
+  .ui-pos-summoned[data-open="true"] {
+    transform: none;
+  }
+
+  .ui-pos-cartbar {
+    align-items: center;
+    background: color-mix(in srgb, var(--color-surface-elevated) 96%, transparent);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--color-border);
+    bottom: 0;
+    display: flex;
+    gap: 10px;
+    left: 0;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    position: fixed;
+    right: 0;
+    z-index: 40;
+  }
+
+  .ui-pos-cartbar-summary {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .ui-pos-cartbar-summary span {
+    color: var(--color-text-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .ui-pos-cartbar-summary strong {
+    font-size: 1.15rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .ui-pos-cartbar .ui-button {
+    margin-left: auto;
+    min-height: 44px;
+  }
+
+  .ui-pos-scrim {
+    background: color-mix(in srgb, #0f172a 45%, transparent);
+    display: block;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    position: fixed;
+    transition: opacity 240ms ease;
+    z-index: 44;
+  }
+
+  .ui-pos-scrim[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .ui-pos-ticket-close {
+    display: inline-flex;
   }
 }
 
 @media (max-width: 767px) {
   .ui-pos-shell {
-    max-height: none;
-    overflow: visible;
+    gap: 8px;
+    padding: 8px;
   }
 
-  .ui-pos-layout {
-    overflow: visible;
+  .ui-pos-shell[data-cartbar="true"] {
+    padding-bottom: 76px;
+  }
+
+  /*
+   * Two rows on a phone, and the second row is the navigation at full width.
+   *
+   * Squeezing register, shift, status, actions and the nav onto one row made the bar wrap into
+   * three ragged lines and moved every control. Giving the nav its own row costs 38px, buys back
+   * the labels, and turns the two destinations into thumb-sized halves of the screen.
+   */
+  .ui-pos-topbar {
+    border-radius: 14px;
+    gap: 8px;
+    grid-template-areas:
+      "start end"
+      "nav nav";
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 8px;
+  }
+
+  .ui-pos-nav a {
+    flex: 1;
+    justify-content: center;
+    padding: 0 10px;
+  }
+
+  .ui-pos-topbar .ui-status-chip {
+    padding: 6px 9px;
+  }
+
+  .ui-pos-panel {
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .ui-pos-summoned {
+    max-height: 90dvh;
   }
 
   .ui-pos-results {
-    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 8px;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  }
+
+  .ui-pos-tile {
+    min-height: 88px;
+  }
+
+  .ui-pos-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ui-pay-methods {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ui-pay-numberpad {
+    max-width: none;
   }
 
   .ui-app-shell {

@@ -203,15 +203,24 @@ export function Drawer({
   onClose,
   open,
   title,
+  wide = false,
 }: {
   children: ReactNode;
   eyebrow?: string;
   onClose: () => void;
   open: boolean;
   title: string;
+  /** A drawer that has to hold two columns, such as the POS payment pad beside the tender list. */
+  wide?: boolean;
 }) {
   return (
-    <Overlay label={title} onClose={onClose} open={open} placement="end" panelClassName="ui-drawer">
+    <Overlay
+      label={title}
+      onClose={onClose}
+      open={open}
+      placement="end"
+      panelClassName={cn("ui-drawer", wide && "ui-drawer--wide")}
+    >
       <div className="ui-dialog-header">
         <div>
           {eyebrow ? <Kicker>{eyebrow}</Kicker> : null}
@@ -740,6 +749,27 @@ export function NumberPad({ onInput }: { onInput: (value: string) => void }) {
       ))}
     </div>
   );
+}
+
+/**
+ * Matches a CSS media query from React.
+ *
+ * It starts as `false` on both server and first client render, so hydration never disagrees, and
+ * the real value lands in the effect. Layouts that depend on it must therefore be readable in the
+ * `false` state, which is the wide layout.
+ */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(false);
+
+  useEffect(() => {
+    const list = window.matchMedia(query);
+    const sync = () => setMatches(list.matches);
+    sync();
+    list.addEventListener("change", sync);
+    return () => list.removeEventListener("change", sync);
+  }, [query]);
+
+  return matches;
 }
 
 /** Keeps the scan input focused, which is the first POS rule in section 6. */

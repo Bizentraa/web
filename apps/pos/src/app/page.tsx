@@ -1,15 +1,10 @@
 "use client";
 
 import type {
-  CatalogReferenceData,
-  CustomerListRow,
   PaymentMethodKind,
   PosCatalogEntry,
-  ReceiptDocument,
-  SaleCartInput,
   SaleDetail,
   SaleListRow,
-  SaleQuote,
 } from "@bizentra/contracts";
 import {
   Badge,
@@ -24,188 +19,145 @@ import {
   FormFooter,
   FormGrid,
   Kicker,
-  MoneySummary,
   OfflineBanner,
   ReceiptView,
   SelectField,
-  SkeletonScreen,
-  Stack,
   StatePanel,
   StatusChip,
 } from "@bizentra/design-system";
 import {
+  ConfirmDialog,
   createIdempotencyKey,
   Dialog,
-  Sheet,
-  useDebouncedValue,
-  useOnlineState,
+  useMediaQuery,
   useScanFocus,
   useToasts,
 } from "@bizentra/design-system/client";
-import Link from "next/link";
+import {
+  ChevronDown,
+  Maximize2,
+  Minimize2,
+  Minus,
+  MonitorSmartphone,
+  Plus,
+  Printer,
+  ScanBarcode,
+  ShoppingCart,
+  SlidersHorizontal,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 
-import { RegisterBar } from "@/components/register-bar";
+import { CloseShiftDrawer } from "@/components/close-shift-drawer";
+import { HeldSaleRow } from "@/components/held-sale-row";
+import { PaymentDrawer } from "@/components/payment-drawer";
+import { CatalogSkeleton, SaleListSkeleton, SellScreenSkeleton } from "@/components/pos-skeletons";
+import { PosTopbar } from "@/components/pos-topbar";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { readNumber, readText } from "./lib/forms";
-import {
-  errorMessage,
-  useCurrentShift,
-  useOfflineQueue,
-  usePosApi,
-  useRegister,
-} from "./lib/pos-session";
-
-interface CartLine {
-  itemId: string;
-  code: string;
-  name: string;
-  unitCode: string;
-  unitPrice: number;
-  quantity: number;
-}
-
-interface Tender {
-  method: PaymentMethodKind;
-  amount: number;
-  tendered: number;
-  reference: string;
-  idempotencyKey: string;
-}
-
-const TENDER_METHODS: Array<{ method: PaymentMethodKind; label: string }> = [
-  { method: "CASH", label: "Cash" },
-  { method: "CARD", label: "Card" },
-  { method: "TRANSFER", label: "Transfer" },
-  { method: "QR_WALLET", label: "QR / wallet" },
-  { method: "STORE_CREDIT", label: "Store credit" },
-];
+import { errorMessage } from "./lib/pos-session";
+import { usePosWorkspace } from "./lib/pos-workspace";
 
 export default function PosPage() {
-  const { api, identity } = usePosApi();
-  const toasts = useToasts();
-  const online = useOnlineState();
-  const { register, setRegister } = useRegister();
   const {
+    api,
+    busy,
+    cart,
+    cartOpen,
+    categoryId,
+    clearCart,
+    closeOpen,
+    coupon,
+    customerId,
+    customers,
+    focusMode,
+    held,
+    heldLoading,
+    heldOpen,
+    holdsLoading,
+    identity,
+    lines,
+    online,
+    openHolds,
+    payOpen,
+    queue,
+    quote,
+    quoteError,
+    receipt,
+    reference,
+    refreshHolds,
+    refreshShift,
+    register,
+    results,
+    resultsLoading,
+    resumedSaleId,
+    saleDiscount,
+    setBusy,
+    setCartOpen,
+    setCategoryId,
+    setCloseOpen,
+    setCoupon,
+    setCustomerId,
+    setFocusMode,
+    setHeld,
+    setHeldLoading,
+    setHeldOpen,
+    setLines,
+    setPayOpen,
+    setReceipt,
+    setRegister,
+    setResumedSaleId,
+    setSaleDiscount,
+    setTenders,
+    setTerm,
     shift,
-    loading: shiftLoading,
-    refresh: refreshShift,
-  } = useCurrentShift(api, identity?.businessId, register);
-  const queue = useOfflineQueue(api, identity?.businessId);
+    shiftLoading,
+    tenders,
+    term,
+  } = usePosWorkspace();
 
-  const [reference, setReference] = useState<CatalogReferenceData | null>(null);
-  const [customers, setCustomers] = useState<CustomerListRow[]>([]);
-  const [term, setTerm] = useState("");
-  const debouncedTerm = useDebouncedValue(term, 200);
-  const [results, setResults] = useState<PosCatalogEntry[]>([]);
-  const [lines, setLines] = useState<CartLine[]>([]);
-  const [customerId, setCustomerId] = useState("");
-  const [saleDiscount, setSaleDiscount] = useState("");
-  const [coupon, setCoupon] = useState("");
-  const [quote, setQuote] = useState<SaleQuote | null>(null);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [tenders, setTenders] = useState<Tender[]>([]);
-  const [payOpen, setPayOpen] = useState(false);
-  const [heldOpen, setHeldOpen] = useState(false);
-  const [held, setHeld] = useState<SaleListRow[]>([]);
-  const [resumedSaleId, setResumedSaleId] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<ReceiptDocument | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [closeOpen, setCloseOpen] = useState(false);
-  const scanRef = useScanFocus<HTMLInputElement>(Boolean(shift) && !payOpen && !receipt);
+  const toasts = useToasts();
+  /* The ticket a cashier has asked to throw away, held until they have given a reason for it. */
+  const [discarding, setDiscarding] = useState<SaleListRow | null>(null);
 
-  /* ------------------------------------------------------------ reference */
-
-  useEffect(() => {
-    if (!api || !identity) return;
-    void api
-      .getCatalogReference(identity.businessId)
-      .then(setReference)
-      .catch(() => setReference(null));
-    void api
-      .listCustomers(identity.businessId, { pageSize: 50, status: "ACTIVE" })
-      .then((page) => setCustomers(page.rows))
-      .catch(() => setCustomers([]));
-  }, [api, identity]);
-
-  useEffect(() => {
-    if (!api || !identity || !register) return;
-    void api
-      .searchPosCatalog(identity.businessId, {
-        term: debouncedTerm,
-        branchId: register.branchId,
-        limit: 24,
-        ...(customerId ? { customerId } : {}),
-      })
-      .then(setResults)
-      .catch(() => setResults([]));
-  }, [api, identity, register, debouncedTerm, customerId]);
-
-  /* ---------------------------------------------------------------- quote */
-
-  const cart: SaleCartInput | null = useMemo(() => {
-    if (!register || !lines.length) return null;
-    const discountValue = Number(saleDiscount);
-    return {
-      branchId: register.branchId,
-      lines: lines.map((line) => ({ itemId: line.itemId, quantity: line.quantity })),
-      ...(customerId ? { customerId } : {}),
-      ...(coupon ? { couponCode: coupon } : {}),
-      ...(Number.isFinite(discountValue) && discountValue > 0
-        ? { saleDiscountKind: "FIXED_AMOUNT" as const, saleDiscountValue: discountValue }
-        : {}),
-    };
-  }, [coupon, customerId, lines, register, saleDiscount]);
-
-  useEffect(() => {
-    if (!api || !identity || !cart) {
-      setQuote(null);
-      setQuoteError(null);
-      return;
-    }
-    let cancelled = false;
-    void api
-      .quoteSale(identity.businessId, cart)
-      .then((result) => {
-        if (!cancelled) {
-          setQuote(result);
-          setQuoteError(null);
-        }
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) {
-          setQuote(null);
-          setQuoteError(errorMessage(cause));
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, identity, cart]);
+  const overlayOpen = payOpen || heldOpen || closeOpen || receipt !== null;
+  /*
+   * A hardware scanner types into whatever holds focus, so the scan field claims it. On a touch
+   * screen that same claim throws up the on-screen keyboard over the product grid every time a
+   * dialog closes, so a coarse pointer opts out and the cashier taps the field when they mean to
+   * type. Scanners on tablets are wedge devices and still deliver to the focused field once tapped.
+   */
+  const coarsePointer = useMediaQuery("(pointer: coarse)");
+  const scanRef = useScanFocus<HTMLInputElement>(Boolean(shift) && !overlayOpen && !coarsePointer);
 
   /* ----------------------------------------------------------------- cart */
 
-  const addEntry = useCallback((entry: PosCatalogEntry) => {
-    setLines((current) => {
-      const existing = current.find((line) => line.itemId === entry.itemId);
-      if (existing) {
-        return current.map((line) =>
-          line.itemId === entry.itemId ? { ...line, quantity: line.quantity + 1 } : line,
-        );
-      }
-      return [
-        ...current,
-        {
-          itemId: entry.itemId,
-          code: entry.code,
-          name: entry.name,
-          unitCode: entry.unitCode,
-          unitPrice: entry.unitPrice,
-          quantity: 1,
-        },
-      ];
-    });
-  }, []);
+  const addEntry = useCallback(
+    (entry: PosCatalogEntry) => {
+      setLines((current) => {
+        const existing = current.find((line) => line.itemId === entry.itemId);
+        if (existing) {
+          return current.map((line) =>
+            line.itemId === entry.itemId ? { ...line, quantity: line.quantity + 1 } : line,
+          );
+        }
+        return [
+          ...current,
+          {
+            itemId: entry.itemId,
+            code: entry.code,
+            name: entry.name,
+            unitCode: entry.unitCode,
+            unitPrice: entry.unitPrice,
+            quantity: 1,
+          },
+        ];
+      });
+    },
+    [setLines],
+  );
 
   const scan = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -246,21 +198,12 @@ export default function PosPage() {
   };
 
   const setQuantity = (itemId: string, quantity: number) => {
+    if (!Number.isFinite(quantity)) return;
     setLines((current) =>
       quantity <= 0
         ? current.filter((line) => line.itemId !== itemId)
         : current.map((line) => (line.itemId === itemId ? { ...line, quantity } : line)),
     );
-  };
-
-  const clearCart = () => {
-    setLines([]);
-    setTenders([]);
-    setCustomerId("");
-    setSaleDiscount("");
-    setCoupon("");
-    setQuote(null);
-    setResumedSaleId(null);
   };
 
   /* ------------------------------------------------------------- payments */
@@ -272,8 +215,13 @@ export default function PosPage() {
     (sum, tender) => sum + Math.max(tender.tendered - tender.amount, 0),
     0,
   );
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const inCart = useMemo(
+    () => new Map(lines.map((line) => [line.itemId, line.quantity] as const)),
+    [lines],
+  );
 
-  const addTender = (method: PaymentMethodKind, amount: number, reference: string) => {
+  const addTender = (method: PaymentMethodKind, amount: number, tenderReference: string) => {
     const applied = Math.min(amount, due);
     if (applied <= 0) return;
     setTenders((current) => [
@@ -282,7 +230,7 @@ export default function PosPage() {
         method,
         amount: applied,
         tendered: method === "CASH" ? amount : applied,
-        reference,
+        reference: tenderReference,
         idempotencyKey: createIdempotencyKey("pay"),
       },
     ]);
@@ -343,6 +291,7 @@ export default function PosPage() {
       setPayOpen(false);
       clearCart();
       await refreshShift();
+      await refreshHolds();
       toasts.push({
         title: `Sale ${sale.receiptNumber ?? sale.number} completed`,
         tone: "success",
@@ -379,6 +328,7 @@ export default function PosPage() {
         tone: "success",
       });
       clearCart();
+      await refreshHolds();
     } catch (cause) {
       toasts.push({ title: "Cart not held", description: errorMessage(cause), tone: "danger" });
     } finally {
@@ -388,16 +338,20 @@ export default function PosPage() {
 
   const openHeld = async () => {
     if (!api || !identity) return;
+    setHeldOpen(true);
+    setHeldLoading(true);
     try {
       const page = await api.listSales(identity.businessId, { status: "HELD", pageSize: 25 });
       setHeld(page.rows);
-      setHeldOpen(true);
     } catch (cause) {
       toasts.push({
         title: "Held carts not loaded",
         description: errorMessage(cause),
         tone: "danger",
       });
+      setHeld([]);
+    } finally {
+      setHeldLoading(false);
     }
   };
 
@@ -418,9 +372,45 @@ export default function PosPage() {
       setCustomerId(sale.customerId ?? "");
       setResumedSaleId(sale.id);
       setHeldOpen(false);
+      /* Resuming is also how a cashier clears a blocker from the close-shift drawer. */
+      setCloseOpen(false);
+      setCartOpen(false);
+      await refreshHolds();
       toasts.push({ title: `Resumed ${sale.number}`, tone: "success" });
     } catch (cause) {
       toasts.push({ title: "Cart not resumed", description: errorMessage(cause), tone: "danger" });
+    }
+  };
+
+  /**
+   * Throwing a ticket away.
+   *
+   * Voiding is the only honest way to end an unfinished sale: the record stays, marked void, with
+   * the reason attached, so a shift that closed with three tickets discarded can still say what
+   * they were. The server refuses outright if any money has already been taken against it, which
+   * is what keeps this from becoming a way to make a payment disappear.
+   */
+  const discardHold = async (saleId: string, reason: string) => {
+    if (!api || !identity) return;
+    setBusy(true);
+    try {
+      await api.voidSale(identity.businessId, saleId, { reason });
+      setDiscarding(null);
+      setHeld((current) => current.filter((row) => row.id !== saleId));
+      await refreshHolds();
+      toasts.push({
+        title: "Ticket discarded",
+        description: "It no longer holds the shift open.",
+        tone: "success",
+      });
+    } catch (cause) {
+      toasts.push({
+        title: "Ticket not discarded",
+        description: errorMessage(cause),
+        tone: "danger",
+      });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -452,15 +442,13 @@ export default function PosPage() {
     }
   };
 
-  const closeShift = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const closeShift = async (countedCash: number, varianceReason: string) => {
     if (!api || !identity || !shift) return;
-    const form = new FormData(event.currentTarget);
     setBusy(true);
     try {
       await api.closeShift(identity.businessId, shift.id, {
-        countedCash: readNumber(form, "countedCash", 0),
-        varianceReason: readText(form, "varianceReason") || undefined,
+        countedCash,
+        ...(varianceReason ? { varianceReason } : {}),
       });
       setCloseOpen(false);
       await refreshShift();
@@ -472,48 +460,80 @@ export default function PosPage() {
     }
   };
 
+  /* ----------------------------------------------------------- focus mode */
+
+  /*
+   * Full view hides the header so the products, the ticket and the amount due own the screen -
+   * the state a till spends its day in. It also asks the browser for real fullscreen, which is
+   * what removes the address bar on a wall-mounted terminal; that request can be refused (it needs
+   * a user gesture, and some kiosk builds disable it) and the layout change stands either way, so
+   * the feature never depends on it.
+   */
+  const toggleFocusMode = () => {
+    const next = !focusMode;
+    setFocusMode(next);
+    try {
+      if (next) {
+        void document.documentElement.requestFullscreen?.().catch(() => undefined);
+      } else if (document.fullscreenElement) {
+        void document.exitFullscreen?.().catch(() => undefined);
+      }
+    } catch {
+      /* Layout still changes; only the browser chrome stays. */
+    }
+  };
+
+  /* Leaving fullscreen by Escape or a system gesture has to bring the header back with it. */
+  useEffect(() => {
+    const sync = () => {
+      if (!document.fullscreenElement) setFocusMode(false);
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, [setFocusMode]);
+
   /* ---------------------------------------------------------------- views */
 
   if (!identity) {
     return (
       <main className="ui-pos-shell">
-        <StatePanel state="permission" title="This terminal has no Business identity yet">
-          Open the Back Office appearance screen and enter the Business and user IDs. The POS uses
-          the same saved identity until production sign-in is connected.
-        </StatePanel>
+        <div className="ui-pos-blank">
+          <div className="ui-pos-blank-card">
+            <MonitorSmartphone aria-hidden="true" />
+            <Kicker>Terminal not set up</Kicker>
+            <h1>This till has no Business yet</h1>
+            <p>
+              Open the Back Office appearance screen and enter the Business and user IDs. The till
+              keeps that identity until production sign-in is connected.
+            </p>
+          </div>
+        </div>
       </main>
     );
   }
 
+  const categories = (reference?.categories ?? []).filter(
+    (category) => category.status === "ACTIVE",
+  );
+
+  /*
+   * `data-cartbar` is what makes the shell leave room for the fixed cart bar on a narrow screen.
+   * The bar only exists once a shift is open, so the open-shift form does not sit above 76px of
+   * nothing.
+   */
   return (
-    <main className="ui-pos-shell">
-      <header className="ui-pos-topbar">
-        <div className="ui-row">
-          <RegisterBar onUnbind={() => setRegister(null)} register={register} shift={shift} />
-          {shift ? <StatusChip tone="success">Shift {shift.number}</StatusChip> : null}
-        </div>
-        <div className="ui-row">
-          <StatusChip tone={online ? "success" : "warning"}>
-            {online ? "Online" : "Offline"}
-          </StatusChip>
-          {queue.queue.length ? (
-            <Button onClick={() => void queue.sync()} size="quiet" variant="secondary">
-              {queue.syncing ? "Syncing..." : `Sync ${queue.queue.length} pending`}
-            </Button>
-          ) : null}
-          <Button onClick={() => void openHeld()} size="quiet" variant="secondary">
-            Held carts
-          </Button>
-          <Link className="ui-button ui-button--quiet" href="/returns">
-            Returns
-          </Link>
-          {shift ? (
-            <Button onClick={() => setCloseOpen(true)} size="quiet" variant="ghost">
-              Close shift
-            </Button>
-          ) : null}
-        </div>
-      </header>
+    <main className="ui-pos-shell" data-cartbar={Boolean(shift)} data-focus={focusMode}>
+      <PosTopbar
+        active="sell"
+        heldCount={openHolds.length}
+        onCloseShift={() => setCloseOpen(true)}
+        onHeld={() => void openHeld()}
+        online={online}
+        queue={{ count: queue.queue.length, syncing: queue.syncing, sync: () => void queue.sync() }}
+        register={register}
+        setRegister={setRegister}
+        shift={shift}
+      />
 
       {!online || queue.queue.length ? (
         <OfflineBanner
@@ -523,335 +543,409 @@ export default function PosPage() {
       ) : null}
 
       {shiftLoading ? (
-        <SkeletonScreen />
+        <SellScreenSkeleton />
       ) : !shift ? (
-        <Card>
-          <CardHeader>
-            <div>
-              <Kicker>CC-P2-001</Kicker>
-              <CardTitle>Open a shift before selling</CardTitle>
-            </div>
-            <StatusChip tone="warning">No open shift</StatusChip>
-          </CardHeader>
-          <CardDescription>
-            Every sale belongs to a shift so the cash drawer can be reconciled at the end of the
-            day. Two shifts can never be open on the same register at once.
-          </CardDescription>
-          <form className="ui-stack" onSubmit={(event) => void openShift(event)}>
-            <FormGrid>
-              <SelectField
-                label="Branch"
-                name="branchId"
-                defaultValue={register?.branchId ?? ""}
-                required
-              >
-                {(reference?.branches ?? []).map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </SelectField>
-              <Field
-                label="Register"
-                name="registerCode"
-                defaultValue={register?.registerCode ?? "REG1"}
-                required
-              />
-              <Field
-                label="Opening cash float"
-                name="openingFloat"
-                defaultValue="0"
-                inputMode="decimal"
-              />
-            </FormGrid>
-            <FormFooter>
-              <span className="ui-card-description">
-                The opening float is counted into the drawer and appears in the closing count.
-              </span>
-              <Button disabled={busy} size="large" type="submit">
-                Open shift
-              </Button>
-            </FormFooter>
-          </form>
-        </Card>
-      ) : (
-        <div className="ui-pos-layout">
-          <section className="ui-pos-panel">
-            <form className="ui-pos-scan" onSubmit={(event) => void scan(event)}>
-              <input
-                aria-label="Scan a barcode or search an item"
-                onChange={(event) => setTerm(event.target.value)}
-                placeholder="Scan barcode or search item"
-                ref={scanRef}
-                value={term}
-              />
-              <Button size="large" type="submit">
-                Add
-              </Button>
+        <div className="ui-pos-fallback">
+          <Card>
+            <CardHeader>
+              <div>
+                <Kicker>CC-P2-001</Kicker>
+                <CardTitle>Open a shift before selling</CardTitle>
+              </div>
+              <StatusChip tone="warning">No open shift</StatusChip>
+            </CardHeader>
+            <CardDescription>
+              Every sale belongs to a shift so the cash drawer can be reconciled at the end of the
+              day. Two shifts can never be open on the same register at once.
+            </CardDescription>
+            <form className="ui-stack" onSubmit={(event) => void openShift(event)}>
+              <FormGrid>
+                <SelectField
+                  label="Branch"
+                  name="branchId"
+                  defaultValue={register?.branchId ?? ""}
+                  required
+                >
+                  {(reference?.branches ?? []).map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </SelectField>
+                <Field
+                  label="Register"
+                  name="registerCode"
+                  defaultValue={register?.registerCode ?? "REG1"}
+                  required
+                />
+                <Field
+                  label="Opening cash float"
+                  name="openingFloat"
+                  defaultValue="0"
+                  inputMode="decimal"
+                />
+              </FormGrid>
+              <FormFooter>
+                <span className="ui-card-description">
+                  The opening float is counted into the drawer and appears in the closing count.
+                </span>
+                <Button disabled={busy} size="large" type="submit">
+                  Open shift
+                </Button>
+              </FormFooter>
             </form>
+          </Card>
+        </div>
+      ) : (
+        <>
+          <div className="ui-pos-layout">
+            {/* -------------------------------------------------- products */}
 
-            {results.length ? (
-              <div className="ui-pos-results">
-                {results.map((entry) => (
+            <section className="ui-pos-panel">
+              <form className="ui-pos-scan" onSubmit={(event) => void scan(event)}>
+                <div className="ui-pos-scan-field">
+                  <ScanBarcode aria-hidden="true" className="size-5" />
+                  <input
+                    aria-label="Scan a barcode or search an item"
+                    autoComplete="off"
+                    onChange={(event) => setTerm(event.target.value)}
+                    placeholder="Scan barcode or search item"
+                    ref={scanRef}
+                    value={term}
+                  />
+                  {term ? (
+                    <button
+                      aria-label="Clear the search"
+                      className="ui-pos-scan-clear"
+                      onClick={() => setTerm("")}
+                      type="button"
+                    >
+                      <X aria-hidden="true" className="size-4" />
+                    </button>
+                  ) : null}
+                </div>
+                <Button type="submit">
+                  <Plus aria-hidden="true" className="size-4" />
+                  Add
+                </Button>
+                <button
+                  aria-label={focusMode ? "Leave full view" : "Full view"}
+                  aria-pressed={focusMode}
+                  className="ui-pos-icon-button"
+                  data-active={focusMode}
+                  onClick={toggleFocusMode}
+                  title={focusMode ? "Leave full view" : "Full view: hide the header"}
+                  type="button"
+                >
+                  {focusMode ? (
+                    <Minimize2 aria-hidden="true" className="size-4" />
+                  ) : (
+                    <Maximize2 aria-hidden="true" className="size-4" />
+                  )}
+                </button>
+              </form>
+
+              {categories.length ? (
+                <div className="ui-pos-chips" role="group" aria-label="Filter by category">
                   <button
-                    className="ui-pos-tile"
-                    key={`${entry.itemId}-${entry.variantId ?? "base"}`}
-                    onClick={() => addEntry(entry)}
+                    aria-pressed={categoryId === ""}
+                    className="ui-pos-chip"
+                    data-active={categoryId === ""}
+                    onClick={() => setCategoryId("")}
                     type="button"
                   >
-                    <strong>{entry.name}</strong>
-                    <span>
-                      {entry.code} · {entry.unitCode}
-                    </span>
-                    <b>{formatMoney(entry.unitPrice)}</b>
+                    All items
                   </button>
-                ))}
+                  {categories.map((category) => (
+                    <button
+                      aria-pressed={categoryId === category.id}
+                      className="ui-pos-chip"
+                      data-active={categoryId === category.id}
+                      key={category.id}
+                      onClick={() => setCategoryId(category.id === categoryId ? "" : category.id)}
+                      type="button"
+                    >
+                      {category.name}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {/*
+                The skeleton is only for the first fill. Once the grid holds something, a refine
+                leaves it on screen and swaps the rows underneath, because blanking a grid a
+                cashier is reading is worse than a moment of slightly stale prices.
+              */}
+              {resultsLoading && !results.length ? (
+                <CatalogSkeleton />
+              ) : results.length ? (
+                <div className="ui-pos-results">
+                  {results.map((entry) => {
+                    const quantity = inCart.get(entry.itemId) ?? 0;
+                    return (
+                      <button
+                        className="ui-pos-tile"
+                        data-in-cart={quantity > 0}
+                        key={`${entry.itemId}-${entry.variantId ?? "base"}`}
+                        onClick={() => addEntry(entry)}
+                        type="button"
+                      >
+                        {quantity > 0 ? (
+                          <span className="ui-pos-tile-count">{formatQuantity(quantity)}</span>
+                        ) : null}
+                        <strong>{entry.name}</strong>
+                        <span>
+                          {entry.code} · {entry.unitCode}
+                        </span>
+                        <b>{formatMoney(entry.unitPrice)}</b>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <StatePanel state="empty" title="No items match">
+                  {term || categoryId
+                    ? "Clear the search or pick another category. Only active, sellable items with a price appear here."
+                    : "Scan a barcode or type part of an item name. Only active, sellable items with a price appear here."}
+                </StatePanel>
+              )}
+            </section>
+
+            {/* ---------------------------------------------------- ticket */}
+
+            <section className="ui-pos-panel ui-pos-ticket ui-pos-summoned" data-open={cartOpen}>
+              <div className="ui-pos-panel-head">
+                <h2 className="ui-pos-panel-title">
+                  <ShoppingCart aria-hidden="true" className="size-4" />
+                  Ticket
+                  {itemCount > 0 ? <small>{formatQuantity(itemCount)}</small> : null}
+                </h2>
+                <div className="ui-row">
+                  {resumedSaleId ? <Badge tone="warning">Resumed hold</Badge> : null}
+                  {/* Only rendered as a control below the ticket breakpoint, where the panel
+                      is a sheet; the stylesheet hides it at every wider size. */}
+                  <button
+                    aria-label="Close the ticket"
+                    className="ui-pos-icon-button ui-pos-ticket-close"
+                    onClick={() => setCartOpen(false)}
+                    type="button"
+                  >
+                    <ChevronDown aria-hidden="true" className="size-4" />
+                  </button>
+                </div>
               </div>
-            ) : (
-              <StatePanel state="empty" title="Nothing to show yet">
-                Scan a barcode or type part of an item name. Only active, sellable items with a
-                price appear here.
-              </StatePanel>
-            )}
-          </section>
 
-          <section className="ui-pos-panel">
-            <div className="ui-row ui-row--between">
-              <CardTitle>Cart</CardTitle>
-              {resumedSaleId ? <Badge tone="warning">Resumed hold</Badge> : null}
-            </div>
+              <label className="ui-pos-ticket-customer">
+                <User aria-hidden="true" className="size-4" />
+                <select
+                  aria-label="Customer"
+                  onChange={(event) => setCustomerId(event.target.value)}
+                  value={customerId}
+                >
+                  <option value="">Walk-in customer</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.name}
+                      {customer.storeCredit > 0
+                        ? ` (credit ${formatMoney(customer.storeCredit)})`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-            {lines.length ? (
-              <div className="ui-pos-cart">
-                {lines.map((line) => (
-                  <div className="ui-pos-cart-line" key={line.itemId}>
-                    <div>
+              {lines.length ? (
+                <div className="ui-pos-cart">
+                  {lines.map((line) => (
+                    <div className="ui-pos-cart-line" key={line.itemId}>
                       <strong>{line.name}</strong>
+                      <div className="ui-pos-qty">
+                        <button
+                          aria-label={`Reduce ${line.name}`}
+                          onClick={() => setQuantity(line.itemId, line.quantity - 1)}
+                          type="button"
+                        >
+                          <Minus aria-hidden="true" className="size-3.5" />
+                        </button>
+                        <input
+                          aria-label={`Quantity for ${line.name}`}
+                          inputMode="decimal"
+                          onChange={(event) =>
+                            setQuantity(line.itemId, Number(event.target.value || 0))
+                          }
+                          value={line.quantity}
+                        />
+                        <button
+                          aria-label={`Add another ${line.name}`}
+                          onClick={() => setQuantity(line.itemId, line.quantity + 1)}
+                          type="button"
+                        >
+                          <Plus aria-hidden="true" className="size-3.5" />
+                        </button>
+                      </div>
                       <small>
                         {formatMoney(line.unitPrice)} / {line.unitCode}
                       </small>
-                    </div>
-                    <div className="ui-pos-qty">
+                      <strong className="ui-money">
+                        {formatMoney(line.unitPrice * line.quantity)}
+                      </strong>
                       <button
-                        aria-label={`Reduce ${line.name}`}
-                        onClick={() => setQuantity(line.itemId, line.quantity - 1)}
+                        aria-label={`Remove ${line.name}`}
+                        className="ui-pos-line-remove"
+                        onClick={() => setQuantity(line.itemId, 0)}
                         type="button"
                       >
-                        -
-                      </button>
-                      <input
-                        aria-label={`Quantity for ${line.name}`}
-                        onChange={(event) => setQuantity(line.itemId, Number(event.target.value))}
-                        value={line.quantity}
-                      />
-                      <button
-                        aria-label={`Add another ${line.name}`}
-                        onClick={() => setQuantity(line.itemId, line.quantity + 1)}
-                        type="button"
-                      >
-                        +
+                        <Trash2 aria-hidden="true" className="size-4" />
                       </button>
                     </div>
-                    <strong className="ui-money">
-                      {formatMoney(line.unitPrice * line.quantity)}
-                    </strong>
+                  ))}
+                </div>
+              ) : (
+                <StatePanel state="empty" title="The ticket is empty">
+                  Scan a barcode or tap a product. Items appear here with their price and quantity.
+                </StatePanel>
+              )}
+
+              <details className="ui-pos-options">
+                <summary>
+                  <SlidersHorizontal aria-hidden="true" className="size-4" />
+                  Discount and coupon
+                  {saleDiscount || coupon ? <Badge tone="information">Applied</Badge> : null}
+                  <ChevronDown aria-hidden="true" className="size-4" />
+                </summary>
+                <div className="ui-pos-options-body">
+                  <Field
+                    label="Sale discount"
+                    inputMode="decimal"
+                    onChange={(event) => setSaleDiscount(event.target.value)}
+                    placeholder="0.00"
+                    value={saleDiscount}
+                  />
+                  <Field
+                    label="Coupon"
+                    onChange={(event) => setCoupon(event.target.value)}
+                    placeholder="SAVE10"
+                    value={coupon}
+                  />
+                </div>
+              </details>
+
+              {quoteError ? (
+                <StatePanel state="error" title="This ticket cannot be priced">
+                  {quoteError}
+                </StatePanel>
+              ) : null}
+
+              {quote ? (
+                <>
+                  <div className="ui-pos-totals">
+                    <div>
+                      <span>Subtotal</span>
+                      <b>{formatMoney(quote.subtotal)}</b>
+                    </div>
+                    {quote.discountTotal > 0 ? (
+                      <div data-tone="saving">
+                        <span>Discount</span>
+                        <b>{formatMoney(-quote.discountTotal)}</b>
+                      </div>
+                    ) : null}
+                    <div>
+                      <span>Tax</span>
+                      <b>{formatMoney(quote.taxTotal)}</b>
+                    </div>
                   </div>
-                ))}
+
+                  {quote.appliedPromotions.length || quote.warnings.length ? (
+                    <div className="ui-row">
+                      {quote.appliedPromotions.map((promotion) => (
+                        <Badge key={promotion.id} tone="success">
+                          {promotion.name} saved {formatMoney(promotion.amount)}
+                        </Badge>
+                      ))}
+                      {quote.warnings.map((warning) => (
+                        <Badge key={warning} tone="warning">
+                          {warning}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+
+              <div className="ui-pos-due">
+                <span>Amount due</span>
+                <strong>{formatMoney(due, quote?.currencyCode)}</strong>
               </div>
-            ) : (
-              <StatePanel state="empty" title="The cart is empty">
-                Scanned and selected items appear here with their price and quantity.
-              </StatePanel>
-            )}
 
-            <FormGrid>
-              <SelectField
-                label="Customer"
-                onChange={(event) => setCustomerId(event.target.value)}
-                value={customerId}
-              >
-                <option value="">Walk-in</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                    {customer.storeCredit > 0
-                      ? ` (credit ${formatMoney(customer.storeCredit)})`
-                      : ""}
-                  </option>
-                ))}
-              </SelectField>
-              <Field
-                label="Sale discount"
-                inputMode="decimal"
-                onChange={(event) => setSaleDiscount(event.target.value)}
-                placeholder="0.00"
-                value={saleDiscount}
-              />
-              <Field
-                label="Coupon"
-                onChange={(event) => setCoupon(event.target.value)}
-                placeholder="SAVE10"
-                value={coupon}
-              />
-            </FormGrid>
+              <div className="ui-pos-actions">
+                <Button
+                  disabled={!lines.length || busy}
+                  onClick={() => void holdCart()}
+                  variant="secondary"
+                >
+                  Hold
+                </Button>
+                <Button disabled={!lines.length || busy} onClick={clearCart} variant="ghost">
+                  Clear
+                </Button>
+                <Button
+                  className="ui-pos-pay"
+                  disabled={!quote || !lines.length || busy}
+                  onClick={() => {
+                    setCartOpen(false);
+                    setPayOpen(true);
+                  }}
+                  size="large"
+                >
+                  Pay {formatMoney(due, quote?.currencyCode)}
+                </Button>
+              </div>
+            </section>
+          </div>
 
-            {quoteError ? (
-              <StatePanel state="error" title="This cart cannot be priced">
-                {quoteError}
-              </StatePanel>
-            ) : null}
+          {/* --------------------------------- compact ticket summoning bar */}
 
-            {quote ? (
-              <>
-                <MoneySummary
-                  rows={[
-                    { label: "Subtotal", value: formatMoney(quote.subtotal) },
-                    { label: "Discount", value: formatMoney(-quote.discountTotal) },
-                    { label: "Tax", value: formatMoney(quote.taxTotal) },
-                    { label: "Total", value: formatMoney(quote.total, quote.currencyCode) },
-                  ]}
-                />
-                {quote.appliedPromotions.map((promotion) => (
-                  <Badge key={promotion.id} tone="success">
-                    {promotion.name} saved {formatMoney(promotion.amount)}
-                  </Badge>
-                ))}
-                {quote.warnings.map((warning) => (
-                  <Badge key={warning} tone="warning">
-                    {warning}
-                  </Badge>
-                ))}
-              </>
-            ) : null}
+          <div
+            aria-hidden="true"
+            className="ui-pos-scrim"
+            data-open={cartOpen}
+            onClick={() => setCartOpen(false)}
+          />
 
-            <div className="ui-pos-due">
-              <span>Amount due</span>
-              <strong>{formatMoney(due)}</strong>
+          <div className="ui-pos-cartbar">
+            <div className="ui-pos-cartbar-summary">
+              <span>
+                {itemCount > 0
+                  ? `${formatQuantity(itemCount)} item${itemCount === 1 ? "" : "s"}`
+                  : "Ticket empty"}
+              </span>
+              <strong>{formatMoney(due, quote?.currencyCode)}</strong>
             </div>
-
-            <div className="ui-row">
-              <Button
-                disabled={!lines.length || busy}
-                onClick={() => void holdCart()}
-                variant="secondary"
-              >
-                Hold
-              </Button>
-              <Button disabled={!lines.length || busy} onClick={clearCart} variant="ghost">
-                Clear
-              </Button>
-              <Button
-                disabled={!quote || !lines.length || busy}
-                onClick={() => setPayOpen(true)}
-                size="large"
-              >
-                Pay {formatMoney(due)}
-              </Button>
-            </div>
-          </section>
-        </div>
+            <Button onClick={() => setCartOpen(true)}>
+              <ShoppingCart aria-hidden="true" className="size-4" />
+              Open ticket
+            </Button>
+          </div>
+        </>
       )}
 
       {/* ------------------------------------------------------- payment */}
 
-      <Sheet onClose={() => setPayOpen(false)} open={payOpen} title="Payment">
-        <MoneySummary
-          rows={[
-            { label: "Sale total", value: formatMoney(total) },
-            { label: "Tendered", value: formatMoney(tendered) },
-            { label: "Change", value: formatMoney(change) },
-            { label: "Still due", value: formatMoney(due) },
-          ]}
-          totalLabel="Still due"
-        />
-
-        {tenders.length ? (
-          <Stack tight>
-            {tenders.map((tender, index) => (
-              <div className="ui-row ui-row--between" key={tender.idempotencyKey}>
-                <span>
-                  {tender.method} {tender.reference ? `· ${tender.reference}` : ""}
-                </span>
-                <div className="ui-row">
-                  <strong className="ui-money">{formatMoney(tender.amount)}</strong>
-                  <Button
-                    onClick={() => setTenders((current) => current.filter((_, at) => at !== index))}
-                    size="quiet"
-                    variant="ghost"
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </Stack>
-        ) : null}
-
-        <form
-          className="ui-stack"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            const method = readText(form, "method", "CASH") as PaymentMethodKind;
-            const amount = readNumber(form, "amount", 0);
-            addTender(method, amount > 0 ? amount : due, readText(form, "reference"));
-            event.currentTarget.reset();
-          }}
-        >
-          <div className="ui-tender-grid">
-            {TENDER_METHODS.map((tender) => (
-              <Button
-                key={tender.method}
-                onClick={() => addTender(tender.method, due, "")}
-                size="large"
-                variant="secondary"
-              >
-                {tender.label}
-                <br />
-                {formatMoney(due)}
-              </Button>
-            ))}
-          </div>
-          <FormGrid>
-            <SelectField label="Method" name="method" defaultValue="CASH">
-              {TENDER_METHODS.map((tender) => (
-                <option key={tender.method} value={tender.method}>
-                  {tender.label}
-                </option>
-              ))}
-            </SelectField>
-            <Field
-              hint="For cash you can enter more than the amount due to see the change."
-              inputMode="decimal"
-              label="Amount"
-              name="amount"
-              placeholder={String(due)}
-            />
-            <Field label="Reference" name="reference" placeholder="Card approval code" />
-          </FormGrid>
-          <FormFooter>
-            <span className="ui-card-description">
-              Split the payment across as many tenders as the customer needs.
-            </span>
-            <Button type="submit" variant="secondary">
-              Add tender
-            </Button>
-          </FormFooter>
-        </form>
-
-        <FormFooter>
-          <Button onClick={() => setPayOpen(false)} variant="secondary">
-            Back to cart
-          </Button>
-          <Button
-            disabled={busy || due > 0 || !tenders.length}
-            onClick={() => void completeSale()}
-            size="large"
-          >
-            {busy ? "Posting..." : "Complete sale"}
-          </Button>
-        </FormFooter>
-      </Sheet>
+      <PaymentDrawer
+        busy={busy}
+        change={change}
+        currencyCode={quote?.currencyCode}
+        due={due}
+        offline={!online}
+        onAddTender={addTender}
+        onClose={() => setPayOpen(false)}
+        onComplete={() => void completeSale()}
+        onRemoveTender={(index) => setTenders((current) => current.filter((_, at) => at !== index))}
+        open={payOpen}
+        tendered={tendered}
+        tenders={tenders}
+        total={total}
+      />
 
       {/* ------------------------------------------------------- receipt */}
 
@@ -887,6 +981,7 @@ export default function PosPage() {
             />
             <FormFooter>
               <Button onClick={() => window.print()} variant="secondary">
+                <Printer aria-hidden="true" className="size-4" />
                 Print
               </Button>
               <Button onClick={() => setReceipt(null)} size="large">
@@ -905,77 +1000,59 @@ export default function PosPage() {
         open={heldOpen}
         title="Held carts"
       >
-        <Stack tight>
-          {held.map((sale) => (
-            <div className="ui-row ui-row--between" key={sale.id}>
-              <div>
-                <strong>{sale.number}</strong>
-                <CardDescription>
-                  {sale.customerName ?? "Walk-in"} · {sale.lineCount} line(s) ·{" "}
-                  {formatMoney(sale.total)}
-                </CardDescription>
-              </div>
-              <Button onClick={() => void resumeHeld(sale.id)} size="quiet">
-                Resume
-              </Button>
-            </div>
-          ))}
-          {!held.length ? (
-            <StatePanel state="empty" title="No held carts">
-              Hold a cart when a customer steps away, then resume it here.
-            </StatePanel>
-          ) : null}
-        </Stack>
+        {heldLoading ? (
+          <SaleListSkeleton rows={4} />
+        ) : held.length ? (
+          <div className="ui-pos-list">
+            {held.map((sale) => (
+              <HeldSaleRow
+                busy={busy}
+                key={sale.id}
+                onDiscard={setDiscarding}
+                onResume={(saleId) => void resumeHeld(saleId)}
+                sale={sale}
+              />
+            ))}
+          </div>
+        ) : (
+          <StatePanel state="empty" title="No held carts">
+            Hold a cart when a customer steps away, then resume it here.
+          </StatePanel>
+        )}
       </Dialog>
 
       {/* -------------------------------------------------- close shift */}
 
-      <Dialog
-        description="Count the drawer and record any difference. A difference always needs a reason."
+      <CloseShiftDrawer
+        busy={busy}
+        holds={openHolds}
+        holdsLoading={holdsLoading}
         onClose={() => setCloseOpen(false)}
+        onDiscard={setDiscarding}
+        onResume={(saleId) => void resumeHeld(saleId)}
+        onSubmit={(countedCash, varianceReason) => void closeShift(countedCash, varianceReason)}
         open={closeOpen}
-        title="Close this shift"
-      >
-        {shift ? (
-          <form className="ui-stack" onSubmit={(event) => void closeShift(event)}>
-            <MoneySummary
-              rows={[
-                { label: "Opening float", value: formatMoney(shift.openingFloat) },
-                { label: "Sales", value: `${shift.saleCount} · ${formatMoney(shift.salesTotal)}` },
-                { label: "Refunds", value: formatMoney(shift.refundTotal) },
-                { label: "Expected cash", value: formatMoney(shift.expectedCash) },
-              ]}
-              totalLabel="Expected cash"
-            />
-            <FormGrid>
-              <Field
-                inputMode="decimal"
-                label="Counted cash"
-                name="countedCash"
-                defaultValue={String(shift.expectedCash)}
-                required
-              />
-              <Field label="Reason for any difference" name="varianceReason" />
-            </FormGrid>
-            <FormFooter>
-              <Button onClick={() => setCloseOpen(false)} variant="secondary">
-                Keep selling
-              </Button>
-              <Button disabled={busy} type="submit">
-                Close shift
-              </Button>
-            </FormFooter>
-          </form>
-        ) : null}
-      </Dialog>
+        shift={shift}
+      />
+
+      {/* ------------------------------------------------ discard a ticket */}
+
+      <ConfirmDialog
+        busy={busy}
+        confirmLabel="Discard this ticket"
+        consequence={
+          discarding
+            ? `${discarding.receiptNumber ?? discarding.number} and its ${discarding.lineCount} line(s) worth ${formatMoney(discarding.total)} will be voided. The record stays with your reason attached, nothing is removed from stock, and the ticket stops holding this shift open.`
+            : ""
+        }
+        onCancel={() => setDiscarding(null)}
+        onConfirm={(reason) => {
+          if (discarding) void discardHold(discarding.id, reason);
+        }}
+        open={discarding !== null}
+        reasonLabel="Why is this ticket being discarded?"
+        title="Discard this unfinished ticket?"
+      />
     </main>
   );
-}
-
-export function tenderTotal(tenders: Array<{ amount: number }>): number {
-  return tenders.reduce((sum, tender) => sum + tender.amount, 0);
-}
-
-export function quantityLabel(quantity: number, unit: string): string {
-  return `${formatQuantity(quantity)} ${unit}`;
 }

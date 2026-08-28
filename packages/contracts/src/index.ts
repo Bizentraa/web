@@ -1040,6 +1040,9 @@ export const saleQuerySchema = z.object({
 export const catalogSearchSchema = z.object({
   term: z.string().trim().max(120).default(""),
   branchId: z.uuid().optional(),
+  /* A till shows the catalogue as a grid, so the cashier narrows it by category rather than by
+     typing. The filter is applied in the query so paging and the result limit stay honest. */
+  categoryId: z.uuid().optional(),
   priceListId: z.uuid().optional(),
   customerId: z.uuid().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -2150,6 +2153,8 @@ export interface PosCatalogEntry {
   name: string;
   unitCode: string;
   kind: ItemKind;
+  categoryId: string | null;
+  categoryName: string | null;
   unitPrice: number;
   taxRatePercent: number;
   stockTracked: boolean;

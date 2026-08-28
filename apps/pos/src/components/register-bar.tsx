@@ -1,8 +1,9 @@
 "use client";
 
 import type { ShiftSummary } from "@bizentra/contracts";
+import { formatDateTime, formatMoney } from "@bizentra/design-system";
 import { ConfirmDialog } from "@bizentra/design-system/client";
-import { ChevronDown, Lock, MapPin, MonitorSmartphone } from "lucide-react";
+import { ChevronDown, Lock, MapPin, MonitorSmartphone, Receipt } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -21,6 +22,11 @@ import type { RegisterSelection } from "@/app/lib/pos-session";
  * A till belongs to one Branch, so this is a binding rather than a switcher: re-binding is a
  * deliberate, confirmed act and is refused outright while a shift is open, because every sale and
  * the cash drawer count belong to that shift's Branch and register.
+ *
+ * The shift lives in here too. It used to sit beside this control as a chip wide enough to read
+ * "Shift COLA2-SHIFT-000003" across the header, which cost the bar its whole left half to say
+ * something a cashier checks perhaps twice a day. The trigger now carries a dot - lit when a
+ * shift is open - and the menu holds the number, when it opened and what has gone through it.
  */
 export function RegisterBar({
   onUnbind,
@@ -58,11 +64,20 @@ export function RegisterBar({
                 Register <span className="ui-code">{register.registerCode}</span>
               </span>
             </span>
-            <ChevronDown className="ml-1 size-4 shrink-0" aria-hidden="true" />
+            {/* The one thing about the shift a cashier checks at a glance: is it open. */}
+            <span
+              aria-hidden="true"
+              className="ui-pos-terminal-dot"
+              data-open={shiftOpen}
+              title={shiftOpen ? `Shift ${shift?.number ?? ""} is open` : "No shift open"}
+            />
+            <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" sideOffset={6} className="min-w-64 rounded-lg">
+        {/* Aligned to the trigger's start: the register bar is the leftmost control on the
+            till header, so an end-aligned menu hung off the left edge of the screen. */}
+        <DropdownMenuContent align="start" sideOffset={6} className="min-w-72 rounded-lg">
           <DropdownMenuLabel className="text-muted-foreground text-xs">
             This terminal
           </DropdownMenuLabel>
@@ -76,6 +91,36 @@ export function RegisterBar({
               </span>
             </span>
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuLabel className="text-muted-foreground text-xs">Shift</DropdownMenuLabel>
+
+          {shift ? (
+            <DropdownMenuItem disabled className="gap-2 p-2 opacity-100">
+              <Receipt className="size-4 shrink-0" aria-hidden="true" />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="ui-code truncate font-medium">{shift.number}</span>
+                <span className="text-muted-foreground text-xs">
+                  Opened {formatDateTime(shift.openedAt)}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {shift.saleCount} {shift.saleCount === 1 ? "sale" : "sales"} ·{" "}
+                  {formatMoney(shift.salesTotal)} · drawer {formatMoney(shift.expectedCash)}
+                </span>
+              </span>
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem disabled className="gap-2 p-2 opacity-100">
+              <Receipt className="size-4 shrink-0" aria-hidden="true" />
+              <span className="flex min-w-0 flex-col">
+                <span>No shift open</span>
+                <span className="text-muted-foreground text-xs">
+                  Open one on the selling screen before taking a sale
+                </span>
+              </span>
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
 

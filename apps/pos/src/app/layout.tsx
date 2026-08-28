@@ -7,6 +7,7 @@ import { THEME_BOOTSTRAP_SCRIPT } from "@bizentra/themes";
 import { ToastProvider } from "@bizentra/design-system/client";
 
 import { AppThemeProvider } from "./app-theme-provider";
+import { PosWorkspaceProvider } from "./lib/pos-workspace";
 import "./globals.css";
 
 /*
@@ -61,7 +62,17 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           apiBaseUrl={apiBaseUrl}
           initialDevelopmentIdentity={initialDevelopmentIdentity}
         >
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {/*
+              The till's state lives here, not in the pages.
+
+              A layout survives a change of route while its children do not, so holding the
+              register, the shift, the reference data, the catalogue and the open ticket at this
+              level is what stops a step across to Returns from re-running every request and
+              throwing away the ticket.
+            */}
+            <PosWorkspaceProvider>{children}</PosWorkspaceProvider>
+          </ToastProvider>
         </AppThemeProvider>
       </body>
     </html>
