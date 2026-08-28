@@ -80,9 +80,21 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 }
 
 function readInitialDevelopmentIdentity(): ThemeIdentity | null {
-  if (process.env.AUTH_MODE !== "development") return null;
   const businessId =
     process.env.DEVELOPMENT_BUSINESS_ID ?? process.env.NEXT_PUBLIC_DEVELOPMENT_BUSINESS_ID;
   const userId = process.env.DEVELOPMENT_USER_ID ?? process.env.NEXT_PUBLIC_DEVELOPMENT_USER_ID;
+
+  if (!businessId || !userId) return null;
+
+  const developmentMode =
+    process.env.AUTH_MODE === "development" ||
+    process.env.NEXT_PUBLIC_AUTH_MODE === "development" ||
+    Boolean(
+      process.env.NEXT_PUBLIC_DEVELOPMENT_BUSINESS_ID &&
+      process.env.NEXT_PUBLIC_DEVELOPMENT_USER_ID,
+    );
+
+  if (!developmentMode) return null;
+
   return businessId && userId ? { businessId, userId } : null;
 }
