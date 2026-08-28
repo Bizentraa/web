@@ -96,7 +96,6 @@ export default function SuppliersPage() {
     <Workspace
       status={<StatusChip tone="success">{data?.suppliers.total ?? 0} supplier(s)</StatusChip>}
       description="Supplier contacts, payment terms, lead times and the items each supplier provides."
-      eyebrow="Suppliers"
       title="Suppliers"
       headerActions={<Button onClick={() => setCreateOpen(true)}>New supplier</Button>}
     >
@@ -105,7 +104,6 @@ export default function SuppliersPage() {
           {data ? (
             <DataTable
               caption="Suppliers"
-              kicker="Supplier records"
               search={{
                 value: search,
                 onChange: setSearch,
@@ -287,7 +285,6 @@ export default function SuppliersPage() {
             <DataTable
               caption="Supplied items"
               summary="Each link keeps the supplier code, cost and lead time that purchasing will use."
-              kicker="Suppliers"
               toolbar={<Button onClick={() => setLinkOpen(true)}>Link item</Button>}
               getRowKey={(supplierItem) => supplierItem.itemId}
               rows={detail.items}

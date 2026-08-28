@@ -134,7 +134,6 @@ export default function ProductionReadinessPage() {
     <Workspace
       status={<StatusChip tone="information">Readiness foundation active</StatusChip>}
       description="Security events, backups, readiness checks, privacy requests and release controls."
-      eyebrow="Production"
       title="Production readiness"
     >
       <Stack>
@@ -185,7 +184,6 @@ export default function ProductionReadinessPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Sensitive activity and control evidence"
-                      kicker="Security events"
                       className="ui-scroll-panel"
                       empty="No security event has been recorded yet."
                       getRowKey={(row) => row.id}
@@ -240,7 +238,6 @@ export default function ProductionReadinessPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Backup runs and restore-test evidence"
-                      kicker="Backup and DR"
                       className="ui-scroll-panel"
                       empty="No backup evidence exists yet."
                       getRowKey={(row) => row.id}
@@ -300,7 +297,6 @@ export default function ProductionReadinessPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Observability, performance and release gates"
-                      kicker="Readiness checks"
                       className="ui-scroll-panel"
                       empty="No readiness check has been recorded yet."
                       getRowKey={(row) => row.id}
@@ -348,7 +344,6 @@ export default function ProductionReadinessPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Customer-data request tracking"
-                      kicker="Privacy requests"
                       className="ui-scroll-panel"
                       empty="No privacy request exists yet."
                       getRowKey={(row) => row.id}
@@ -393,7 +388,6 @@ export default function ProductionReadinessPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Go-live checklist and rollback evidence"
-                      kicker="Release readiness"
                       className="ui-scroll-panel"
                       empty="No release-readiness record exists yet."
                       getRowKey={(row) => row.id}

@@ -111,7 +111,6 @@ export default function DashboardPage() {
         </StatusChip>
       }
       description="What is ready to use today, what still needs setup, and where the next action belongs."
-      eyebrow="Common Core"
       title="Operating dashboard"
       headerActions={
         <>
@@ -164,7 +163,6 @@ export default function DashboardPage() {
               <Split>
                 <DataTable
                   caption="Recent sales"
-                  kicker="Sales"
                   toolbar={
                     <Link className="ui-button ui-button--quiet" href="/sales">
                       Open sales

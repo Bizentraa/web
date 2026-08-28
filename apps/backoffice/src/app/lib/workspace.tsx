@@ -1,7 +1,7 @@
 "use client";
 
 import type { BizentraApiClient } from "@bizentra/api-client";
-import { Button, Kicker, SkeletonScreen, StatePanel } from "@bizentra/design-system";
+import { Button, SkeletonScreen, StatePanel } from "@bizentra/design-system";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
@@ -69,14 +69,12 @@ export function useResource<T>(
 export function Workspace({
   children,
   description,
-  eyebrow,
   headerActions,
   status,
   title,
 }: {
   children: ReactNode;
   description: string;
-  eyebrow: string;
   headerActions?: ReactNode;
   /** Live state of the screen, shown beside the title. */
   status?: ReactNode;
@@ -87,7 +85,6 @@ export function Workspace({
   return (
     <BackOfficeShell
       description={description}
-      eyebrow={eyebrow}
       headerActions={headerActions}
       status={status}
       title={title}
@@ -100,14 +97,12 @@ export function Workspace({
 function BackOfficeShell({
   children,
   description,
-  eyebrow,
   headerActions,
   status,
   title,
 }: {
   children: ReactNode;
   description: string;
-  eyebrow: string;
   headerActions?: ReactNode;
   status?: ReactNode;
   title: string;
@@ -115,7 +110,7 @@ function BackOfficeShell({
   const pathname = usePathname();
   const { activeBranch } = useActiveBranch();
   const trail = findNavTrail(pathname);
-  const section = trail?.group.title ?? eyebrow;
+  const section = trail?.group.title ?? "Back Office";
 
   return (
     <SidebarInset>
@@ -144,18 +139,9 @@ function BackOfficeShell({
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-4">
-        {/*
-          The one header a screen gets. Built from the design system's own primitives rather than
-          Tailwind type utilities so it shares the application's type scale, and carrying the four
-          things a screen needs to state: where it sits, what it is, what it is for, and its live
-          status. Actions belong here beside the title, not in the fixed-height breadcrumb bar
-          where a wrapped second row was being clipped.
-        */}
+        {/* The one header a screen gets; actions belong beside the title, not in the breadcrumb. */}
         <header className="bo-screen-header">
           <div>
-            <div className="bo-screen-eyebrow">
-              <Kicker>{eyebrow}</Kicker>
-            </div>
             <div className="ui-page-header-title-row">
               <h1>{title}</h1>
               {status}

@@ -142,7 +142,6 @@ export default function CustomersPage() {
     <Workspace
       status={<StatusChip tone="success">{data?.customers.total ?? 0} customer(s)</StatusChip>}
       description="Contacts, groups, purchase history and store credit for the people who buy from this Business."
-      eyebrow="Customers"
       title="Customers"
       headerActions={
         <>
@@ -158,7 +157,6 @@ export default function CustomersPage() {
           {data ? (
             <DataTable
               caption="Customers"
-              kicker="Customer records"
               search={{
                 value: search,
                 onChange: setSearch,
@@ -357,7 +355,6 @@ export default function CustomersPage() {
             <DataTable
               caption="Recent sales"
               summary="Store credit is issued by a refund and can be spent as a tender on a later sale."
-              kicker="Sales"
               getRowKey={(sale) => sale.id}
               rows={detail.recentSales}
               empty="This customer has not bought anything yet."
@@ -371,7 +368,6 @@ export default function CustomersPage() {
 
             <DataTable
               caption="Store credit"
-              kicker="Store credit"
               toolbar={
                 <Badge tone={detail.storeCredit > 0 ? "success" : "neutral"}>
                   {formatMoney(detail.storeCredit)}

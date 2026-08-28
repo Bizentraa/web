@@ -75,7 +75,6 @@ export default function StoreReliabilityPage() {
     <Workspace
       status={<StatusChip tone="information">Reliability controls active</StatusChip>}
       description="Store devices, POS terminal health, offline queue and sync conflicts."
-      eyebrow="Store reliability"
       title="Store reliability"
     >
       <Stack>
@@ -124,7 +123,6 @@ export default function StoreReliabilityPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Terminals and connected hardware"
-                      kicker="Device registry"
                       className="ui-scroll-panel"
                       summary="Register POS terminals, printers, scanners, cash drawers and payment terminals."
                       empty="No devices registered yet."
@@ -200,7 +198,6 @@ export default function StoreReliabilityPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Queued offline operations"
-                      kicker="Offline work"
                       className="ui-scroll-panel"
                       summary="Each offline action has a unique key so replay does not duplicate sales or stock movement."
                       empty="No offline queue items yet."
@@ -280,7 +277,6 @@ export default function StoreReliabilityPage() {
               {tab === "conflicts" ? (
                 <DataTable
                   caption="Conflict queue"
-                  kicker="Sync review"
                   className="ui-scroll-panel"
                   summary="Conflicts stay visible until an authorized user resolves or ignores them."
                   empty="No sync conflicts."

@@ -64,7 +64,6 @@ interface ReferenceRecord {
 interface ReferenceSection {
   value: string;
   label: string;
-  kicker: string;
   description: string;
   onAdd: () => void;
   rows: ReferenceRecord[];
@@ -155,7 +154,6 @@ export default function CatalogPage() {
     {
       value: "units",
       label: "Units",
-      kicker: "Units",
       description: "Units of measure",
       onAdd: () => setDialog("unit"),
       rows: (reference?.units ?? []).map((unit) => ({
@@ -175,7 +173,6 @@ export default function CatalogPage() {
     {
       value: "conversions",
       label: "Unit conversions",
-      kicker: "Units",
       description: "How one unit converts into another",
       onAdd: () => setDialog("conversion"),
       rows: (reference?.unitConversions ?? []).map((conversion) => {
@@ -198,7 +195,6 @@ export default function CatalogPage() {
     {
       value: "categories",
       label: "Categories",
-      kicker: "Organization",
       description: "Item categories",
       onAdd: () => setDialog("category"),
       rows: (reference?.categories ?? []).map((category) => ({
@@ -223,7 +219,6 @@ export default function CatalogPage() {
     {
       value: "brands",
       label: "Brands",
-      kicker: "Organization",
       description: "Brands",
       onAdd: () => setDialog("brand"),
       rows: (reference?.brands ?? []).map((brand) => ({
@@ -242,7 +237,6 @@ export default function CatalogPage() {
     {
       value: "tags",
       label: "Tags",
-      kicker: "Organization",
       description: "Tags used to group items across categories",
       onAdd: () => setDialog("tag"),
       rows: (reference?.tags ?? []).map((tag) => ({
@@ -261,7 +255,6 @@ export default function CatalogPage() {
     {
       value: "attributes",
       label: "Custom attributes",
-      kicker: "Organization",
       description: "Extra fields this Business needs on its items",
       onAdd: () => setDialog("attribute"),
       rows: (reference?.attributes ?? []).map((attribute) => ({
@@ -320,7 +313,6 @@ export default function CatalogPage() {
         <StatusChip tone={readiness >= 80 ? "success" : "warning"}>Setup {readiness}%</StatusChip>
       }
       description="Items, units, categories, prices, promotions and tax. These records are definitions; they never move stock or money by themselves."
-      eyebrow="Catalog"
       title="Catalog and pricing"
       headerActions={
         <>
@@ -387,7 +379,6 @@ export default function CatalogPage() {
                 <Stack>
                   <DataTable
                     caption="Items"
-                    kicker="Master data"
                     search={{
                       value: search,
                       onChange: setSearch,
@@ -477,7 +468,6 @@ export default function CatalogPage() {
                       <DataTable
                         key={section.value}
                         caption={section.label}
-                        kicker={section.kicker}
                         toolbar={<Button onClick={section.onAdd}>Add</Button>}
                         getRowKey={(row) => row.id}
                         rows={section.rows}
@@ -528,7 +518,6 @@ export default function CatalogPage() {
                     <DataTable
                       caption="Price lists"
                       summary="A customer group can point at its own price list, and a price can be set for one Branch or from a quantity break upward."
-                      kicker="Prices"
                       toolbar={
                         <Button onClick={() => setDialog("priceList")}>New price list</Button>
                       }
@@ -584,7 +573,6 @@ export default function CatalogPage() {
                     <DataTable
                       caption="Promotions"
                       summary="The POS applies the promotion that gives the customer the best price and explains any promotion it skipped."
-                      kicker="Promotions"
                       toolbar={
                         <Button onClick={() => setDialog("promotion")}>New promotion</Button>
                       }
@@ -677,7 +665,6 @@ export default function CatalogPage() {
                   {taxSection === "categories" ? (
                     <DataTable
                       caption="Tax categories and rates"
-                      kicker="Tax"
                       toolbar={
                         <div className="ui-row">
                           <Button onClick={() => setDialog("taxCategory")}>New category</Button>

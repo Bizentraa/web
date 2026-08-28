@@ -83,7 +83,6 @@ export default function BusinessEnginesPage() {
     <Workspace
       status={<StatusChip tone="information">Shared engines active</StatusChip>}
       description="Reusable workflow, ticket, booking, traceability, warranty, BOM, route and document engines."
-      eyebrow="Operations"
       title="Business engines"
     >
       <Stack>
@@ -182,7 +181,6 @@ export default function BusinessEnginesPage() {
                 >
                   <DataTable
                     caption="Work tickets"
-                    kicker="Work engine"
                     className="ui-scroll-panel"
                     summary="Reusable work tracking for repairs, service jobs, production work and internal tasks."
                     empty="No work tickets yet."
@@ -257,7 +255,6 @@ export default function BusinessEnginesPage() {
                 >
                   <DataTable
                     caption="Bookings"
-                    kicker="Booking engine"
                     className="ui-scroll-panel"
                     summary="Reserve a branch resource and prevent double booking for the same time range."
                     empty="No bookings yet."
@@ -312,7 +309,6 @@ export default function BusinessEnginesPage() {
                 >
                   <DataTable
                     caption="Traceability"
-                    kicker="Traceability engine"
                     className="ui-scroll-panel"
                     summary="Register exact units by serial, IMEI, batch, lot and expiry date."
                     empty="No traceable units yet."
@@ -395,9 +391,8 @@ export default function BusinessEnginesPage() {
 /**
  * The two-column engine layout: records on the left, the create form on the right.
  *
- * It used to wrap the records in a card whose header repeated the title three times over - as a
- * kicker, as the card title, and again as the table's caption. The table states its own identity,
- * so the card is gone and the title, kicker and description are passed to it directly.
+ * It used to wrap the records in a card whose header repeated the title. The table states its own
+ * identity, so the card is gone and the title and description are passed to it directly.
  */
 function Screen({ children, form }: { children: ReactNode; form: ReactNode }) {
   return (
@@ -411,20 +406,17 @@ function Screen({ children, form }: { children: ReactNode; form: ReactNode }) {
 function ReadOnlyPanel<T extends { id: string }>({
   columns,
   description,
-  kicker = "Read only",
   rows,
   title,
 }: {
   columns: Array<{ header: string; render: (row: T) => ReactNode }>;
   description: string;
-  kicker?: string;
   rows: T[];
   title: string;
 }) {
   return (
     <DataTable
       caption={title}
-      kicker={kicker}
       className="ui-scroll-panel"
       summary={description}
       empty="No records yet."

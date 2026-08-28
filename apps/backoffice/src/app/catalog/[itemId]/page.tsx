@@ -99,7 +99,6 @@ export default function ItemDetailPage() {
   return (
     <Workspace
       description="One item, everything it is used for, and the history of every change."
-      eyebrow="Catalog"
       title={item?.name ?? "Item"}
       headerActions={
         <Link className="ui-button ui-button--secondary" href="/catalog">
@@ -268,7 +267,6 @@ export default function ItemDetailPage() {
               {tab === "prices" ? (
                 <DataTable
                   caption="Prices"
-                  kicker="Prices"
                   summary="A Branch price beats a Business-wide price, and the highest quantity break the customer qualifies for wins."
                   toolbar={<Button onClick={() => setDialog("price")}>Add price</Button>}
                   getRowKey={(price) => price.id}
@@ -313,7 +311,6 @@ export default function ItemDetailPage() {
                 <DataTable
                   caption="Barcodes and codes"
                   summary="A code can only belong to one item in the Business, so a scan is never ambiguous."
-                  kicker="Codes"
                   toolbar={<Button onClick={() => setDialog("identifier")}>Add code</Button>}
                   getRowKey={(identifier) => identifier.id}
                   rows={item.identifierRecords}
@@ -337,7 +334,6 @@ export default function ItemDetailPage() {
                 <DataTable
                   caption="Variants"
                   summary="Variants describe size, colour, storage, style or pack size while sharing the same item definition."
-                  kicker="Variants"
                   toolbar={<Button onClick={() => setDialog("variant")}>Add variant</Button>}
                   getRowKey={(variant) => variant.id}
                   rows={item.variants}
@@ -367,7 +363,6 @@ export default function ItemDetailPage() {
               {tab === "suppliers" ? (
                 <DataTable
                   caption="Who supplies this item"
-                  kicker="Suppliers"
                   toolbar={
                     <Link className="ui-button ui-button--quiet" href="/suppliers">
                       Manage suppliers

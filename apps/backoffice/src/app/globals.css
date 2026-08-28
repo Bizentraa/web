@@ -191,19 +191,6 @@
   justify-content: space-between;
 }
 
-.bo-screen-eyebrow {
-  align-items: baseline;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-/* Secondary screen metadata sits quieter than the section label beside it. */
-.bo-screen-eyebrow > .ui-code {
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-}
-
 .bo-screen-header h1 {
   font-size: 1.6rem;
   font-weight: 700;

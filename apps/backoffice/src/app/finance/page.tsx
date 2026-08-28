@@ -91,7 +91,6 @@ export default function FinancePage() {
     <Workspace
       status={<StatusChip tone="information">Finance records active</StatusChip>}
       description="Customer invoices, supplier bills, expenses, cash and bank, loyalty and accounting events."
-      eyebrow="Finance"
       title="Finance foundation"
     >
       <Stack>
@@ -143,7 +142,6 @@ export default function FinancePage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Invoices and collection status"
-                      kicker="Customer balances"
                       className="ui-scroll-panel"
                       empty="No customer invoice exists yet."
                       getRowKey={(row) => row.id}
@@ -202,7 +200,6 @@ export default function FinancePage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Bills and payment status"
-                      kicker="Supplier balances"
                       className="ui-scroll-panel"
                       empty="No supplier bill exists yet."
                       getRowKey={(row) => row.id}
@@ -256,7 +253,6 @@ export default function FinancePage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Posted business expenses"
-                      kicker="Expenses"
                       className="ui-scroll-panel"
                       empty="No expense exists yet."
                       getRowKey={(row) => row.id}
@@ -320,7 +316,6 @@ export default function FinancePage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Accounts and latest movements"
-                      kicker="Cash and bank"
                       className="ui-scroll-panel"
                       empty="No cash or bank account exists yet."
                       getRowKey={(row) => row.id}
@@ -364,7 +359,6 @@ export default function FinancePage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Customer points and tiers"
-                      kicker="Loyalty"
                       className="ui-scroll-panel"
                       empty="No loyalty balance exists yet."
                       getRowKey={(row) => row.id}
@@ -407,7 +401,6 @@ export default function FinancePage() {
               {tab === "events" ? (
                 <DataTable
                   caption="Finance event queue"
-                  kicker="Accounting bridge"
                   className="ui-scroll-panel"
                   empty="No accounting event exists yet."
                   getRowKey={(row) => row.id}

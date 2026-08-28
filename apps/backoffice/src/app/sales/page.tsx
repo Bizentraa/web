@@ -177,7 +177,6 @@ export default function SalesPage() {
         </StatusChip>
       }
       description="Sales, tenders, receipts, returns and the POS shifts they belong to."
-      eyebrow="Sales"
       title="Sales and shifts"
     >
       <Stack>
@@ -223,7 +222,6 @@ export default function SalesPage() {
               {sales ? (
                 <DataTable
                   caption="Sales"
-                  kicker="Selling activity"
                   search={{
                     value: search,
                     onChange: setSearch,
@@ -293,7 +291,6 @@ export default function SalesPage() {
           <ResourceState error={error} onRetry={reload} state={state} title="Shifts">
             <DataTable
               caption="Shifts"
-              kicker="Cash reconciliation"
               search={{
                 value: shiftSearch,
                 onChange: setShiftSearch,
@@ -438,7 +435,6 @@ export default function SalesPage() {
 
             <DataTable
               caption="Tenders"
-              kicker="Shift"
               summary="What was taken, by payment method, during this shift."
               getRowKey={(tender) => tender.method}
               rows={shiftDetail.tenders}
@@ -456,7 +452,6 @@ export default function SalesPage() {
 
             <DataTable
               caption="Cash movements"
-              kicker="Shift"
               summary="Pay-ins, pay-outs and drops against the drawer. These are what move expected cash away from sales alone."
               getRowKey={(movement) => movement.id}
               rows={shiftDetail.cashMovements}
@@ -523,7 +518,6 @@ export default function SalesPage() {
               <CardTitle>Lines</CardTitle>
               <DataTable
                 caption="Lines"
-                kicker="Sale"
                 summary="What was sold, at what price and with what tax."
                 getRowKey={(line) => line.id}
                 rows={detail.lines}
@@ -578,7 +572,6 @@ export default function SalesPage() {
               <CardTitle>Tenders</CardTitle>
               <DataTable
                 caption="Payments"
-                kicker="Sale"
                 summary="Every payment attempt against this sale."
                 getRowKey={(payment) => payment.id}
                 rows={detail.payments}
@@ -631,7 +624,6 @@ export default function SalesPage() {
                 <CardTitle>Returns</CardTitle>
                 <DataTable
                   caption="Returns"
-                  kicker="Sale"
                   summary="Returns accepted against this sale."
                   getRowKey={(saleReturn) => saleReturn.id}
                   rows={detail.returns}

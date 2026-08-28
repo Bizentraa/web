@@ -120,7 +120,6 @@ export default function ReportingOperationsPage() {
     <Workspace
       status={<StatusChip tone="information">Reporting foundation active</StatusChip>}
       description="Reports, exports, webhooks, integration delivery and migration validation."
-      eyebrow="Reports"
       title="Reports and integrations"
     >
       <Stack>
@@ -173,7 +172,6 @@ export default function ReportingOperationsPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Reusable report filters"
-                      kicker="Saved views"
                       className="ui-scroll-panel"
                       empty="No saved report view exists yet."
                       getRowKey={(row) => row.id}
@@ -223,7 +221,6 @@ export default function ReportingOperationsPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Auditable data export requests"
-                      kicker="Exports"
                       className="ui-scroll-panel"
                       empty="No export has been requested yet."
                       getRowKey={(row) => row.id}
@@ -273,7 +270,6 @@ export default function ReportingOperationsPage() {
                     <Stack>
                       <DataTable
                         className="ui-scroll-panel"
-                        kicker="Webhooks"
                         caption="Subscriptions"
                         empty="No webhook is configured yet."
                         getRowKey={(row) => row.id}
@@ -286,7 +282,6 @@ export default function ReportingOperationsPage() {
                         ]}
                       />
                       <DataTable
-                        kicker="Webhooks"
                         caption="Delivery failures"
                         empty="No webhook delivery exists yet."
                         getRowKey={(row) => row.id}
@@ -337,7 +332,6 @@ export default function ReportingOperationsPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Preview before final import commit"
-                      kicker="Migration validation"
                       className="ui-scroll-panel"
                       empty="No migration validation exists yet."
                       getRowKey={(row) => row.id}

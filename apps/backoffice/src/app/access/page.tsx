@@ -191,7 +191,6 @@ export default function AccessPage() {
     <Workspace
       status={<StatusChip tone="success">{memberships.length} user(s)</StatusChip>}
       description="Users, Roles and the fine-grained permissions that decide who can do what."
-      eyebrow="Access"
       title="Users and roles"
       headerActions={
         <Button disabled={!data} onClick={() => setInviteOpen(true)}>
@@ -217,7 +216,6 @@ export default function AccessPage() {
                 <DataTable
                   caption="People with access"
                   summary="The Owner Role always keeps full access. Every other Role can be edited, and a Role in use cannot lose the Business its last Owner."
-                  kicker="Users"
                   toolbar={<Button onClick={() => setInviteOpen(true)}>Invite user</Button>}
                   getRowKey={(member) => member.membershipId}
                   rows={memberships}
@@ -380,7 +378,6 @@ export default function AccessPage() {
               {tab === "roles" ? (
                 <DataTable
                   caption="Roles"
-                  kicker="Roles"
                   toolbar={<Button onClick={() => setNewRoleOpen(true)}>New Role</Button>}
                   getRowKey={(role) => role.id}
                   rows={roles}
@@ -435,7 +432,6 @@ export default function AccessPage() {
                   >
                     <DataTable
                       caption={activeArea}
-                      kicker="Permission area"
                       getRowKey={(permission) => permission.code}
                       rows={catalog.filter((permission) => permission.area === activeArea)}
                       onRowSelect={setPermission}

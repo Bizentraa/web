@@ -151,7 +151,6 @@ export default function ImportPage() {
     <Workspace
       status={<StatusChip tone="success">{batches.length} import(s)</StatusChip>}
       description="Bring existing items, customers and suppliers in from a CSV or spreadsheet export, safely."
-      eyebrow="Import"
       title="Import"
     >
       <Stack>
@@ -251,7 +250,6 @@ export default function ImportPage() {
             {preview ? (
               <DataTable
                 caption="Preview"
-                kicker="Step 2"
                 toolbar={
                   <div className="ui-row">
                     <Badge tone="success">{preview.validRows} ready</Badge>
@@ -309,7 +307,6 @@ export default function ImportPage() {
           <ResourceState error={error} onRetry={reload} state={state} title="Import history">
             <DataTable
               caption="Past imports"
-              kicker="Every run"
               getRowKey={(batch) => batch.id}
               rows={batches}
               empty="No imports have been run yet."

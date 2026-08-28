@@ -138,7 +138,6 @@ export default function ControlsPage() {
         </StatusChip>
       }
       description="Approval rules, feature packs, document numbering and the audit history."
-      eyebrow="Controls"
       title="Controls and audit"
     >
       <Stack>
@@ -161,7 +160,6 @@ export default function ControlsPage() {
                   <DataTable
                     caption="Approval rules"
                     summary="A rule applies from its threshold upward. Leave the threshold empty to require approval every time."
-                    kicker="Approvals"
                     toolbar={
                       <CardDescription>
                         A rule applies from its threshold upward. Leave the threshold empty to
@@ -223,7 +221,6 @@ export default function ControlsPage() {
                   <DataTable
                     caption="Approval requests"
                     summary="Turning a pack off never deletes data. A pack that other packs depend on cannot be turned off until they are."
-                    kicker="Requests"
                     toolbar={
                       <Badge tone={pending.length ? "warning" : "neutral"}>
                         {pending.length} waiting
@@ -314,7 +311,6 @@ export default function ControlsPage() {
               {tab === "features" ? (
                 <DataTable
                   caption="Feature packs"
-                  kicker="Features"
                   toolbar={
                     <CardDescription>
                       Turning a pack off never deletes data. A pack that other packs depend on
@@ -374,7 +370,6 @@ export default function ControlsPage() {
                 <DataTable
                   caption="Document numbers"
                   summary="Numbers are allocated atomically, so two terminals never receive the same number. A sequence can only move forward."
-                  kicker="Numbering"
                   toolbar={
                     <CardDescription>
                       Numbers are allocated atomically, so two terminals never receive the same
@@ -482,7 +477,6 @@ export default function ControlsPage() {
                     </FormGrid>
                     <DataTable
                       caption="Audit history"
-                      kicker="Audit"
                       summary="Who changed what, and when. Records are append-only."
                       getRowKey={(row) => row.id}
                       onRowSelect={setAuditDetail}

@@ -99,8 +99,8 @@ still follow the Business theme, so no screen needed editing.
 
 ### One header per screen
 
-Every screen used to render a design-system `PageHeader` inside its own content *and* pass an
-eyebrow, title and description to `Workspace`, so all fourteen showed two stacked headers with
+Every screen used to render a design-system `PageHeader` inside its own content *and* pass title,
+description and an eyebrow to `Workspace`, so all fourteen showed two stacked headers with
 near-identical weight — "Sales and shifts" immediately above "Selling activity", each with its own
 description. Both sets of text came from the same page file, so this was a duplication in the
 screens rather than in the shell.
@@ -111,7 +111,8 @@ slot on `Workspace`:
 | Was | Now |
 |---|---|
 | `status` chip | `Workspace status={...}` — beside the title, in `.ui-page-header-title-row` |
-| Internal requirement range eyebrow | No longer rendered in the product UI; `Workspace requirements="..."` remains accepted only as historical development metadata |
+| Internal requirement range eyebrow | Removed from the Back Office screen API and no longer rendered in the product UI |
+| `Workspace eyebrow` | Removed from the Back Office screen API; breadcrumbs derive their section from the sidebar route map |
 | Second title and description | Dropped; the shell's were already the navigational ones, matching the sidebar and breadcrumb |
 
 `PageHeader` itself stays in the design system. It is the right component for a *section* header
@@ -219,9 +220,9 @@ obvious next ones to give the same treatment.
 
 ## A table is not a card
 
-`DataTable` renders its own header — a small kicker, the caption as a heading, and a `toolbar`
-slot on the right. Twenty-four tables were nevertheless wrapped in a `Card` that drew a second
-heading and a second description for the same thing, so a section read:
+`DataTable` renders its own header — the caption as a heading and a `toolbar` slot on the right.
+Twenty-four tables were nevertheless wrapped in a `Card` that drew a second heading and a second
+description for the same thing, so a section read:
 
 ```
 Units                       [Add]     <- card header
@@ -235,12 +236,12 @@ Those wrappers are gone. The table carries it all:
 | Was | Now |
 |---|---|
 | `CardTitle` | `caption` |
-| `Kicker` | `kicker` — previously hard-coded to the word "Table", which said nothing |
 | Buttons in `CardHeader` | `toolbar`, so the action sits with the rows it acts on |
 | `CardDescription` | `summary`, the footer line under the table |
 
-`kicker` is a new optional prop on `DataTable`; it still defaults to "Table" for callers that pass
-nothing. Nine now-unused `Card*` and `Kicker` imports were dropped with the wrappers.
+The later cleanup removed `DataTable`'s `kicker` prop entirely. The table header now has one text
+label, its caption, which keeps tables from carrying a second small label that repeats the screen
+or record type. Nine now-unused `Card*` and `Kicker` imports were dropped with the wrappers.
 
 `Card` is still right for a section that holds a form, a grid of tiles, or several things at once —
 this only unwraps the cards whose entire content was one table. Three kept theirs deliberately:
@@ -253,7 +254,7 @@ Two further props came out of the later operations screens, where the tables sit
 - `className` on `DataTable`, so `ui-scroll-panel` moves from the card onto the table wrapper and
   the records still scroll independently of the form beside them.
 - Business engines' local `Screen` helper no longer draws a card header. It was printing the
-  section title three times — as a kicker, as the card title, and again as the table's caption.
+  section title three times — as a small label, as the card title, and again as the table's caption.
 
 The four main list screens — Sales, Catalog, Customers, Suppliers — each wrapped their primary
 table in `<Card flush>`, which is `.ui-card` with its padding removed: a border, radius, background
@@ -263,10 +264,9 @@ are gone too.
 Those same four used the row count as the table's *title*: `caption={`${data.customers.total}
 customer(s). Click a row to open the record.`}` rendered as the bold heading. A caption is a title,
 so it is now the record type — "Sales", "Items", "Customers", "Suppliers" — with the count and the
-hint moved to `summary`, and the kicker carrying the section name the inner `PageHeader` used to
-show ("Selling activity", "Master data", "Customer records", "Supplier records").
+hint moved to `summary`.
 
-All 61 tables in the Back Office now carry a kicker, and no caption is a sentence.
+All 61 tables in the Back Office now rely on `caption` alone, and no caption is a sentence.
 
 ### Import: two tabs instead of one long page
 
@@ -282,8 +282,8 @@ It now carries the same horizontal `Tabs` row every other screen uses:
 | History | Past imports, badged with the run count |
 
 The two steps stay together because they are one task — validate then apply — and the preview is
-meaningless without the file that produced it. The history table's kicker changed from "History" to
-"Every run", since the tab above it already says History.
+meaningless without the file that produced it. The history table uses its caption alone, since the
+tab above it already says History.
 
 ### Tab icons
 

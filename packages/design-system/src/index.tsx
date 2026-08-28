@@ -628,10 +628,7 @@ export function Pagination({
   );
 }
 
-/**
- * Back-office list from section 5.2 of the UI/UX specification. Below the phone breakpoint the
- * table becomes task cards instead of a shrunken table, as the specification requires.
- */
+/** Back-office list that becomes task cards below the phone breakpoint. */
 export function DataTable<T>({
   caption,
   chips,
@@ -641,7 +638,6 @@ export function DataTable<T>({
   filters,
   footer,
   getRowKey,
-  kicker = "Table",
   onRowSelect,
   search,
   selectable = false,
@@ -660,12 +656,6 @@ export function DataTable<T>({
   filters?: ReactNode;
   footer?: ReactNode;
   getRowKey: (row: T) => string;
-  /**
-   * Small label above the caption. Defaults to "Table", which says nothing; pass the requirement
-   * id or the record type so the table can stand on its own instead of needing a card around it
-   * to carry a heading.
-   */
-  kicker?: string;
   onRowSelect?: (row: T) => void;
   /**
    * Search for the rows of this table. It belongs to the table rather than to a separate bar
@@ -687,7 +677,6 @@ export function DataTable<T>({
       <div className={cn("ui-table-wrap", "ui-table-wrap--empty", className)}>
         <div className="ui-data-table-header">
           <div>
-            <span>{kicker}</span>
             <strong>{caption}</strong>
           </div>
           {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}
@@ -745,7 +734,6 @@ export function DataTable<T>({
       <div className={cn("ui-table-wrap", className)}>
         <div className="ui-data-table-header">
           <div>
-            <span>{kicker}</span>
             <strong>{caption}</strong>
           </div>
           {toolbar ? <div className="ui-data-table-actions">{toolbar}</div> : null}

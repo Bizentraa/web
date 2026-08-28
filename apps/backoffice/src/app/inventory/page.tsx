@@ -90,7 +90,6 @@ export default function InventoryPage() {
     <Workspace
       status={<StatusChip tone="information">Inventory ledger active</StatusChip>}
       description="Stock ledger, availability, receiving, transfers, reorder suggestions and fulfillment preparation."
-      eyebrow="Inventory"
       title="Inventory and purchasing"
       headerActions={
         <>
@@ -147,7 +146,6 @@ export default function InventoryPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="On hand, reserved, incoming and available"
-                      kicker="Availability"
                       className="ui-scroll-panel"
                       toolbar={
                         <div className="ui-row">
@@ -200,7 +198,6 @@ export default function InventoryPage() {
                   <aside className="ui-screen-side">
                     <DataTable
                       caption="Latest stock movements"
-                      kicker="Audit trail"
                       className="ui-scroll-panel"
                       empty="No stock movement exists yet."
                       getRowKey={(row) => row.id}
@@ -232,7 +229,6 @@ export default function InventoryPage() {
                   <main className="ui-screen-main">
                     <DataTable
                       caption="Purchase orders and receiving"
-                      kicker="Purchasing"
                       toolbar={
                         <div className="ui-row">
                           <Button onClick={() => setDialog("request")}>Purchase request</Button>
@@ -284,7 +280,6 @@ export default function InventoryPage() {
                   <aside className="ui-screen-side">
                     <DataTable
                       caption="Suggested replenishment"
-                      kicker="Reorder"
                       empty="No reorder suggestions."
                       getRowKey={(row) => row.id}
                       rows={data.inventory.reorderSuggestions}
@@ -304,7 +299,6 @@ export default function InventoryPage() {
                     />
                     <DataTable
                       caption="Purchase requests"
-                      kicker="Requests"
                       empty="No purchase requests yet."
                       getRowKey={(row) => row.id}
                       rows={data.inventory.purchaseRequests}
@@ -332,7 +326,6 @@ export default function InventoryPage() {
               {tab === "fulfillment" ? (
                 <DataTable
                   caption="Pick, pack and dispatch"
-                  kicker="Fulfillment"
                   toolbar={
                     <Button onClick={() => setDialog("fulfill")}>New fulfillment order</Button>
                   }

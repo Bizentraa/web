@@ -127,7 +127,6 @@ export default function SetupPage() {
     <Workspace
       status={<StatusChip tone="success">{branches.length} Branch(es)</StatusChip>}
       description="The Business, its Branches and the Locations where stock and work are managed."
-      eyebrow="Setup"
       title="Business setup"
       headerActions={
         <Button onClick={() => setBranchDialog(true)} disabled={!data}>
@@ -222,7 +221,6 @@ export default function SetupPage() {
                 <DataTable
                   caption="Branches"
                   summary="Stock and work Locations belong to a Branch and are used by inventory and operations later."
-                  kicker="Branches"
                   toolbar={<Button onClick={() => setBranchDialog(true)}>New Branch</Button>}
                   getRowKey={(branch) => branch.id}
                   rows={branches}
@@ -291,7 +289,6 @@ export default function SetupPage() {
               {tab === "locations" ? (
                 <DataTable
                   caption="Locations"
-                  kicker="Locations"
                   toolbar={
                     <CardDescription>
                       Stock and work Locations belong to a Branch and are used by inventory and

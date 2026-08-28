@@ -53,7 +53,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `Progress` | Accessible progress indicator |
 | `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text. Numeric fields select their existing value on focus/click so typing replaces it immediately |
 | `FilterBar` | Superseded. `DataTable` now takes `search`, `filters` and `chips` directly, so a list's controls sit inside the table's own border. Kept exported for a future screen that filters something other than a table |
-| `DataTable` | Sticky header, optional kicker, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
+| `DataTable` | Sticky header, caption, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
 | `Timeline` | Business history on a record |
 | `MoneySummary` | Subtotal, discount, tax, paid and due in one aligned block |
 | `StockBadge` | On-hand quantity with a semantic tone |
