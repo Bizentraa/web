@@ -162,8 +162,17 @@ export function CloseShiftDrawer({
 
           <div className="ui-pay-amount">
             <span>Counted in the drawer</span>
-            <strong>{valid ? formatMoney(countedCash) : "\u2014"}</strong>
+            <strong>{valid ? formatMoney(countedCash) : "-"}</strong>
           </div>
+
+          <Field
+            autoFocus
+            inputMode="decimal"
+            label="Counted cash"
+            onChange={(event) => setCounted(normalizeAmountEntry(event.target.value))}
+            placeholder="0.00"
+            value={counted}
+          />
 
           <div className="ui-pos-variance" data-tone={tone}>
             <div>
@@ -226,4 +235,10 @@ export function CloseShiftDrawer({
       </div>
     </Drawer>
   );
+}
+
+function normalizeAmountEntry(value: string): string {
+  const [whole = "", fraction] = value.replace(/[^\d.]/g, "").split(".", 2);
+  const decimals = fraction === undefined ? "" : `.${fraction.slice(0, 2)}`;
+  return `${whole.slice(0, 9)}${decimals}`;
 }

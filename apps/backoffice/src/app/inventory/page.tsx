@@ -88,10 +88,9 @@ export default function InventoryPage() {
 
   return (
     <Workspace
-      requirements="CC-P3-001 to CC-P3-012"
       status={<StatusChip tone="information">Inventory ledger active</StatusChip>}
       description="Stock ledger, availability, receiving, transfers, reorder suggestions and fulfillment preparation."
-      eyebrow="Common Core · P3"
+      eyebrow="Inventory"
       title="Inventory and purchasing"
       headerActions={
         <>
@@ -382,11 +381,11 @@ export default function InventoryPage() {
 
               {stockItems.length === 0 ? (
                 <Card>
-                  <Kicker>Before P3 can move stock</Kicker>
+                  <Kicker>Before stock can move</Kicker>
                   <CardTitle>Create at least one stock-tracked Item</CardTitle>
                   <CardDescription>
-                    Open Catalog, create or edit an Item, and tick “Track stock”. P3 uses those
-                    items for adjustments, transfers, receiving and fulfillment.
+                    Open Catalog, create or edit an Item, and tick “Track stock”. Inventory uses
+                    those items for adjustments, transfers, receiving and fulfillment.
                   </CardDescription>
                 </Card>
               ) : null}

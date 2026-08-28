@@ -73,10 +73,9 @@ export default function StoreReliabilityPage() {
 
   return (
     <Workspace
-      requirements="CC-P6-001 to CC-P6-008"
       status={<StatusChip tone="information">Reliability controls active</StatusChip>}
       description="Store devices, POS terminal health, offline queue and sync conflicts."
-      eyebrow="Common Core · P6"
+      eyebrow="Store reliability"
       title="Store reliability"
     >
       <Stack>

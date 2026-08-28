@@ -177,7 +177,7 @@
  *
  * The single header for a screen. Screens used to render a second design-system `PageHeader`
  * inside their own content, which duplicated the title and description and left two competing
- * headers stacked; that block is gone and its status chip and SRS range moved up here.
+ * headers stacked; that block is gone and its status chip moved up here.
  *
  * It borrows the design system's scale wholesale — same tokens, same letter-spacing language,
  * same actions row — and steps the title one size above `.ui-page-header h2` so a section header
@@ -198,7 +198,7 @@
   gap: 10px;
 }
 
-/* The SRS range is traceability metadata, so it sits quieter than the phase label beside it. */
+/* Secondary screen metadata sits quieter than the section label beside it. */
 .bo-screen-eyebrow > .ui-code {
   color: var(--color-text-muted);
   font-size: 0.7rem;

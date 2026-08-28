@@ -118,10 +118,9 @@ export default function ReportingOperationsPage() {
 
   return (
     <Workspace
-      requirements="CC-P7-001 to CC-P7-010"
       status={<StatusChip tone="information">Reporting foundation active</StatusChip>}
       description="Reports, exports, webhooks, integration delivery and migration validation."
-      eyebrow="Common Core · P7"
+      eyebrow="Reports"
       title="Reports and integrations"
     >
       <Stack>

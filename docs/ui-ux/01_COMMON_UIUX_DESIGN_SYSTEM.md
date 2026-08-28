@@ -16,6 +16,8 @@
 8. **Touch + keyboard:** POS and operational screens work well with touch; back office supports efficient keyboard navigation and shortcuts.
 9. **Accessible by default:** readable contrast, keyboard focus, labels, status not communicated by colour alone, reduced-motion support.
 10. **Consistent across verticals:** same component names and interaction behavior; vertical theme changes accent and specialized content only.
+11. **Replace numbers directly:** when a numeric field already has a value, focusing or clicking it selects the whole value so the next typed digit replaces it.
+12. **No internal codes in product UI:** requirement IDs, phase IDs and story IDs are development tracking metadata. Product screens should show business labels such as Shift, Payment, Stock and Returns.
 
 ## 2. Product surfaces
 
@@ -126,7 +128,8 @@ Use for receiving, initial Business setup, migration, refund, closing a shift, r
 POS rules:
 - Scan/search input gets immediate focus.
 - Cart and amount due never disappear behind a modal.
-- Payment opens a focused sheet with large tender buttons.
+- Payment opens focused on the tender amount, with its current value selected and large tender buttons nearby.
+- Close-shift opens focused on the counted-cash value; an empty count stays empty until the cashier types or uses the number pad.
 - Approval is a drawer/secure dialog, not a separate navigation page.
 - Held carts show owner/time/customer/status.
 - Offline state and pending sync count remain visible.

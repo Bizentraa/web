@@ -99,7 +99,7 @@ export default function ItemDetailPage() {
   return (
     <Workspace
       description="One item, everything it is used for, and the history of every change."
-      eyebrow="Common Core · P1"
+      eyebrow="Catalog"
       title={item?.name ?? "Item"}
       headerActions={
         <Link className="ui-button ui-button--secondary" href="/catalog">
@@ -175,7 +175,7 @@ export default function ItemDetailPage() {
                 <FormCard onSubmit={(event) => void saveItem(event)}>
                   <CardHeader>
                     <div>
-                      <Kicker>CC-P1-001</Kicker>
+                      <Kicker>Item</Kicker>
                       <CardTitle>Item details</CardTitle>
                     </div>
                     <Badge tone="neutral">Updated {formatDateTime(item.updatedAt)}</Badge>
@@ -239,7 +239,7 @@ export default function ItemDetailPage() {
                       <input defaultChecked={item.purchasable} name="purchasable" type="checkbox" />
                       <span>
                         <strong>Can be purchased</strong>
-                        <small>Used by purchasing in P3.</small>
+                        <small>Used by purchasing when inventory purchasing is enabled.</small>
                       </span>
                     </label>
                     <label className="ui-check-field">
@@ -268,7 +268,7 @@ export default function ItemDetailPage() {
               {tab === "prices" ? (
                 <DataTable
                   caption="Prices"
-                  kicker="CC-P1-006"
+                  kicker="Prices"
                   summary="A Branch price beats a Business-wide price, and the highest quantity break the customer qualifies for wins."
                   toolbar={<Button onClick={() => setDialog("price")}>Add price</Button>}
                   getRowKey={(price) => price.id}
@@ -313,7 +313,7 @@ export default function ItemDetailPage() {
                 <DataTable
                   caption="Barcodes and codes"
                   summary="A code can only belong to one item in the Business, so a scan is never ambiguous."
-                  kicker="CC-P1-005"
+                  kicker="Codes"
                   toolbar={<Button onClick={() => setDialog("identifier")}>Add code</Button>}
                   getRowKey={(identifier) => identifier.id}
                   rows={item.identifierRecords}
@@ -337,7 +337,7 @@ export default function ItemDetailPage() {
                 <DataTable
                   caption="Variants"
                   summary="Variants describe size, colour, storage, style or pack size while sharing the same item definition."
-                  kicker="CC-P1-003"
+                  kicker="Variants"
                   toolbar={<Button onClick={() => setDialog("variant")}>Add variant</Button>}
                   getRowKey={(variant) => variant.id}
                   rows={item.variants}
@@ -367,7 +367,7 @@ export default function ItemDetailPage() {
               {tab === "suppliers" ? (
                 <DataTable
                   caption="Who supplies this item"
-                  kicker="CC-P1-010"
+                  kicker="Suppliers"
                   toolbar={
                     <Link className="ui-button ui-button--quiet" href="/suppliers">
                       Manage suppliers
@@ -399,7 +399,7 @@ export default function ItemDetailPage() {
                 <Card>
                   <CardHeader>
                     <div>
-                      <Kicker>CC-P0-009</Kicker>
+                      <Kicker>History</Kicker>
                       <CardTitle>History</CardTitle>
                     </div>
                   </CardHeader>

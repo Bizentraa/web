@@ -94,9 +94,9 @@ export function PaymentDrawer({
   useEffect(() => {
     if (!open) return;
     setMethod("CASH");
-    setEntry("");
+    setEntry(formatAmountEntry(due));
     setReference("");
-  }, [open]);
+  }, [due, open]);
 
   const active = tenderMethod(method);
   /* An empty pad means "exactly what is due", which is what a cashier means by pressing Cash. */
@@ -120,7 +120,7 @@ export function PaymentDrawer({
   const add = () => {
     if (!canAdd) return;
     onAddTender(method, amount, reference.trim());
-    setEntry("");
+    setEntry(formatAmountEntry(Math.max(round2(due - Math.min(amount, due)), 0)));
     setReference("");
   };
 
@@ -139,6 +139,15 @@ export function PaymentDrawer({
             <strong>{formatMoney(due > 0 ? amount : 0, currencyCode)}</strong>
             {changePreview > 0 ? <small>Change {formatMoney(changePreview)}</small> : null}
           </div>
+
+          <Field
+            autoFocus
+            inputMode="decimal"
+            label="Tender amount"
+            onChange={(event) => setEntry(normalizeAmountEntry(event.target.value))}
+            placeholder="0.00"
+            value={entry}
+          />
 
           <div className="ui-pay-methods">
             {TENDER_METHODS.map((candidate) => (
@@ -291,4 +300,14 @@ function cashSuggestions(due: number): number[] {
     if (out.length === 4) break;
   }
   return out;
+}
+
+function formatAmountEntry(value: number): string {
+  return Number.isFinite(value) && value > 0 ? String(round2(value)) : "";
+}
+
+function normalizeAmountEntry(value: string): string {
+  const [whole = "", fraction] = value.replace(/[^\d.]/g, "").split(".", 2);
+  const decimals = fraction === undefined ? "" : `.${fraction.slice(0, 2)}`;
+  return `${whole.slice(0, 9)}${decimals}`;
 }

@@ -95,10 +95,22 @@ function useOverlayBehaviour(open: boolean, onClose: () => void) {
     document.addEventListener("keydown", onKeyDown);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const firstControl = panelRef.current?.querySelector<HTMLElement>(
-      "input, select, textarea, button, [href], [tabindex]:not([tabindex='-1'])",
-    );
+    const firstControl =
+      panelRef.current?.querySelector<HTMLElement>("[data-autofocus='true']") ??
+      panelRef.current?.querySelector<HTMLElement>(
+        "input:not([type='hidden']):not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      ) ??
+      panelRef.current?.querySelector<HTMLElement>(
+        "button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])",
+      );
     firstControl?.focus();
+    if (
+      firstControl instanceof HTMLInputElement &&
+      firstControl.dataset.selectOnFocus === "true" &&
+      firstControl.value
+    ) {
+      requestAnimationFrame(() => firstControl.select());
+    }
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
@@ -265,10 +277,7 @@ export function Sheet({
   );
 }
 
-/**
- * CC-P0-007 and section 18 of the UI/UX specification: a destructive or financial action states
- * its consequence and collects a reason before it can be confirmed.
- */
+/** A destructive or financial action states its consequence before it can be confirmed. */
 export function ConfirmDialog({
   busy = false,
   confirmLabel = "Confirm",
@@ -772,7 +781,7 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-/** Keeps the scan input focused, which is the first POS rule in section 6. */
+/** Keeps the scan input focused while a till is ready to sell. */
 export function useScanFocus<T extends HTMLElement>(active = true) {
   const ref = useRef<T | null>(null);
 

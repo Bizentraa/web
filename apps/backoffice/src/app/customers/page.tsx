@@ -140,10 +140,9 @@ export default function CustomersPage() {
 
   return (
     <Workspace
-      requirements="CC-P1-009"
       status={<StatusChip tone="success">{data?.customers.total ?? 0} customer(s)</StatusChip>}
       description="Contacts, groups, purchase history and store credit for the people who buy from this Business."
-      eyebrow="Common Core · P1"
+      eyebrow="Customers"
       title="Customers"
       headerActions={
         <>
@@ -358,7 +357,7 @@ export default function CustomersPage() {
             <DataTable
               caption="Recent sales"
               summary="Store credit is issued by a refund and can be spent as a tender on a later sale."
-              kicker="CC-P2"
+              kicker="Sales"
               getRowKey={(sale) => sale.id}
               rows={detail.recentSales}
               empty="This customer has not bought anything yet."
@@ -372,7 +371,7 @@ export default function CustomersPage() {
 
             <DataTable
               caption="Store credit"
-              kicker="CC-P2-010"
+              kicker="Store credit"
               toolbar={
                 <Badge tone={detail.storeCredit > 0 ? "success" : "neutral"}>
                   {formatMoney(detail.storeCredit)}

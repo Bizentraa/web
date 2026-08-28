@@ -89,10 +89,9 @@ export default function FinancePage() {
 
   return (
     <Workspace
-      requirements="CC-P4-001 to CC-P4-012"
       status={<StatusChip tone="information">Finance records active</StatusChip>}
       description="Customer invoices, supplier bills, expenses, cash and bank, loyalty and accounting events."
-      eyebrow="Common Core · P4"
+      eyebrow="Finance"
       title="Finance foundation"
     >
       <Stack>

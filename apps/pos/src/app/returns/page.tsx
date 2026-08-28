@@ -51,6 +51,11 @@ const DEFAULT_DISPOSITION: StockDisposition = "RESELLABLE";
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
+function selectInputValue(input: HTMLInputElement) {
+  if (input.disabled || input.readOnly || input.value === "") return;
+  requestAnimationFrame(() => input.select());
+}
+
 /**
  * Returns and refunds.
  *
@@ -379,6 +384,11 @@ export default function ReturnsPage() {
                               onChange={(event) =>
                                 setQuantity(line.id, Number(event.target.value || 0), available)
                               }
+                              onFocus={(event) => selectInputValue(event.currentTarget)}
+                              onMouseUp={(event) => {
+                                event.preventDefault();
+                                selectInputValue(event.currentTarget);
+                              }}
                               value={chosen}
                             />
                             <button

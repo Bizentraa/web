@@ -66,7 +66,7 @@ export function useRegister(): {
 }
 
 /**
- * CC-P6-005 in POS form: sales taken while the connection is down are queued locally with their
+ * Sales taken while the connection is down are queued locally with their
  * own idempotency key and replayed through the sync endpoint, so a replay can never post twice.
  */
 export function useOfflineQueue(api: BizentraApiClient | null, businessId: string | undefined) {

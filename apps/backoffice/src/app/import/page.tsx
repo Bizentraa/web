@@ -34,7 +34,7 @@ const ENTITY_KINDS: Array<{ value: ImportEntityKind; label: string; help: string
   {
     value: "OPENING_DATA",
     label: "Opening stock",
-    help: "Needs the P3 inventory phase; validation explains this clearly.",
+    help: "Needs inventory tracking; validation explains this clearly.",
   },
 ];
 
@@ -149,10 +149,9 @@ export default function ImportPage() {
 
   return (
     <Workspace
-      requirements="CC-P1-011"
       status={<StatusChip tone="success">{batches.length} import(s)</StatusChip>}
       description="Bring existing items, customers and suppliers in from a CSV or spreadsheet export, safely."
-      eyebrow="Common Core · P1"
+      eyebrow="Import"
       title="Import"
     >
       <Stack>

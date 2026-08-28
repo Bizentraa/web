@@ -132,10 +132,9 @@ export default function ProductionReadinessPage() {
 
   return (
     <Workspace
-      requirements="CC-P8-001 to CC-P8-010"
       status={<StatusChip tone="information">Readiness foundation active</StatusChip>}
       description="Security events, backups, readiness checks, privacy requests and release controls."
-      eyebrow="Common Core · P8"
+      eyebrow="Production"
       title="Production readiness"
     >
       <Stack>

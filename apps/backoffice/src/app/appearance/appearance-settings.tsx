@@ -105,7 +105,7 @@ export function AppearanceSettings() {
           <Card>
             <CardHeader>
               <div>
-                <Kicker>CC-P0-008</Kicker>
+                <Kicker>Appearance</Kicker>
                 <CardTitle>Colour palette</CardTitle>
               </div>
               <Badge tone="neutral">{THEME_PRESETS.length} palettes</Badge>

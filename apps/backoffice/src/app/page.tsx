@@ -164,7 +164,7 @@ export default function DashboardPage() {
               <Split>
                 <DataTable
                   caption="Recent sales"
-                  kicker="P2"
+                  kicker="Sales"
                   toolbar={
                     <Link className="ui-button ui-button--quiet" href="/sales">
                       Open sales
@@ -242,7 +242,7 @@ export default function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <div>
-                        <Kicker>P0</Kicker>
+                        <Kicker>Setup</Kicker>
                         <CardTitle>Business</CardTitle>
                       </div>
                       <Link className="ui-button ui-button--quiet" href="/setup">

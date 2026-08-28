@@ -125,10 +125,9 @@ export default function SetupPage() {
 
   return (
     <Workspace
-      requirements="CC-P0-001 to CC-P0-004"
       status={<StatusChip tone="success">{branches.length} Branch(es)</StatusChip>}
       description="The Business, its Branches and the Locations where stock and work are managed."
-      eyebrow="Common Core · P0"
+      eyebrow="Setup"
       title="Business setup"
       headerActions={
         <Button onClick={() => setBranchDialog(true)} disabled={!data}>
@@ -154,7 +153,7 @@ export default function SetupPage() {
                 <FormCard onSubmit={(event) => void saveBusiness(event)}>
                   <CardHeader>
                     <div>
-                      <Kicker>CC-P0-001</Kicker>
+                      <Kicker>Business</Kicker>
                       <CardTitle>Business details</CardTitle>
                     </div>
                     <Badge tone={data.business.status === "ACTIVE" ? "success" : "neutral"}>
@@ -223,7 +222,7 @@ export default function SetupPage() {
                 <DataTable
                   caption="Branches"
                   summary="Stock and work Locations belong to a Branch and are used by inventory and operations later."
-                  kicker="CC-P0-003"
+                  kicker="Branches"
                   toolbar={<Button onClick={() => setBranchDialog(true)}>New Branch</Button>}
                   getRowKey={(branch) => branch.id}
                   rows={branches}
@@ -292,7 +291,7 @@ export default function SetupPage() {
               {tab === "locations" ? (
                 <DataTable
                   caption="Locations"
-                  kicker="CC-P0-004"
+                  kicker="Locations"
                   toolbar={
                     <CardDescription>
                       Stock and work Locations belong to a Branch and are used by inventory and

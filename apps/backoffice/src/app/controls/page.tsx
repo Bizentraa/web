@@ -132,14 +132,13 @@ export default function ControlsPage() {
 
   return (
     <Workspace
-      requirements="CC-P0-007 to CC-P0-010"
       status={
         <StatusChip tone={pending.length ? "warning" : "success"}>
           {pending.length ? `${pending.length} waiting approval` : "Nothing waiting"}
         </StatusChip>
       }
       description="Approval rules, feature packs, document numbering and the audit history."
-      eyebrow="Common Core · P0"
+      eyebrow="Controls"
       title="Controls and audit"
     >
       <Stack>
@@ -162,7 +161,7 @@ export default function ControlsPage() {
                   <DataTable
                     caption="Approval rules"
                     summary="A rule applies from its threshold upward. Leave the threshold empty to require approval every time."
-                    kicker="CC-P0-007"
+                    kicker="Approvals"
                     toolbar={
                       <CardDescription>
                         A rule applies from its threshold upward. Leave the threshold empty to
@@ -315,7 +314,7 @@ export default function ControlsPage() {
               {tab === "features" ? (
                 <DataTable
                   caption="Feature packs"
-                  kicker="CC-P0-008"
+                  kicker="Features"
                   toolbar={
                     <CardDescription>
                       Turning a pack off never deletes data. A pack that other packs depend on
@@ -375,7 +374,7 @@ export default function ControlsPage() {
                 <DataTable
                   caption="Document numbers"
                   summary="Numbers are allocated atomically, so two terminals never receive the same number. A sequence can only move forward."
-                  kicker="CC-P0-010"
+                  kicker="Numbering"
                   toolbar={
                     <CardDescription>
                       Numbers are allocated atomically, so two terminals never receive the same
@@ -419,7 +418,7 @@ export default function ControlsPage() {
                   <Card>
                     <CardHeader>
                       <div>
-                        <Kicker>CC-P0-009</Kicker>
+                        <Kicker>Audit</Kicker>
                         <CardTitle>Audit history</CardTitle>
                       </div>
                       <Badge tone="neutral">{data.audit.total} record(s)</Badge>
@@ -483,7 +482,7 @@ export default function ControlsPage() {
                     </FormGrid>
                     <DataTable
                       caption="Audit history"
-                      kicker="CC-P0-009"
+                      kicker="Audit"
                       summary="Who changed what, and when. Records are append-only."
                       getRowKey={(row) => row.id}
                       onRowSelect={setAuditDetail}

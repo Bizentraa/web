@@ -71,7 +71,6 @@ export function Workspace({
   description,
   eyebrow,
   headerActions,
-  requirements,
   status,
   title,
 }: {
@@ -79,8 +78,6 @@ export function Workspace({
   description: string;
   eyebrow: string;
   headerActions?: ReactNode;
-  /** SRS requirement range this screen implements, e.g. "CC-P2-001 to CC-P2-011". */
-  requirements?: string | undefined;
   /** Live state of the screen, shown beside the title. */
   status?: ReactNode;
   title: string;
@@ -92,7 +89,6 @@ export function Workspace({
       description={description}
       eyebrow={eyebrow}
       headerActions={headerActions}
-      requirements={requirements}
       status={status}
       title={title}
     >
@@ -106,7 +102,6 @@ function BackOfficeShell({
   description,
   eyebrow,
   headerActions,
-  requirements,
   status,
   title,
 }: {
@@ -114,7 +109,6 @@ function BackOfficeShell({
   description: string;
   eyebrow: string;
   headerActions?: ReactNode;
-  requirements?: string | undefined;
   status?: ReactNode;
   title: string;
 }) {
@@ -161,7 +155,6 @@ function BackOfficeShell({
           <div>
             <div className="bo-screen-eyebrow">
               <Kicker>{eyebrow}</Kicker>
-              {requirements ? <span className="ui-code">{requirements}</span> : null}
             </div>
             <div className="ui-page-header-title-row">
               <h1>{title}</h1>

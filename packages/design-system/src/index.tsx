@@ -387,20 +387,55 @@ export function Field({
   error,
   hint,
   label,
+  onFocus,
+  onMouseUp,
+  type,
+  inputMode,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
   hint?: string;
   label: string;
 }) {
+  const selectOnFocus = shouldSelectInputValue(type, inputMode);
+
   return (
     <label className={cn("ui-field", error && "ui-field--invalid", className)}>
       <span>{label}</span>
-      <input aria-invalid={error ? true : undefined} {...props} />
+      <input
+        aria-invalid={error ? true : undefined}
+        data-autofocus={props.autoFocus ? true : undefined}
+        data-select-on-focus={selectOnFocus ? true : undefined}
+        inputMode={inputMode}
+        onFocus={(event) => {
+          onFocus?.(event);
+          if (selectOnFocus) selectInputValue(event.currentTarget);
+        }}
+        onMouseUp={(event) => {
+          onMouseUp?.(event);
+          if (!selectOnFocus) return;
+          event.preventDefault();
+          selectInputValue(event.currentTarget);
+        }}
+        type={type}
+        {...props}
+      />
       {error ? <small className="ui-field-error">{error}</small> : null}
       {!error && hint ? <small>{hint}</small> : null}
     </label>
   );
+}
+
+function shouldSelectInputValue(
+  type: InputHTMLAttributes<HTMLInputElement>["type"],
+  inputMode: InputHTMLAttributes<HTMLInputElement>["inputMode"],
+): boolean {
+  return type === "number" || inputMode === "numeric" || inputMode === "decimal";
+}
+
+function selectInputValue(input: HTMLInputElement): void {
+  if (input.disabled || input.readOnly || input.value === "") return;
+  requestAnimationFrame(() => input.select());
 }
 
 export function SelectField({

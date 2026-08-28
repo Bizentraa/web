@@ -111,7 +111,7 @@ slot on `Workspace`:
 | Was | Now |
 |---|---|
 | `status` chip | `Workspace status={...}` — beside the title, in `.ui-page-header-title-row` |
-| SRS range eyebrow, e.g. `CC-P2-001 to CC-P2-011` | `Workspace requirements="..."` — a quiet `.ui-code` tag next to the phase label |
+| Internal requirement range eyebrow | No longer rendered in the product UI; `Workspace requirements="..."` remains accepted only as historical development metadata |
 | Second title and description | Dropped; the shell's were already the navigational ones, matching the sidebar and breadcrumb |
 
 `PageHeader` itself stays in the design system. It is the right component for a *section* header
@@ -141,9 +141,10 @@ name Inter first.
 `.ui-code` is the class for an identifier: mono, ligatures off, 0.94em so it sits level with the
 surrounding sans. Use it for values a person reads character by character or compares down a
 column — `COLA2-SHIFT-000003`, `REG2` — not for labels. `Kicker` stays in the sans face on purpose:
-it holds words like "Role dashboard" as often as codes like "CC-P2-001", and splitting it by
-content would be less consistent, not more. Money and quantities keep `tabular-nums` in the sans
-face, which is what a finance surface wants.
+it carries short product contexts such as "Role dashboard", "Shift" or "Prices". Internal
+requirement IDs, phase IDs and story IDs stay in development documents and should not return to
+operator-facing navigation, page headers, kickers or table labels. Money and quantities keep
+`tabular-nums` in the sans face, which is what a finance surface wants.
 
 ### Theme flash on reload
 
@@ -223,7 +224,6 @@ slot on the right. Twenty-four tables were nevertheless wrapped in a `Card` that
 heading and a second description for the same thing, so a section read:
 
 ```
-CC-P1-004
 Units                       [Add]     <- card header
 Units of measure                      <- card description
   TABLE
@@ -247,7 +247,7 @@ this only unwraps the cards whose entire content was one table. Three kept their
 Controls' audit history (a filter grid above the table), Sales' shift records (a description list,
 not a table) and the Sales detail card.
 
-Two further props came out of the P5–P8 screens, where the tables sit in the two-column
+Two further props came out of the later operations screens, where the tables sit in the two-column
 `ui-screen-grid` beside a create form:
 
 - `className` on `DataTable`, so `ui-scroll-panel` moves from the card onto the table wrapper and
@@ -495,8 +495,8 @@ group. Reports is now `ListOrdered`, matching the Reports tab; Store reliability
 Appearance `Palette` instead of a generic cog. Where a concept appears both in the sidebar and as a
 tab, the two now draw the same glyph.
 
-Group labels are quieter and more spaced, and the P0-P8 phase tags are dimmed to read as build
-metadata rather than as notification counts - except on the active row, where they take the accent.
+Group labels are quieter and more spaced, and the old phase tags were removed so the sidebar reads
+as product navigation rather than build metadata.
 
 All of this is CSS against shadcn's `data-slot` hooks in `globals.css`, not edits to the vendored
 component, so a future `shadcn add sidebar` remains a drop-in. It is colour and motion only; no
@@ -516,7 +516,7 @@ Both axes are now stated - `overflow-x: auto; overflow-y: hidden` - and the indi
 rail got the same treatment, since they are the same shape of element.
 
 `.ui-table-wrap` deliberately keeps only `overflow-x`. It is combined with `.ui-scroll-panel`
-(`overflow: auto`) on the P5-P8 screens, and pinning its vertical axis to `hidden` would stop those
+(`overflow: auto`) on the later operations screens, and pinning its vertical axis to `hidden` would stop those
 panels scrolling.
 
 ### Themed scrollbars
@@ -541,7 +541,7 @@ raw `<select>` inside `label.theme-field`, its own panel, kicker, message and sa
 was the one screen that did not look like the product.
 
 It is now built from `Card`, `Field`, `SelectField`, `CheckField`, `Button`, `Badge` and `Kicker`
-like everything else, in the two-column `ui-screen-grid` the P5-P8 screens use: choices on the
+like everything else, in the two-column `ui-screen-grid` the later operations screens use: choices on the
 left, a sticky panel on the right.
 
 ### The preview is the real thing
@@ -757,17 +757,21 @@ shown beside the amount, so it is read off the screen rather than worked out whi
 A reference field appears only for the methods that have one to record.
 
 The design system's `NumberPad` had been shipped and never used in this flow; it is the pad here
-and in the close-shift drawer. `Drawer` gained a `wide` prop so the pad can sit beside the tender
-list, and collapses to one column below 1200px.
+and in the close-shift drawer. The drawer also has a normal amount input above the pad. It receives
+focus when Payment opens, and because numeric fields select their full value on focus, a cashier
+can click Pay on `98`, type `100`, and immediately see the cash change without deleting first.
+`Drawer` gained a `wide` prop so the pad can sit beside the tender list, and collapses to one
+column below 1200px.
 
 ### Closing the drawer
 
 The old dialog pre-filled counted cash with the expected figure, which quietly invites accepting
 it without counting: the one number the close exists to capture was already filled in. The field
-now starts empty, the count is entered on the pad, and the difference is named the moment it stops
-being zero - **balanced**, **over** or **short**, each with its own tone - so nobody works it out
-in their head and nobody discovers it the next morning. A difference always carries a reason, and
-the button says which step is missing rather than failing on submit.
+now starts empty, receives focus when the drawer opens, can be typed directly or entered on the
+pad, and the difference is named the moment it stops being zero - **balanced**, **over** or
+**short**, each with its own tone - so nobody works it out in their head and nobody discovers it
+the next morning. A difference always carries a reason, and the button says which step is missing
+rather than failing on submit.
 
 ### Returns
 
@@ -844,8 +848,8 @@ single-row bar over the edge.
 **The shift code was set as a heading.** "Close shift COLA2-SHIFT-000003" made the code the
 hardest thing on the panel to read back over a counter, in a face where 0/O and 1/l are the whole
 point. The heading says what the panel does; the code sits under it as a `ui-pos-shift-id` chip in
-the mono face the rest of the product uses for identifiers. The uncounted drawer reads as an
-em dash rather than two hyphens.
+the mono face the rest of the product uses for identifiers. The uncounted drawer reads as an empty
+count rather than a fake zero.
 
 Verified in a real browser rather than by inspection: at 1280, 1023, 768 and 375px, on both
 screens, `document.documentElement.scrollWidth` equals the viewport width and the shell's height

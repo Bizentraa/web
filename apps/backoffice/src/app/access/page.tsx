@@ -189,10 +189,9 @@ export default function AccessPage() {
 
   return (
     <Workspace
-      requirements="CC-P0-005 and CC-P0-006"
       status={<StatusChip tone="success">{memberships.length} user(s)</StatusChip>}
       description="Users, Roles and the fine-grained permissions that decide who can do what."
-      eyebrow="Common Core · P0"
+      eyebrow="Access"
       title="Users and roles"
       headerActions={
         <Button disabled={!data} onClick={() => setInviteOpen(true)}>
@@ -218,7 +217,7 @@ export default function AccessPage() {
                 <DataTable
                   caption="People with access"
                   summary="The Owner Role always keeps full access. Every other Role can be edited, and a Role in use cannot lose the Business its last Owner."
-                  kicker="CC-P0-005"
+                  kicker="Users"
                   toolbar={<Button onClick={() => setInviteOpen(true)}>Invite user</Button>}
                   getRowKey={(member) => member.membershipId}
                   rows={memberships}
@@ -381,7 +380,7 @@ export default function AccessPage() {
               {tab === "roles" ? (
                 <DataTable
                   caption="Roles"
-                  kicker="CC-P0-006"
+                  kicker="Roles"
                   toolbar={<Button onClick={() => setNewRoleOpen(true)}>New Role</Button>}
                   getRowKey={(role) => role.id}
                   rows={roles}

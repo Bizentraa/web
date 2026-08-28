@@ -32,14 +32,14 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-/** The Back Office navigation, grouped the way the Common Core phases are delivered. */
+/** The Back Office navigation, grouped by the way operators use the product. */
 export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Operate",
     items: [
       { title: "Dashboard", href: "/", icon: Gauge },
-      { title: "Sales", href: "/sales", icon: ReceiptText, badge: "P2" },
-      { title: "Catalog", href: "/catalog", icon: Boxes, badge: "P1" },
+      { title: "Sales", href: "/sales", icon: ReceiptText },
+      { title: "Catalog", href: "/catalog", icon: Boxes },
       { title: "Customers", href: "/customers", icon: UsersRound },
       { title: "Suppliers", href: "/suppliers", icon: Truck },
     ],
@@ -47,25 +47,24 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: "Control",
     items: [
-      { title: "Setup", href: "/setup", icon: Building2, badge: "P0" },
+      { title: "Setup", href: "/setup", icon: Building2 },
       { title: "Access", href: "/access", icon: KeyRound },
       { title: "Controls", href: "/controls", icon: SlidersHorizontal },
-      { title: "Inventory", href: "/inventory", icon: PackageSearch, badge: "P3" },
-      { title: "Finance", href: "/finance", icon: CircleDollarSign, badge: "P4" },
+      { title: "Inventory", href: "/inventory", icon: PackageSearch },
+      { title: "Finance", href: "/finance", icon: CircleDollarSign },
     ],
   },
   {
     title: "Extend",
     items: [
-      { title: "Business engines", href: "/business-engines", icon: Store, badge: "P5" },
+      { title: "Business engines", href: "/business-engines", icon: Store },
       {
         title: "Store reliability",
         href: "/store-reliability",
         icon: MonitorSmartphone,
-        badge: "P6",
       },
-      { title: "Reports", href: "/reporting-operations", icon: ListOrdered, badge: "P7" },
-      { title: "Production", href: "/production-readiness", icon: ShieldCheck, badge: "P8" },
+      { title: "Reports", href: "/reporting-operations", icon: ListOrdered },
+      { title: "Production", href: "/production-readiness", icon: ShieldCheck },
       { title: "Import", href: "/import", icon: FileInput },
       { title: "Appearance", href: "/appearance", icon: Palette },
     ],

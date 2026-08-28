@@ -1,6 +1,6 @@
 # Development Change Log
 
-**Purpose:** track what has actually been developed, when it changed, which SRS requirements/user stories it supports, and what evidence proves it.
+**Purpose:** track what has actually been developed, when it changed, which product area it supports, and what evidence proves it.
 
 This file is append-only. Do not delete older entries when the same feature changes again. Add a new dated entry under the same feature or date so the team can see the full history.
 
@@ -14,18 +14,18 @@ Each change entry should include:
 |---|---|
 | Date | Calendar date of the change in `YYYY-MM-DD` format. |
 | Feature / slice | The business capability or technical slice changed. |
-| SRS mapping | Requirement IDs and user stories from the SRS, for example `CC-P0-001`, `CC-US-001`. |
+| Product area | The business capability, app surface or shared technical area changed. |
 | What changed | Short factual list of what was built or changed. |
 | Main files | Important files or folders touched. |
 | Verification | Tests, builds, browser checks, API checks, migration checks, or manual evidence. |
-| Commit | Git commit hash once committed. Use `Uncommitted` while the change is still in progress. |
+| Commit | Git commit hash once committed. Use `This changeset` while the change is still in progress. |
 | Remaining work | Clear follow-up items, if any. |
 
 ## 2. Status Meanings
 
 | Status | Meaning |
 |---|---|
-| Planned | Documented in SRS, not started in code. |
+| Planned | Documented, not started in code. |
 | Started | Data model, API, UI, or workflow has begun but is not complete. |
 | In progress | Usable slice exists, but some P0 acceptance or management workflow remains. |
 | Implemented | Feature slice is built and verified for its current scope. |
@@ -105,7 +105,8 @@ Each change entry should include:
 | 2026-08-27 | Implemented for Back Office shell scope | `CC-P0-001`, `CC-P0-008`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` | `c3bc01d` | Replaced the hand-written Back Office shell with the shadcn/ui `sidebar-07` block on Tailwind CSS v4, added a Business Branch switcher with persisted selection, and made every loaded resource re-scope when the Branch changes. |
 | 2026-08-27 | Implemented for POS foundation scope | `CC-P2-001`, `CC-P0-001`, `CC-US-004`, `CC-US-018` | `c3bc01d` | Added the same Tailwind v4 and shadcn foundation to POS without a sidebar, and replaced the plain register text in both POS topbars with a guarded register bar that refuses re-binding while a shift is open. |
 | 2026-08-28 | Implemented for Back Office polish scope | `CC-P0-005`, `CC-P0-008`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001`, `CC-P2-012`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` | `68ec1cd` | Polished the shadcn-backed Back Office experience: table-owned search/filter controls, explicit tab icons with sliding indicators, access-management avatars and inline Role editing, shift reconciliation as a table-plus-drawer workflow, a real Appearance preview, unified control height, themed scrollbars, softer dark borders and one consistent loading skeleton. |
-| 2026-08-28 | Implemented for POS overhaul scope | `CC-P2-001`, `CC-P2-012`, `CC-P0-001`, `CC-US-004`, `CC-US-018` | This changeset | Rebuilt the till: a cashier-shaped header shared by selling and returns, a full-view mode that hides it, a catalogue grid with category filters and in-ticket badges, a ticket that runs straight from lines to amount due, a tender-first payment drawer on the number pad with cash shortcuts and live change, a close-shift drawer that names the variance, a stepper-driven returns screen with a live refund estimate, and breakpoints from desktop to phone including a summoned cart sheet. |
+| 2026-08-28 | Implemented for POS overhaul scope | `CC-P2-001`, `CC-P2-012`, `CC-P0-001`, `CC-US-004`, `CC-US-018` | `15cf8ca` | Rebuilt the till: a cashier-shaped header shared by selling and returns, a full-view mode that hides it, a catalogue grid with category filters and in-ticket badges, a ticket that runs straight from lines to amount due, a tender-first payment drawer on the number pad with cash shortcuts and live change, a close-shift drawer that names the variance, a stepper-driven returns screen with a live refund estimate, and breakpoints from desktop to phone including a summoned cart sheet. |
+| 2026-08-28 | Implemented for numeric-entry and product-label cleanup | Shared UI and POS/backoffice shell | This changeset | Numeric fields now select existing values on focus/click across shared forms, payment, close-shift and return/quantity steppers; overlays focus the first meaningful field rather than the close button; POS payment and close-shift drawers accept direct keyboard entry beside the number pad; the open-shift float is focused by default; and visible Back Office/POS labels no longer show internal requirement or phase codes. |
 
 ## 4. Detailed Change Entries
 
@@ -379,11 +380,24 @@ Each change entry should include:
 | What changed | Extracted the till header into a shared `PosTopbar` used by selling and returns, carrying register, shift, online state, offline queue, clock and a two-stop segmented nav; added a full-view mode that hides the header and requests browser fullscreen, toggled from the selling panel and restored when fullscreen ends; gave the catalogue grid category quick-filters, in-ticket quantity badges and loading/empty states, which added `categoryId` and `categoryName` to `PosCatalogEntry` and an optional `categoryId` filter to `catalogSearchSchema` and `searchSellableItems`; moved the customer to the top of the ticket and collapsed discount and coupon into a disclosure so lines, totals, amount due and Pay read as one run; gave cart lines a stepper and a remove control; replaced the payment sheet with a tender-first `PaymentDrawer` built on the previously unused `NumberPad`, pre-loaded with the amount due, with method tiles, cash denomination shortcuts, live change and per-method reference capture; replaced the close-shift dialog with a `CloseShiftDrawer` that starts the count empty, shows the tender breakdown and names the variance as balanced, over or short with a required reason; rebuilt returns around the same stepper with a live line-by-line refund estimate and on-screen guards for over-refund and store credit on a walk-in; added a `wide` variant to `Drawer`, a `useMediaQuery` hook, and POS breakpoints down to phone including a bottom-sheet ticket summoned by a fixed cart bar; suppressed scan auto-focus on coarse pointers so a tablet does not raise its keyboard over the grid. |
 | Main files | `apps/pos/src/app/page.tsx`; `apps/pos/src/app/returns/page.tsx`; `apps/pos/src/components/pos-topbar.tsx`; `apps/pos/src/components/payment-drawer.tsx`; `apps/pos/src/components/close-shift-drawer.tsx`; `packages/design-system/styles.css`; `packages/design-system/src/client.tsx`; `packages/contracts/src/index.ts`; `packages/domains/commerce/src/application/pricing.service.ts`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md` |
 | Verification | Prettier written over every changed file; TypeScript parse check over all changed sources; stylesheet brace-balance check; scripted audit that every `ui-pos-*` / `ui-pay-*` class used in JSX has a rule and that no POS rule is dead (`ui-tender-grid` removed as a result); scripted unused-import check across the five POS files; grid-area coverage and `min-height: 0` chain reviewed by hand; `pnpm --filter @bizentra/contracts build`; `pnpm --filter @bizentra/contracts typecheck`; `pnpm --filter @bizentra/contracts lint`; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/domain-commerce typecheck`; `pnpm --filter @bizentra/domain-commerce lint`; `pnpm --filter @bizentra/domain-commerce test`; `pnpm --filter @bizentra/pos typecheck`; `pnpm --filter @bizentra/pos lint`; `pnpm --filter @bizentra/pos test`; `pnpm --filter @bizentra/pos build`; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`. |
-| Commit | This changeset |
 | Follow-up 2026-08-28 | Six layout defects found on a real till and fixed: the header is a three-column grid so Sell/Returns keeps the same position on both screens; the register menu aligns to its trigger's start instead of hanging off the left edge; the returns form scrolls its body and pins the accept row; the returns detail joins the selling ticket on the shared `ui-pos-summoned` sheet behaviour so it is no longer clipped below 1023px; the phone header is two rows with a full-width nav and folds label-by-label above that; and the shift code moved out of the close-shift heading into a mono chip. Verified in-browser at 1280, 1023, 768 and 375px with no overflow on either axis. |
 | Follow-up 2026-08-28 (2) | Till state lifted out of the pages into `PosWorkspaceProvider`, rendered in `app/layout.tsx`: a layout survives a route change, so moving between selling and returns no longer remounts, refetches or loses the open ticket. Added `pos-skeletons.tsx` - catalogue tiles, sale rows, return lines and a whole selling surface - shown only on a first fill, never on a refine. Removed the shift chip from the header and moved the shift into the register menu behind a lit dot, and replaced the no-identity state panel with a centred card. Verified in-browser: state survives soft navigation both ways, and three route changes issue no API request. |
 | Follow-up 2026-08-28 (3) | Surfaced the close-shift guard as a workflow instead of a rejection. The workspace tracks the shift's open `DRAFT`/`HELD` sales with the same predicate `PosService.closeShift` uses, refreshed on shift change and after hold, resume, discard and complete. The close-shift drawer lists those tickets with Resume and Discard, and its button reads "Finish or discard N open tickets" rather than failing on press. Discard voids through `voidSale` behind a `ConfirmDialog` that collects the reason `reasonSchema` requires. The header's Held carts button carries the count, and the new shared `HeldSaleRow` replaced the held-carts dialog's whole-row button, which could not hold a second action without nesting buttons. |
-| Remaining work | Run the full `pnpm check` gate. Exercise the till by hand with an open shift at each width, including offline queueing and a split tender. Consider persisting the chosen category per terminal, and a keyboard shortcut for full view. |
+| Commit | `15cf8ca feat: overhaul pos cashier experience` |
+| Remaining work | Exercise the till by hand with an open shift at each width, including offline queueing and a split tender. Consider persisting the chosen category per terminal, and a keyboard shortcut for full view. |
+
+### 2026-08-28 - Numeric Entry and Product Label Cleanup
+
+| Field | Details |
+|---|---|
+| Feature / slice | Shared numeric-entry behavior and operator-facing label cleanup |
+| Status | Implemented |
+| Product area | Shared design system, Back Office shell, POS selling/payment/returns/shift flows |
+| What changed | Shared `Field` and the local shadcn `Input` now select an existing numeric value on focus or click for `type="number"`, `inputMode="numeric"` and `inputMode="decimal"`. Shared overlays now focus an explicit autofocus field or the first input/select/textarea before falling back to buttons, so drawers no longer open with the close button focused. POS Payment now opens with the tender amount focused and selected, supports direct typing beside the number pad, and still offers cash shortcuts. Close shift opens on the counted-cash input, accepts keyboard or pad entry, and still starts empty. Open shift focuses the opening cash float by default. Ticket and return quantity steppers select their value when clicked. Visible Back Office/POS navigation, headers, kickers and table labels were changed from internal codes to product-language labels. |
+| Main files | `packages/design-system/src/index.tsx`; `packages/design-system/src/client.tsx`; `apps/backoffice/src/components/ui/input.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `apps/backoffice/src/components/app-sidebar.tsx`; `apps/pos/src/app/page.tsx`; `apps/pos/src/app/returns/page.tsx`; `apps/pos/src/components/payment-drawer.tsx`; `apps/pos/src/components/close-shift-drawer.tsx`; `docs/development/06_UI_COMPONENT_SYSTEM.md`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md`; `docs/ui-ux/01_COMMON_UIUX_DESIGN_SYSTEM.md` |
+| Verification | `pnpm prettier --write` for changed code/docs; no old requirement/phase code strings remain in `apps/backoffice/src`, `apps/pos/src` or `packages/design-system/src`; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/backoffice typecheck`; `pnpm --filter @bizentra/backoffice lint`; `pnpm --filter @bizentra/backoffice test`; `pnpm --filter @bizentra/backoffice build`; `pnpm --filter @bizentra/pos typecheck`; `pnpm --filter @bizentra/pos lint`; `pnpm --filter @bizentra/pos test`; `pnpm --filter @bizentra/pos build`; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`. |
+| Commit | This changeset |
+| Remaining work | Add browser-level focus assertions once route-level visual tests are introduced. |
 
 ## 5. Consolidated Remaining Work Register
 
@@ -515,7 +529,7 @@ Copy this template for the next change and keep older entries unchanged.
 |---|---|
 | Feature / slice |  |
 | Status | Planned / Started / In progress / Implemented / Blocked / Superseded |
-| SRS mapping | `CC-...`, `XX-US-...` |
+| Product area |  |
 | What changed |  |
 | Main files |  |
 | Verification |  |
@@ -531,4 +545,4 @@ When the same feature changes again:
 2. Keep the old entry as historical evidence.
 3. Update the feature history table with the new date and summary.
 4. If a previous approach is replaced, mark the old entry as `Superseded` and mention the newer entry date.
-5. If an SRS requirement changes meaning, update the SRS document separately and reference that SRS change here.
+5. Keep internal requirement IDs and phase/story IDs out of operator-facing UI copy; use product-area labels in new change-log entries.

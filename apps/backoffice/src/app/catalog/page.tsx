@@ -155,7 +155,7 @@ export default function CatalogPage() {
     {
       value: "units",
       label: "Units",
-      kicker: "CC-P1-004",
+      kicker: "Units",
       description: "Units of measure",
       onAdd: () => setDialog("unit"),
       rows: (reference?.units ?? []).map((unit) => ({
@@ -175,7 +175,7 @@ export default function CatalogPage() {
     {
       value: "conversions",
       label: "Unit conversions",
-      kicker: "CC-P1-004",
+      kicker: "Units",
       description: "How one unit converts into another",
       onAdd: () => setDialog("conversion"),
       rows: (reference?.unitConversions ?? []).map((conversion) => {
@@ -198,7 +198,7 @@ export default function CatalogPage() {
     {
       value: "categories",
       label: "Categories",
-      kicker: "CC-P1-002",
+      kicker: "Organization",
       description: "Item categories",
       onAdd: () => setDialog("category"),
       rows: (reference?.categories ?? []).map((category) => ({
@@ -223,7 +223,7 @@ export default function CatalogPage() {
     {
       value: "brands",
       label: "Brands",
-      kicker: "CC-P1-002",
+      kicker: "Organization",
       description: "Brands",
       onAdd: () => setDialog("brand"),
       rows: (reference?.brands ?? []).map((brand) => ({
@@ -242,7 +242,7 @@ export default function CatalogPage() {
     {
       value: "tags",
       label: "Tags",
-      kicker: "CC-P1-002",
+      kicker: "Organization",
       description: "Tags used to group items across categories",
       onAdd: () => setDialog("tag"),
       rows: (reference?.tags ?? []).map((tag) => ({
@@ -261,7 +261,7 @@ export default function CatalogPage() {
     {
       value: "attributes",
       label: "Custom attributes",
-      kicker: "CC-P1-002",
+      kicker: "Organization",
       description: "Extra fields this Business needs on its items",
       onAdd: () => setDialog("attribute"),
       rows: (reference?.attributes ?? []).map((attribute) => ({
@@ -316,12 +316,11 @@ export default function CatalogPage() {
 
   return (
     <Workspace
-      requirements="CC-P1-001 to CC-P1-011"
       status={
         <StatusChip tone={readiness >= 80 ? "success" : "warning"}>Setup {readiness}%</StatusChip>
       }
       description="Items, units, categories, prices, promotions and tax. These records are definitions; they never move stock or money by themselves."
-      eyebrow="Common Core · P1"
+      eyebrow="Catalog"
       title="Catalog and pricing"
       headerActions={
         <>
@@ -529,7 +528,7 @@ export default function CatalogPage() {
                     <DataTable
                       caption="Price lists"
                       summary="A customer group can point at its own price list, and a price can be set for one Branch or from a quantity break upward."
-                      kicker="CC-P1-006"
+                      kicker="Prices"
                       toolbar={
                         <Button onClick={() => setDialog("priceList")}>New price list</Button>
                       }
@@ -585,7 +584,7 @@ export default function CatalogPage() {
                     <DataTable
                       caption="Promotions"
                       summary="The POS applies the promotion that gives the customer the best price and explains any promotion it skipped."
-                      kicker="CC-P1-007"
+                      kicker="Promotions"
                       toolbar={
                         <Button onClick={() => setDialog("promotion")}>New promotion</Button>
                       }
@@ -678,7 +677,7 @@ export default function CatalogPage() {
                   {taxSection === "categories" ? (
                     <DataTable
                       caption="Tax categories and rates"
-                      kicker="CC-P1-008"
+                      kicker="Tax"
                       toolbar={
                         <div className="ui-row">
                           <Button onClick={() => setDialog("taxCategory")}>New category</Button>
@@ -921,7 +920,7 @@ export default function CatalogPage() {
               <input name="purchasable" type="checkbox" />
               <span>
                 <strong>Can be purchased</strong>
-                <small>Appears in purchasing when P3 is built.</small>
+                <small>Appears in purchasing when inventory purchasing is enabled.</small>
               </span>
             </label>
             <label className="ui-check-field">

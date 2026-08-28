@@ -171,14 +171,13 @@ export default function SalesPage() {
 
   return (
     <Workspace
-      requirements="CC-P2-001 to CC-P2-011"
       status={
         <StatusChip tone={openShifts.length ? "success" : "neutral"}>
           {openShifts.length ? `${openShifts.length} shift open` : "No open shift"}
         </StatusChip>
       }
       description="Sales, tenders, receipts, returns and the POS shifts they belong to."
-      eyebrow="Common Core · P2"
+      eyebrow="Sales"
       title="Sales and shifts"
     >
       <Stack>

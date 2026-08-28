@@ -41,7 +41,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `AppShell` | Shared content frame for app surfaces that do not provide their own product shell |
 | `PageHeader` | Page title, description, visible status and actions |
 | `Card`, `FormCard`, `CardHeader`, `CardContent`, `CardTitle`, `CardDescription` | Shared surfaces; `FormCard` is a card that is also the form |
-| `Kicker` | Small uppercase phase or context label |
+| `Kicker` | Small uppercase product context label |
 | `KpiCard` | Dashboard metric with trend and comparison |
 | `StatusCard` | Ready / planned / attention summary |
 | `EntityHeader` | Identity, status, context and main actions on a detail page |
@@ -51,7 +51,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `Avatar` | Initials in a circle, derived from a name; there are no uploaded photographs, so it needs no network request and cannot fail to load |
 | `Badge`, `StatusChip` | State shown as text plus a semantic colour, never colour alone |
 | `Progress` | Accessible progress indicator |
-| `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text |
+| `Field`, `SelectField`, `TextareaField`, `CheckField`, `FormGrid`, `FormFooter` | Labelled controls with hints and error text. Numeric fields select their existing value on focus/click so typing replaces it immediately |
 | `FilterBar` | Superseded. `DataTable` now takes `search`, `filters` and `chips` directly, so a list's controls sit inside the table's own border. Kept exported for a future screen that filters something other than a table |
 | `DataTable` | Sticky header, optional kicker, toolbar, aligned numeric columns, row click, footer, and task cards below 768px |
 | `Timeline` | Business history on a record |
@@ -63,7 +63,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `Skeleton`, `SkeletonRows` | Loading placeholders |
 | `ReceiptView` | Printable receipt with lines, totals, tax lines and tenders |
 | `ApprovalDrawer`, `DangerConfirmation`, `PaymentSheet` | Presentational operational patterns |
-| `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard`, `WorkTicketPanel` | Placeholders reserved for P5 engines |
+| `SerialPicker`, `BatchExpiryPicker`, `BookingCalendar`, `WorkBoard`, `WorkTicketPanel` | Placeholders reserved for future operational engines |
 | `formatMoney`, `formatQuantity`, `formatDateTime`, `cn` | Shared formatting so money and dates look the same everywhere |
 
 ## Client components and hooks
@@ -78,7 +78,7 @@ once, so a table, chip or dialog cannot drift between Back Office and POS.
 | `VerticalTabs` | Section navigation as a left-hand rail, for screens whose sections are a list of record types; full tablist keyboard support, collapses to a scrolling row below 900px |
 | `ToastProvider`, `useToasts` | Non-blocking result messages |
 | `NumberPad` | Touch numeric entry |
-| `useScanFocus` | Keeps the POS scan input focused, as section 6 requires |
+| `useScanFocus` | Keeps the POS scan input focused while a till is ready to sell |
 | `useOnlineState` | Connectivity for the offline banner |
 | `useDebouncedValue` | Search and live cart pricing without a request per keystroke |
 | `createIdempotencyKey` | One stable key per POS action so a retry never posts twice |
@@ -94,10 +94,12 @@ bottom sheet on phones.
 4. Anything that uses a hook goes in `client.tsx`, so a server component can still import the rest.
 5. Money and quantities use tabular numbers and the shared formatters.
 6. A component ships with its empty, loading, error and permission behaviour, not only its happy path.
+7. Numeric inputs (`type="number"`, `inputMode="numeric"` or `inputMode="decimal"`) select the full existing value whenever they receive focus or are clicked. Do not make a cashier or operator delete `98` before typing `100`.
+8. Operator-facing screens use product language such as Sales, Catalog, Shift, Stock and Payment. Internal requirement IDs, phase IDs and story IDs stay in development records, not in navigation, page headers, kickers or table labels.
 
 ## Remaining work
 
 - Component examples (Storybook or equivalent) and visual-regression snapshots.
 - Automated accessibility assertions on the overlay and table patterns.
 - Saved views, a column selector and a density switch for back-office lists.
-- Real implementations for the P5 placeholders when those engines are built.
+- Real implementations for the future operational placeholders when those engines are built.

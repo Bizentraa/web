@@ -60,6 +60,11 @@ import { readNumber, readText } from "./lib/forms";
 import { errorMessage } from "./lib/pos-session";
 import { usePosWorkspace } from "./lib/pos-workspace";
 
+function selectInputValue(input: HTMLInputElement) {
+  if (input.disabled || input.readOnly || input.value === "") return;
+  requestAnimationFrame(() => input.select());
+}
+
 export default function PosPage() {
   const {
     api,
@@ -549,7 +554,7 @@ export default function PosPage() {
           <Card>
             <CardHeader>
               <div>
-                <Kicker>CC-P2-001</Kicker>
+                <Kicker>Shift</Kicker>
                 <CardTitle>Open a shift before selling</CardTitle>
               </div>
               <StatusChip tone="warning">No open shift</StatusChip>
@@ -579,6 +584,7 @@ export default function PosPage() {
                   required
                 />
                 <Field
+                  autoFocus
                   label="Opening cash float"
                   name="openingFloat"
                   defaultValue="0"
@@ -773,6 +779,11 @@ export default function PosPage() {
                           onChange={(event) =>
                             setQuantity(line.itemId, Number(event.target.value || 0))
                           }
+                          onFocus={(event) => selectInputValue(event.currentTarget)}
+                          onMouseUp={(event) => {
+                            event.preventDefault();
+                            selectInputValue(event.currentTarget);
+                          }}
                           value={line.quantity}
                         />
                         <button

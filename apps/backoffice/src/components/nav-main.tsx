@@ -20,7 +20,7 @@ export interface NavItem {
   title: string;
   href: string;
   icon: LucideIcon;
-  /** Common Core phase tag shown as a badge, e.g. "P2". */
+  /** Optional operational badge shown beside a navigation item. */
   badge?: string;
   items?: Array<{ title: string; href: string }>;
 }

@@ -94,10 +94,9 @@ export default function SuppliersPage() {
 
   return (
     <Workspace
-      requirements="CC-P1-010"
       status={<StatusChip tone="success">{data?.suppliers.total ?? 0} supplier(s)</StatusChip>}
       description="Supplier contacts, payment terms, lead times and the items each supplier provides."
-      eyebrow="Common Core · P1"
+      eyebrow="Suppliers"
       title="Suppliers"
       headerActions={<Button onClick={() => setCreateOpen(true)}>New supplier</Button>}
     >
@@ -288,7 +287,7 @@ export default function SuppliersPage() {
             <DataTable
               caption="Supplied items"
               summary="Each link keeps the supplier code, cost and lead time that purchasing will use."
-              kicker="CC-P1-010"
+              kicker="Suppliers"
               toolbar={<Button onClick={() => setLinkOpen(true)}>Link item</Button>}
               getRowKey={(supplierItem) => supplierItem.itemId}
               rows={detail.items}

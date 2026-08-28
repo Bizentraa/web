@@ -81,10 +81,9 @@ export default function BusinessEnginesPage() {
 
   return (
     <Workspace
-      requirements="CC-P5-001 to CC-P5-012"
       status={<StatusChip tone="information">Shared engines active</StatusChip>}
       description="Reusable workflow, ticket, booking, traceability, warranty, BOM, route and document engines."
-      eyebrow="Common Core · P5"
+      eyebrow="Operations"
       title="Business engines"
     >
       <Stack>
