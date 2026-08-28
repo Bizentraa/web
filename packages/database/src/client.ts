@@ -24,7 +24,7 @@ function readTransactionTimeout(): number {
     return configuredTimeout;
   }
 
-  return 20_000;
+  return 60_000;
 }
 
 export async function withBusinessContext<T>(

@@ -13,6 +13,8 @@ export async function ensureAccessCatalogSync(
   transaction: DatabaseTransaction,
   businessId: string,
 ): Promise<void> {
+  if (await accessCatalogIsCurrent(transaction, businessId)) return;
+
   const permissions = await Promise.all(
     PLATFORM_PERMISSIONS.map((permission) =>
       transaction.permission.upsert({
@@ -59,6 +61,47 @@ export async function ensureAccessCatalogSync(
       permissionIdByCode,
     );
   }
+}
+
+async function accessCatalogIsCurrent(
+  transaction: DatabaseTransaction,
+  businessId: string,
+): Promise<boolean> {
+  const requiredRolePermissionCount =
+    PLATFORM_PERMISSIONS.length +
+    ROLE_TEMPLATES.reduce((total, template) => total + template.permissions.length, 0);
+
+  const [permissionCount, roleCount, rolePermissionCount] = await Promise.all([
+    transaction.permission.count({
+      where: { code: { in: PLATFORM_PERMISSIONS.map((permission) => permission.code) } },
+    }),
+    transaction.role.count({
+      where: {
+        businessId,
+        OR: [
+          { code: "OWNER", isSystem: true },
+          { code: { in: ROLE_TEMPLATES.map((template) => template.code) }, isSystem: false },
+        ],
+      },
+    }),
+    transaction.rolePermission.count({
+      where: {
+        businessId,
+        role: {
+          OR: [
+            { code: "OWNER", isSystem: true },
+            { code: { in: ROLE_TEMPLATES.map((template) => template.code) }, isSystem: false },
+          ],
+        },
+      },
+    }),
+  ]);
+
+  return (
+    permissionCount === PLATFORM_PERMISSIONS.length &&
+    roleCount === ROLE_TEMPLATES.length + 1 &&
+    rolePermissionCount >= requiredRolePermissionCount
+  );
 }
 
 async function grantRolePermissions(
