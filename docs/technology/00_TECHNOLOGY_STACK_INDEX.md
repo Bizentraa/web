@@ -143,6 +143,7 @@ Applications may import public package entry points. They shall not reach into a
 | [05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md](./05_IMPLEMENTATION_ROADMAP_AND_DECISION_GATES.md) | Delivery phases, architecture gates, quality gates, risks, and Definition of Done. |
 | [06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md](./06_ARCHITECTURE_TUTORIAL_AND_DEPLOYMENT_GUIDE.md) | Beginner-friendly teaching guide with real workflows, folder connections, local development, deployment, migrations, scaling, and exercises. |
 | [07_TECHNICAL_ARCHITECTURE_MERMAID_DIAGRAMS.md](./07_TECHNICAL_ARCHITECTURE_MERMAID_DIAGRAMS.md) | Mermaid source diagrams for the complete technology stack, domain modules, repository links, sale/offline/payment flows, deployment, migrations, and Business isolation. |
+| [08_FREE_HOSTING_AND_CICD_DEPLOYMENT_STRATEGY.md](./08_FREE_HOSTING_AND_CICD_DEPLOYMENT_STRATEGY.md) | Free/demo hosting, Supabase, Redis, GitHub Actions CI/CD, service deployment settings, and production upgrade gates. |
 
 ## 6. Fixed, Conditional, and Deferred Decisions
 
