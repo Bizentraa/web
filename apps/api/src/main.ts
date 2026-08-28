@@ -12,12 +12,24 @@ import { ApiExceptionFilter } from "./errors/api-exception.filter.js";
 
 const logger = createLogger("bizentra-api");
 
+function resolveAllowedOrigins(): Array<RegExp | string> {
+  const configuredOrigins = process.env.ALLOWED_WEB_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (configuredOrigins?.length) {
+    return configuredOrigins;
+  }
+
+  return [/^http:\/\/localhost:\d+$/];
+}
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
 
   await app.register(helmet);
   await app.register(cors, {
-    origin: [/^http:\/\/localhost:\d+$/],
+    origin: resolveAllowedOrigins(),
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
