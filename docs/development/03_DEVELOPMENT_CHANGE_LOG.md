@@ -109,7 +109,7 @@ Each change entry should include:
 | 2026-08-28 | Implemented for numeric-entry and product-label cleanup | Shared UI and POS/backoffice shell | `812498e` | Numeric fields now select existing values on focus/click across shared forms, payment, close-shift and return/quantity steppers; overlays focus the first meaningful field rather than the close button; POS payment and close-shift drawers accept direct keyboard entry beside the number pad; the open-shift float is focused by default; and visible Back Office/POS labels no longer show internal requirement or phase codes. |
 | 2026-08-28 | Implemented for Back Office header/table cleanup | Back Office shell and shared table API | `76d00b9` | Removed the `eyebrow` prop from the Back Office `Workspace` API and removed the `kicker` prop from `DataTable`; screen headers now rely on title, description, status and actions, while table headers rely on caption and toolbar. |
 | 2026-08-28 | Implemented for Back Office action deduplication | Back Office screen actions and table toolbars | `75f7215` | Removed duplicate create buttons from primary list table headers when the same action already appears in the Workspace header, keeping table toolbars for table-scoped actions. |
-| 2026-08-28 | Implemented for Back Office repeated-title cleanup | Back Office primary list tables | This changeset | Hid the visible `DataTable` title on primary lists when it exactly repeats the surrounding `Workspace` title, while keeping the native table caption for assistive technology. |
+| 2026-08-28 | Implemented for Back Office repeated-title cleanup | Back Office primary list tables | `1555113` | Hid the visible `DataTable` title on primary lists when it exactly repeats the surrounding `Workspace` title, while keeping the native table caption for assistive technology. |
 
 ## 4. Detailed Change Entries
 
@@ -438,7 +438,7 @@ Each change entry should include:
 | What changed | Added `hideHeaderTitle` to `DataTable` so a screen can keep the native accessible table caption without printing a visible table title that repeats the `Workspace` title immediately above it. Applied it to Customers and Suppliers, where the primary list caption exactly matched the page title. |
 | Main files | `packages/design-system/src/index.tsx`; `packages/design-system/styles.css`; `apps/backoffice/src/app/customers/page.tsx`; `apps/backoffice/src/app/suppliers/page.tsx`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md`; `docs/development/06_UI_COMPONENT_SYSTEM.md`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md` |
 | Verification | `pnpm prettier --write` for changed code/docs; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/backoffice typecheck`; `pnpm --filter @bizentra/backoffice lint`; `pnpm --filter @bizentra/backoffice build`; `pnpm format:check`; `pnpm typecheck`. |
-| Commit | This changeset |
+| Commit | `1555113 fix: hide repeated primary table titles` |
 | Remaining work | None for this cleanup. |
 
 ## 5. Consolidated Remaining Work Register
