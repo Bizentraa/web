@@ -221,7 +221,6 @@ export default function SetupPage() {
                 <DataTable
                   caption="Branches"
                   summary="Stock and work Locations belong to a Branch and are used by inventory and operations later."
-                  toolbar={<Button onClick={() => setBranchDialog(true)}>New Branch</Button>}
                   getRowKey={(branch) => branch.id}
                   rows={branches}
                   empty="Create the first Branch to start trading."

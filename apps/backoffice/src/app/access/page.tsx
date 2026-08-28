@@ -216,7 +216,6 @@ export default function AccessPage() {
                 <DataTable
                   caption="People with access"
                   summary="The Owner Role always keeps full access. Every other Role can be edited, and a Role in use cannot lose the Business its last Owner."
-                  toolbar={<Button onClick={() => setInviteOpen(true)}>Invite user</Button>}
                   getRowKey={(member) => member.membershipId}
                   rows={memberships}
                   empty="Invite the people who will use the system."

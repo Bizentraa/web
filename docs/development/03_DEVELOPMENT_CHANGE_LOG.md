@@ -107,7 +107,8 @@ Each change entry should include:
 | 2026-08-28 | Implemented for Back Office polish scope | `CC-P0-005`, `CC-P0-008`, `CC-P1-001` to `CC-P1-011`, `CC-P2-001`, `CC-P2-012`, `CC-US-001`, `CC-US-003`, `CC-US-004`, `CC-US-018` | `68ec1cd` | Polished the shadcn-backed Back Office experience: table-owned search/filter controls, explicit tab icons with sliding indicators, access-management avatars and inline Role editing, shift reconciliation as a table-plus-drawer workflow, a real Appearance preview, unified control height, themed scrollbars, softer dark borders and one consistent loading skeleton. |
 | 2026-08-28 | Implemented for POS overhaul scope | `CC-P2-001`, `CC-P2-012`, `CC-P0-001`, `CC-US-004`, `CC-US-018` | `15cf8ca` | Rebuilt the till: a cashier-shaped header shared by selling and returns, a full-view mode that hides it, a catalogue grid with category filters and in-ticket badges, a ticket that runs straight from lines to amount due, a tender-first payment drawer on the number pad with cash shortcuts and live change, a close-shift drawer that names the variance, a stepper-driven returns screen with a live refund estimate, and breakpoints from desktop to phone including a summoned cart sheet. |
 | 2026-08-28 | Implemented for numeric-entry and product-label cleanup | Shared UI and POS/backoffice shell | `812498e` | Numeric fields now select existing values on focus/click across shared forms, payment, close-shift and return/quantity steppers; overlays focus the first meaningful field rather than the close button; POS payment and close-shift drawers accept direct keyboard entry beside the number pad; the open-shift float is focused by default; and visible Back Office/POS labels no longer show internal requirement or phase codes. |
-| 2026-08-28 | Implemented for Back Office header/table cleanup | Back Office shell and shared table API | This changeset | Removed the `eyebrow` prop from the Back Office `Workspace` API and removed the `kicker` prop from `DataTable`; screen headers now rely on title, description, status and actions, while table headers rely on caption and toolbar. |
+| 2026-08-28 | Implemented for Back Office header/table cleanup | Back Office shell and shared table API | `76d00b9` | Removed the `eyebrow` prop from the Back Office `Workspace` API and removed the `kicker` prop from `DataTable`; screen headers now rely on title, description, status and actions, while table headers rely on caption and toolbar. |
+| 2026-08-28 | Implemented for Back Office action deduplication | Back Office screen actions and table toolbars | This changeset | Removed duplicate create buttons from primary list table headers when the same action already appears in the Workspace header, keeping table toolbars for table-scoped actions. |
 
 ## 4. Detailed Change Entries
 
@@ -410,6 +411,19 @@ Each change entry should include:
 | What changed | Removed `eyebrow` from `Workspace` so page headers no longer require a separate small label above the title. Breadcrumb grouping now comes from the sidebar route map. Removed `kicker` from `DataTable` so every table header has one primary text label, its `caption`, plus any toolbar action. Cleaned the Back Office page callers and removed the unused `.bo-screen-eyebrow` styles. Record-level drawer/entity eyebrows remain because they identify the open record context rather than duplicating page/table labels. |
 | Main files | `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `apps/backoffice/src/app/*/page.tsx`; `apps/backoffice/src/app/globals.css`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md`; `docs/development/06_UI_COMPONENT_SYSTEM.md`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md` |
 | Verification | `pnpm prettier --write` for changed Back Office code, design-system source and docs; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/backoffice typecheck`; `pnpm --filter @bizentra/backoffice lint`; `pnpm --filter @bizentra/backoffice test`; `pnpm --filter @bizentra/backoffice build`; `pnpm format:check`; `pnpm lint`; `pnpm typecheck`; `pnpm test`. |
+| Commit | `76d00b9 refactor: simplify backoffice headers and tables` |
+| Remaining work | None for this cleanup. |
+
+### 2026-08-28 - Back Office Action Deduplication
+
+| Field | Details |
+|---|---|
+| Feature / slice | Back Office primary actions and table toolbar cleanup |
+| Status | Implemented |
+| Product area | Back Office Workspace headers and primary list tables |
+| What changed | Removed duplicate `Invite user`, `New Branch`, `New item`, `New customer` and `New supplier` buttons from the first table on their screens when the same action already appears in `Workspace headerActions`. Table toolbars remain available for actions that are scoped to a specific tab, reference table or record detail. |
+| Main files | `apps/backoffice/src/app/access/page.tsx`; `apps/backoffice/src/app/setup/page.tsx`; `apps/backoffice/src/app/catalog/page.tsx`; `apps/backoffice/src/app/customers/page.tsx`; `apps/backoffice/src/app/suppliers/page.tsx`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md`; `docs/development/06_UI_COMPONENT_SYSTEM.md`; `docs/development/15_BACKOFFICE_SIDEBAR_SHADCN.md` |
+| Verification | Direct search confirmed the duplicate primary-create labels remain only in Workspace headers and dialog titles; `pnpm prettier --write` for changed code/docs; `pnpm --filter @bizentra/backoffice typecheck`; `pnpm --filter @bizentra/backoffice lint`; `pnpm --filter @bizentra/backoffice build`; `pnpm format:check`; `pnpm typecheck`. |
 | Commit | This changeset |
 | Remaining work | None for this cleanup. |
 

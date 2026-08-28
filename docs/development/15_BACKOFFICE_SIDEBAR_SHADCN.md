@@ -97,6 +97,12 @@ the sidebar trigger, the breadcrumb and the active Branch.
 Pages keep passing design-system `Button`s and `ui-button` links; those classes are unchanged and
 still follow the Business theme, so no screen needed editing.
 
+The header is also the single home for a screen's main create action. A button such as "New
+supplier", "New customer", "New item", "New Branch" or "Invite user" should not be repeated inside
+the first table's toolbar when it opens the same dialog. Keep the copy in `Workspace
+headerActions`; reserve `DataTable toolbar` for table-scoped actions, tab-specific actions and
+detail-panel actions.
+
 ### One header per screen
 
 Every screen used to render a design-system `PageHeader` inside its own content *and* pass title,
@@ -342,11 +348,13 @@ and the rows it filters, in different boxes.
 | `search` | `{ value, onChange, placeholder?, label? }` — the search field, first control in the row |
 | `filters` | Extra controls beside it, typically `SelectField`s |
 | `chips` | Clearable active-filter chips |
-| `toolbar` | The primary action, on the title row at full size |
+| `toolbar` | Table-scoped or tab-specific actions, on the title row at full size |
 
-The action is deliberately **not** `size="quiet"`. A list's main action — New supplier, New item — is
-the primary action on that screen, and the quiet size made it read as an afterthought. Eight table
-actions across the Back Office were sized down that way and are now full size.
+The action is deliberately **not** `size="quiet"`. A table action needs the same touch target as a
+screen action, and the quiet size made it read as an afterthought. Eight table actions across the
+Back Office were sized down that way and are now full size. The later duplicate-action cleanup
+removed toolbar buttons from primary list tables when the exact same action already lives in
+`Workspace headerActions`.
 
 Four screens used `FilterBar` — Sales, Catalog, Customers, Suppliers — and none do now.
 `FilterBar` stays exported for a future screen that filters something other than a table.

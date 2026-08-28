@@ -96,6 +96,7 @@ bottom sheet on phones.
 6. A component ships with its empty, loading, error and permission behaviour, not only its happy path.
 7. Numeric inputs (`type="number"`, `inputMode="numeric"` or `inputMode="decimal"`) select the full existing value whenever they receive focus or are clicked. Do not make a cashier or operator delete `98` before typing `100`.
 8. Operator-facing screens use product language such as Sales, Catalog, Shift, Stock and Payment. Internal requirement IDs, phase IDs and story IDs stay in development records, not in navigation, page headers, kickers or table labels.
+9. Do not duplicate the same primary action in both `Workspace headerActions` and a `DataTable toolbar`. If the action creates the main record for the screen, keep it in the Workspace header. Use the table toolbar for actions that only make sense inside that table, tab or record detail.
 
 ## Remaining work
 

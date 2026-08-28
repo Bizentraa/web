@@ -400,7 +400,6 @@ export default function CatalogPage() {
                         ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
                         : []
                     }
-                    toolbar={<Button onClick={() => setDialog("item")}>New item</Button>}
                     summary={`${data.items.total} item(s). Click a row to open the item.`}
                     getRowKey={(item) => item.id}
                     rows={data.items.rows}

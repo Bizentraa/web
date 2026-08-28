@@ -109,7 +109,6 @@ export default function SuppliersPage() {
                 onChange: setSearch,
                 placeholder: "Search by supplier name or code",
               }}
-              toolbar={<Button onClick={() => setCreateOpen(true)}>New supplier</Button>}
               summary={`${data.suppliers.total} supplier(s). Click a row to open the record.`}
               getRowKey={(supplier) => supplier.id}
               onRowSelect={(supplier) => void openDetail(supplier)}

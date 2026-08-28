@@ -178,7 +178,6 @@ export default function CustomersPage() {
                   ? [{ label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("") }]
                   : []
               }
-              toolbar={<Button onClick={() => setCreateOpen(true)}>New customer</Button>}
               summary={`${data.customers.total} customer(s). Click a row to open the record.`}
               getRowKey={(customer) => customer.id}
               onRowSelect={(customer) => void openDetail(customer)}
