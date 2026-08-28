@@ -1,10 +1,12 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "./generated/prisma/client.js";
-import type { Prisma } from "./generated/prisma/client.js";
 
 export type DatabaseClient = PrismaClient;
-export type DatabaseTransaction = Prisma.TransactionClient;
+export type DatabaseTransaction = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
 
 export function createDatabaseClient(databaseUrl = process.env.DATABASE_URL): DatabaseClient {
   if (!databaseUrl) {
@@ -15,15 +17,28 @@ export function createDatabaseClient(databaseUrl = process.env.DATABASE_URL): Da
   return new PrismaClient({ adapter });
 }
 
+function readTransactionTimeout(): number {
+  const configuredTimeout = Number(process.env.PRISMA_TRANSACTION_TIMEOUT_MS);
+
+  if (Number.isFinite(configuredTimeout) && configuredTimeout > 0) {
+    return configuredTimeout;
+  }
+
+  return 20_000;
+}
+
 export async function withBusinessContext<T>(
   database: DatabaseClient,
   businessId: string,
   work: (transaction: DatabaseTransaction) => Promise<T>,
 ): Promise<T> {
-  return database.$transaction(async (transaction) => {
-    await transaction.$executeRaw`SELECT set_config('app.current_business_id', ${businessId}, true)`;
-    return work(transaction);
-  });
+  return database.$transaction(
+    async (transaction) => {
+      await transaction.$executeRaw`SELECT set_config('app.current_business_id', ${businessId}, true)`;
+      return work(transaction);
+    },
+    { timeout: readTransactionTimeout() },
+  );
 }
 
 export async function databaseIsReady(database: DatabaseClient): Promise<boolean> {
