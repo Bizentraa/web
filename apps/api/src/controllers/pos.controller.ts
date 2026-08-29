@@ -6,9 +6,13 @@ import {
   catalogSearchSchema,
   closeShiftSchema,
   confirmSaleSchema,
+  confirmSalesOrderSchema,
+  convertQuotationToOrderSchema,
   createExchangeSchema,
+  createQuotationSchema,
   createReturnSchema,
   createSaleSchema,
+  createSalesOrderSchema,
   importEntityKindSchema,
   openShiftSchema,
   quoteSaleSchema,
@@ -139,6 +143,49 @@ export class PosController {
     return this.pos.createSale(businessId, identity.userId, createSaleSchema.parse(body));
   }
 
+  @Post("quotations")
+  @ApiOperation({ summary: "Create a quotation without reserving stock or taking payment" })
+  createQuotation(
+    @Param("businessId") businessId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.pos.createQuotation(businessId, identity.userId, createQuotationSchema.parse(body));
+  }
+
+  @Post("quotations/:saleId/convert-to-order")
+  @ApiOperation({ summary: "Convert an accepted quotation into a sales order" })
+  convertQuotationToOrder(
+    @Param("businessId") businessId: string,
+    @Param("saleId") saleId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.pos.convertQuotationToOrder(
+      businessId,
+      identity.userId,
+      saleId,
+      convertQuotationToOrderSchema.parse(body ?? {}),
+    );
+  }
+
+  @Post("sales-orders")
+  @ApiOperation({ summary: "Create a sales order for later fulfillment or invoicing" })
+  createSalesOrder(
+    @Param("businessId") businessId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.pos.createSalesOrder(
+      businessId,
+      identity.userId,
+      createSalesOrderSchema.parse(body),
+    );
+  }
+
   @Get("sales")
   @ApiOperation({ summary: "Search sales, held carts and returns" })
   listSales(
@@ -192,6 +239,23 @@ export class PosController {
       identity.userId,
       saleId,
       confirmSaleSchema.parse(body ?? {}),
+    );
+  }
+
+  @Post("sales-orders/:saleId/confirm")
+  @ApiOperation({ summary: "Confirm a sales order when it becomes a real sale" })
+  confirmSalesOrder(
+    @Param("businessId") businessId: string,
+    @Param("saleId") saleId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.pos.confirmSalesOrder(
+      businessId,
+      identity.userId,
+      saleId,
+      confirmSalesOrderSchema.parse(body ?? {}),
     );
   }
 

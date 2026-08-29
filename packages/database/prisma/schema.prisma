@@ -161,6 +161,8 @@ enum CashMovementKind {
 
 enum SaleStatus {
   DRAFT
+  QUOTATION
+  ORDER
   HELD
   CONFIRMED
   PARTIALLY_RETURNED

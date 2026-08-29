@@ -2,9 +2,13 @@ import type {
   AddPaymentInput,
   CashMovementInput,
   CloseShiftInput,
+  ConfirmSalesOrderInput,
+  ConvertQuotationToOrderInput,
   CreateExchangeInput,
+  CreateQuotationInput,
   CreateReturnInput,
   CreateSaleInput,
+  CreateSalesOrderInput,
   ExchangeResult,
   OpenShiftInput,
   Paginated,
@@ -418,6 +422,159 @@ export class PosService {
     return this.getSale(businessId, actorUserId, saleId);
   }
 
+  async createQuotation(
+    businessId: string,
+    actorUserId: string,
+    input: CreateQuotationInput,
+  ): Promise<SaleDetail> {
+    const saleId = await this.createDeferredSale(businessId, actorUserId, input, {
+      documentType: "QUOTE",
+      status: "QUOTATION",
+      auditEntity: "Quotation",
+    });
+    return this.getSale(businessId, actorUserId, saleId);
+  }
+
+  async createSalesOrder(
+    businessId: string,
+    actorUserId: string,
+    input: CreateSalesOrderInput,
+  ): Promise<SaleDetail> {
+    const saleId = await this.createDeferredSale(businessId, actorUserId, input, {
+      documentType: "ORDER",
+      status: "ORDER",
+      auditEntity: "SalesOrder",
+      sourceQuotationId: input.sourceQuotationId,
+    });
+    return this.getSale(businessId, actorUserId, saleId);
+  }
+
+  async convertQuotationToOrder(
+    businessId: string,
+    actorUserId: string,
+    saleId: string,
+    input: ConvertQuotationToOrderInput,
+  ): Promise<SaleDetail> {
+    await withBusinessContext(this.database, businessId, async (transaction) => {
+      const actor = await requirePermission(transaction, businessId, actorUserId, "SALE_CREATE");
+      const quotation = await transaction.sale.findFirst({
+        where: { id: saleId, businessId },
+        include: { branch: true },
+      });
+      if (!quotation) throw new BusinessAccessError("NOT_FOUND", "Quotation was not found.");
+      if (quotation.status !== "QUOTATION") {
+        throw new BusinessAccessError("CONFLICT", "Only a quotation can be converted to an order.");
+      }
+
+      const orderNumber = await allocateDocumentNumber(transaction, {
+        businessId,
+        documentType: "ORDER",
+        branchId: quotation.branchId,
+        branchCode: quotation.branch.code,
+      });
+
+      await transaction.sale.update({
+        where: { id: saleId },
+        data: {
+          number: orderNumber,
+          status: "ORDER",
+          note: [input.note, quotation.note, `Converted from quotation ${quotation.number}`]
+            .filter(Boolean)
+            .join("\n"),
+        },
+      });
+
+      await recordAudit(transaction, {
+        businessId,
+        branchId: quotation.branchId,
+        actorMembershipId: actor.membershipId,
+        action: "UPDATE",
+        entityType: "SalesOrder",
+        entityId: saleId,
+        before: { status: "QUOTATION", number: quotation.number },
+        after: { status: "ORDER", number: orderNumber },
+      });
+      await publishEvent(transaction, {
+        businessId,
+        eventType: "SalesOrderCreated",
+        aggregateType: "Sale",
+        aggregateId: saleId,
+        payload: { businessId, quoteNumber: quotation.number, orderNumber },
+      });
+    });
+
+    return this.getSale(businessId, actorUserId, saleId);
+  }
+
+  async confirmSalesOrder(
+    businessId: string,
+    actorUserId: string,
+    saleId: string,
+    input: ConfirmSalesOrderInput,
+  ): Promise<SaleDetail> {
+    await withBusinessContext(this.database, businessId, async (transaction) => {
+      const actor = await requirePermission(transaction, businessId, actorUserId, "SALE_CREATE");
+      const sale = await transaction.sale.findFirst({
+        where: { id: saleId, businessId },
+        include: { lines: true },
+      });
+      if (!sale) throw new BusinessAccessError("NOT_FOUND", "Sales order was not found.");
+      if (sale.status === "CONFIRMED") return;
+      if (sale.status !== "ORDER") {
+        throw new BusinessAccessError("CONFLICT", "Only a sales order can be confirmed here.");
+      }
+      if (!sale.lines.length) {
+        throw new BusinessAccessError("CONFLICT", "A sales order needs at least one line.");
+      }
+
+      if (toNumber(sale.discountTotal) > 0) {
+        await enforceApproval(transaction, {
+          businessId,
+          actionCode: "SALE_DISCOUNT",
+          amount: toNumber(sale.discountTotal),
+          approvalRequestId: input.approvalRequestId,
+          membership: actor,
+          entityType: "Sale",
+          entityId: saleId,
+        });
+      }
+
+      const shift = input.shiftId
+        ? await this.requireOpenShift(transaction, businessId, input.shiftId)
+        : null;
+
+      await transaction.sale.update({
+        where: { id: saleId },
+        data: {
+          status: "CONFIRMED",
+          confirmedAt: new Date(),
+          dueTotal: moneyToDb(roundMoney(toNumber(sale.total) - toNumber(sale.paidTotal))),
+          ...(shift ? { shiftId: shift.id } : {}),
+        },
+      });
+
+      await recordAudit(transaction, {
+        businessId,
+        branchId: sale.branchId,
+        actorMembershipId: actor.membershipId,
+        action: "UPDATE",
+        entityType: "SalesOrder",
+        entityId: saleId,
+        before: { status: "ORDER" },
+        after: { status: "CONFIRMED" },
+      });
+      await publishEvent(transaction, {
+        businessId,
+        eventType: "OrderConfirmed",
+        aggregateType: "Sale",
+        aggregateId: saleId,
+        payload: { businessId, number: sale.number, total: toNumber(sale.total) },
+      });
+    });
+
+    return this.getSale(businessId, actorUserId, saleId);
+  }
+
   async updateHeldSale(
     businessId: string,
     actorUserId: string,
@@ -616,6 +773,12 @@ export class PosService {
       if (!sale) throw new BusinessAccessError("NOT_FOUND", "Sale was not found.");
       if (sale.status === "VOIDED") {
         throw new BusinessAccessError("CONFLICT", "A voided sale cannot receive payment.");
+      }
+      if (sale.status === "QUOTATION" || sale.status === "ORDER") {
+        throw new BusinessAccessError(
+          "CONFLICT",
+          "Confirm the sales order before receiving payment.",
+        );
       }
       if (sale.status === "HELD") {
         throw new BusinessAccessError(
@@ -1168,6 +1331,100 @@ export class PosService {
     });
   }
 
+  private async createDeferredSale(
+    businessId: string,
+    actorUserId: string,
+    input: CreateQuotationInput | CreateSalesOrderInput,
+    options: {
+      documentType: "QUOTE" | "ORDER";
+      status: "QUOTATION" | "ORDER";
+      auditEntity: "Quotation" | "SalesOrder";
+      sourceQuotationId?: string | undefined;
+    },
+  ): Promise<string> {
+    return withBusinessContext(this.database, businessId, async (transaction) => {
+      const actor = await requirePermission(transaction, businessId, actorUserId, "SALE_CREATE");
+
+      const existing = await transaction.sale.findFirst({
+        where: { businessId, idempotencyKey: input.idempotencyKey },
+        select: { id: true },
+      });
+      if (existing) return existing.id;
+
+      if (options.sourceQuotationId) {
+        const quotation = await transaction.sale.findFirst({
+          where: { id: options.sourceQuotationId, businessId, status: "QUOTATION" },
+        });
+        if (!quotation) {
+          throw new BusinessAccessError(
+            "NOT_FOUND",
+            "The source quotation was not found or is no longer open.",
+          );
+        }
+      }
+
+      const cart = await this.pricing.resolveCart(transaction, businessId, actor, input);
+      const number = await allocateDocumentNumber(transaction, {
+        businessId,
+        documentType: options.documentType,
+        branchId: cart.branchId,
+        branchCode: cart.branchCode,
+      });
+
+      const noteParts = [
+        input.note,
+        "validUntil" in input && input.validUntil ? `Valid until ${input.validUntil}` : null,
+        options.sourceQuotationId ? `Source quotation ${options.sourceQuotationId}` : null,
+      ].filter(Boolean);
+
+      const sale = await transaction.sale.create({
+        data: {
+          businessId,
+          branchId: cart.branchId,
+          number,
+          status: options.status,
+          channel: "BACK_OFFICE",
+          customerId: cart.customerId,
+          currencyCode: cart.currencyCode,
+          subtotal: moneyToDb(cart.quote.subtotal),
+          discountTotal: moneyToDb(cart.quote.discountTotal),
+          taxTotal: moneyToDb(cart.quote.taxTotal),
+          total: moneyToDb(cart.quote.total),
+          dueTotal: moneyToDb(0),
+          idempotencyKey: input.idempotencyKey,
+          note: noteParts.length ? noteParts.join("\n") : null,
+          createdByMembershipId: actor.membershipId,
+        },
+      });
+
+      await this.writeSaleLines(transaction, businessId, sale.id, cart.quote.lines);
+
+      await recordAudit(transaction, {
+        businessId,
+        branchId: cart.branchId,
+        actorMembershipId: actor.membershipId,
+        action: "CREATE",
+        entityType: options.auditEntity,
+        entityId: sale.id,
+        after: {
+          number,
+          status: options.status,
+          total: cart.quote.total,
+          lines: cart.quote.lines.length,
+        },
+      });
+      await publishEvent(transaction, {
+        businessId,
+        eventType: options.status === "ORDER" ? "SalesOrderCreated" : "QuotationCreated",
+        aggregateType: "Sale",
+        aggregateId: sale.id,
+        payload: { businessId, branchId: cart.branchId, number, total: cart.quote.total },
+      });
+
+      return sale.id;
+    });
+  }
+
   private async writeSaleLines(
     transaction: DatabaseTransaction,
     businessId: string,
@@ -1337,10 +1594,16 @@ export class PosService {
       include: { lines: true, branch: true, payments: true },
     });
     if (!sale) throw new BusinessAccessError("NOT_FOUND", "The original sale was not found.");
-    if (sale.status === "VOIDED" || sale.status === "HELD" || sale.status === "DRAFT") {
+    if (
+      sale.status === "VOIDED" ||
+      sale.status === "HELD" ||
+      sale.status === "DRAFT" ||
+      sale.status === "QUOTATION" ||
+      sale.status === "ORDER"
+    ) {
       throw new BusinessAccessError(
         "CONFLICT",
-        "Only a confirmed sale can be returned. A held or voided sale has no money to reverse.",
+        "Only a confirmed sale can be returned. A draft, quotation, order, held or voided sale has no money to reverse.",
       );
     }
 

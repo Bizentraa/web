@@ -1,6 +1,14 @@
 "use client";
 
-import type { Paginated, SaleDetail, SaleListRow, ShiftSummary } from "@bizentra/contracts";
+import type {
+  CatalogReferenceData,
+  CustomerListRow,
+  Paginated,
+  PosCatalogEntry,
+  SaleDetail,
+  SaleListRow,
+  ShiftSummary,
+} from "@bizentra/contracts";
 import {
   Badge,
   Button,
@@ -37,12 +45,15 @@ import {
 } from "@bizentra/design-system/client";
 import { useState, type FormEvent } from "react";
 
-import { readOptionalNumber, readText } from "../lib/forms";
+import { readOptionalNumber, readOptionalText, readText } from "../lib/forms";
 import { errorMessage, ResourceState, useApi, useResource, Workspace } from "../lib/workspace";
 
 interface SalesData {
   sales: Paginated<SaleListRow>;
   shifts: ShiftSummary[];
+  reference: CatalogReferenceData;
+  customers: Paginated<CustomerListRow>;
+  catalog: PosCatalogEntry[];
 }
 
 export default function SalesPage() {
@@ -62,7 +73,15 @@ export default function SalesPage() {
         }),
         client.listShifts(businessId),
       ]);
-      return { sales, shifts };
+      const reference = await client.getCatalogReference(businessId);
+      const activeBranch = reference.branches.find((branch) => branch.status === "ACTIVE");
+      const [customers, catalog] = await Promise.all([
+        client.listCustomers(businessId, { pageSize: 50, status: "ACTIVE" }),
+        activeBranch
+          ? client.searchPosCatalog(businessId, { branchId: activeBranch.id, limit: 50 })
+          : Promise.resolve([]),
+      ]);
+      return { sales, shifts, reference, customers, catalog };
     },
     [debounced, statusFilter],
   );
@@ -74,6 +93,7 @@ export default function SalesPage() {
   const [shiftSearch, setShiftSearch] = useState("");
   const [shiftStatus, setShiftStatus] = useState("");
   const [returnOpen, setReturnOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [voidTarget, setVoidTarget] = useState<SaleDetail | null>(null);
   const [receipt, setReceipt] = useState<Awaited<
     ReturnType<NonNullable<typeof api>["getReceipt"]>
@@ -140,6 +160,95 @@ export default function SalesPage() {
     }
   };
 
+  const createCommercialDocument = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!api || !identity) return;
+    const form = new FormData(event.currentTarget);
+    const documentType = readText(form, "documentType", "QUOTATION") as "QUOTATION" | "ORDER";
+    const branchId = readText(form, "branchId");
+    const [itemId, variantId] = readText(form, "itemId").split(":");
+    const quantity = readOptionalNumber(form, "quantity") ?? 1;
+    const customerId = readOptionalText(form, "customerId");
+    const note = readOptionalText(form, "note");
+
+    if (!branchId || !itemId) {
+      toasts.push({
+        title: "Document not created",
+        description: "Choose a Branch and an item before saving.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const input = {
+        branchId,
+        customerId,
+        idempotencyKey: createIdempotencyKey(documentType === "ORDER" ? "order" : "quote"),
+        note,
+        lines: [{ itemId, variantId: variantId || undefined, quantity }],
+      };
+      const sale =
+        documentType === "ORDER"
+          ? await api.createSalesOrder(identity.businessId, input)
+          : await api.createQuotation(identity.businessId, input);
+      toasts.push({
+        title: `${documentType === "ORDER" ? "Sales order" : "Quotation"} ${sale.number} created`,
+        tone: "success",
+      });
+      setCreateOpen(false);
+      setDetail(sale);
+      await reload();
+    } catch (cause) {
+      toasts.push({
+        title: "Document not created",
+        description: errorMessage(cause),
+        tone: "danger",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const convertQuotation = async () => {
+    if (!api || !identity || !detail) return;
+    setBusy(true);
+    try {
+      const sale = await api.convertQuotationToOrder(identity.businessId, detail.id, {});
+      toasts.push({ title: `Sales order ${sale.number} created`, tone: "success" });
+      setDetail(sale);
+      await reload();
+    } catch (cause) {
+      toasts.push({
+        title: "Quotation not converted",
+        description: errorMessage(cause),
+        tone: "danger",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmOrder = async () => {
+    if (!api || !identity || !detail) return;
+    setBusy(true);
+    try {
+      const sale = await api.confirmSalesOrder(identity.businessId, detail.id, {});
+      toasts.push({ title: `Sale ${sale.number} confirmed`, tone: "success" });
+      setDetail(sale);
+      await reload();
+    } catch (cause) {
+      toasts.push({
+        title: "Order not confirmed",
+        description: errorMessage(cause),
+        tone: "danger",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const showReceipt = async (saleId: string) => {
     if (!api || !identity) return;
     try {
@@ -155,6 +264,9 @@ export default function SalesPage() {
 
   const sales = data?.sales;
   const shifts = data?.shifts ?? [];
+  const branches = data?.reference.branches.filter((branch) => branch.status === "ACTIVE") ?? [];
+  const customers = data?.customers.rows ?? [];
+  const catalog = data?.catalog ?? [];
   const openShifts = shifts.filter((shift) => shift.status === "OPEN");
   /* Shifts arrive as one list; the screen filters them rather than asking the API again. */
   const visibleShifts = shifts.filter((shift) => {
@@ -178,6 +290,7 @@ export default function SalesPage() {
       }
       description="Sales, tenders, receipts, returns and the POS shifts they belong to."
       title="Sales and shifts"
+      headerActions={<Button onClick={() => setCreateOpen(true)}>Create document</Button>}
     >
       <Stack>
         <Grid>
@@ -234,13 +347,19 @@ export default function SalesPage() {
                       value={statusFilter}
                     >
                       <option value="">Every status</option>
-                      {["CONFIRMED", "HELD", "PARTIALLY_RETURNED", "RETURNED", "VOIDED"].map(
-                        (status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ),
-                      )}
+                      {[
+                        "QUOTATION",
+                        "ORDER",
+                        "CONFIRMED",
+                        "HELD",
+                        "PARTIALLY_RETURNED",
+                        "RETURNED",
+                        "VOIDED",
+                      ].map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
                     </SelectField>
                   }
                   chips={
@@ -502,6 +621,16 @@ export default function SalesPage() {
                   <Button onClick={() => void showReceipt(detail.id)} variant="secondary">
                     Receipt
                   </Button>
+                  {detail.status === "QUOTATION" ? (
+                    <Button disabled={busy} onClick={() => void convertQuotation()}>
+                      Convert to order
+                    </Button>
+                  ) : null}
+                  {detail.status === "ORDER" ? (
+                    <Button disabled={busy} onClick={() => void confirmOrder()}>
+                      Confirm order
+                    </Button>
+                  ) : null}
                   {detail.status === "CONFIRMED" || detail.status === "PARTIALLY_RETURNED" ? (
                     <Button onClick={() => setReturnOpen(true)}>Return items</Button>
                   ) : null}
@@ -665,6 +794,63 @@ export default function SalesPage() {
       </Drawer>
 
       <Dialog
+        description="Create a quotation or sales order from the current catalogue. Orders can be confirmed later when they become a real sale."
+        onClose={() => setCreateOpen(false)}
+        open={createOpen}
+        title="Create sales document"
+      >
+        <form onSubmit={createCommercialDocument}>
+          <FormGrid>
+            <SelectField label="Document type" name="documentType">
+              <option value="QUOTATION">Quotation</option>
+              <option value="ORDER">Sales order</option>
+            </SelectField>
+            <SelectField label="Branch" name="branchId" required>
+              <option value="">Choose Branch</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.code} - {branch.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Customer" name="customerId">
+              <option value="">Walk-in</option>
+              {customers.map((customer) => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name}
+                </option>
+              ))}
+            </SelectField>
+            <SelectField label="Item" name="itemId" required>
+              <option value="">Choose item</option>
+              {catalog.map((item) => (
+                <option
+                  key={`${item.itemId}:${item.variantId ?? "base"}`}
+                  value={`${item.itemId}:${item.variantId ?? ""}`}
+                >
+                  {item.code} - {item.name}
+                </option>
+              ))}
+            </SelectField>
+            <Field
+              defaultValue="1"
+              label="Quantity"
+              min="0.0001"
+              name="quantity"
+              step="0.0001"
+              type="number"
+            />
+            <Field label="Note" name="note" />
+          </FormGrid>
+          <FormFooter>
+            <Button disabled={busy || !branches.length || !catalog.length} type="submit">
+              Save document
+            </Button>
+          </FormFooter>
+        </form>
+      </Dialog>
+
+      <Dialog
         description="Enter the quantity being returned on each line. The refund is the exact share of what was charged, including its tax."
         onClose={() => setReturnOpen(false)}
         open={returnOpen}
@@ -810,7 +996,8 @@ function saleTone(
   status: SaleListRow["status"],
 ): "success" | "warning" | "danger" | "neutral" | "information" {
   if (status === "CONFIRMED") return "success";
-  if (status === "HELD" || status === "DRAFT") return "warning";
+  if (status === "HELD" || status === "DRAFT" || status === "QUOTATION" || status === "ORDER")
+    return "warning";
   if (status === "VOIDED") return "danger";
   if (status === "RETURNED" || status === "PARTIALLY_RETURNED") return "information";
   return "neutral";

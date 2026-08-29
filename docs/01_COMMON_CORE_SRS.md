@@ -154,7 +154,7 @@ A requirement is not marked Implemented because its database table exists. It is
 Implemented when the user workflow, permission behaviour, validation, audit evidence and
 verification evidence are complete for the current phase scope.
 
-**Current count:** 87 Implemented, 23 Started, 5 Not started, of 115 rows across sections 6 and 8.
+**Current count:** 88 Implemented, 23 Started, 4 Not started, of 115 rows across sections 6 and 8.
 Last reviewed 2026-08-29.
 
 | ID | Phase | Area | Requirement | Status |
@@ -191,7 +191,7 @@ Last reviewed 2026-08-29.
 | CC-P2-009 | P2 | Return | The system shall return items against the original sale and preserve a clear reversal trail. | Implemented |
 | CC-P2-010 | P2 | Refund | The system shall refund to allowed payment methods or store credit according to policy. | Implemented |
 | CC-P2-011 | P2 | Exchange | The system shall support exchange by returning the old item and selling the replacement in one controlled flow. | Implemented |
-| CC-P2-012 | P2 | Quotation/Order | The system shall support quotations and sales orders for non-instant sales. | Not started |
+| CC-P2-012 | P2 | Quotation/Order | The system shall support quotations and sales orders for non-instant sales. | Implemented |
 | CC-P3-001 | P3 | Stock Ledger | The system shall keep an auditable stock ledger for every Item, Location and movement. | Implemented |
 | CC-P3-002 | P3 | One Movement Rule | One physical stock movement shall create one authoritative stock movement event only. | Implemented |
 | CC-P3-003 | P3 | Availability | The system shall show on-hand, reserved, available and incoming quantities. | Implemented |

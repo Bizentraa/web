@@ -87,6 +87,8 @@ export const cashMovementKindSchema = z.enum([
 
 export const saleStatusSchema = z.enum([
   "DRAFT",
+  "QUOTATION",
+  "ORDER",
   "HELD",
   "CONFIRMED",
   "PARTIALLY_RETURNED",
@@ -967,6 +969,27 @@ export const createSaleSchema = saleCartSchema.extend({
   payments: z.array(tenderSchema).max(10).default([]),
 });
 
+export const createQuotationSchema = saleCartSchema.extend({
+  idempotencyKey: idempotencyKeySchema,
+  note: z.string().trim().max(500).optional(),
+  validUntil: z.iso.datetime().optional(),
+});
+
+export const createSalesOrderSchema = saleCartSchema.extend({
+  idempotencyKey: idempotencyKeySchema,
+  note: z.string().trim().max(500).optional(),
+  sourceQuotationId: z.uuid().optional(),
+});
+
+export const convertQuotationToOrderSchema = z.object({
+  note: z.string().trim().max(500).optional(),
+});
+
+export const confirmSalesOrderSchema = z.object({
+  shiftId: z.uuid().optional(),
+  approvalRequestId: z.uuid().optional(),
+});
+
 export const updateHeldSaleSchema = saleCartSchema.extend({
   holdName: z.string().trim().max(120).optional(),
   note: z.string().trim().max(500).optional(),
@@ -1671,6 +1694,10 @@ export type SaleCartInput = z.output<typeof saleCartSchema>;
 export type QuoteSaleInput = z.output<typeof quoteSaleSchema>;
 export type TenderInput = z.output<typeof tenderSchema>;
 export type CreateSaleInput = z.output<typeof createSaleSchema>;
+export type CreateQuotationInput = z.output<typeof createQuotationSchema>;
+export type CreateSalesOrderInput = z.output<typeof createSalesOrderSchema>;
+export type ConvertQuotationToOrderInput = z.output<typeof convertQuotationToOrderSchema>;
+export type ConfirmSalesOrderInput = z.output<typeof confirmSalesOrderSchema>;
 export type UpdateHeldSaleInput = z.output<typeof updateHeldSaleSchema>;
 export type ConfirmSaleInput = z.output<typeof confirmSaleSchema>;
 export type AddPaymentInput = z.output<typeof addPaymentSchema>;

@@ -17,6 +17,8 @@ import type {
   CatalogSummary,
   CloseShiftInput,
   CollectCustomerPaymentInput,
+  ConfirmSalesOrderInput,
+  ConvertQuotationToOrderInput,
   CreateApprovalRequestInput,
   CreateAttributeDefinitionInput,
   AttachBusinessDocumentInput,
@@ -47,12 +49,14 @@ import type {
   CreatePriceListInput,
   CreatePrivacyRequestInput,
   CreatePromotionInput,
+  CreateQuotationInput,
   CreatePurchaseOrderInput,
   CreatePurchaseRequestInput,
   CreateReleaseReadinessInput,
   CreateReturnInput,
   CreateRoleInput,
   CreateSaleInput,
+  CreateSalesOrderInput,
   CreateSavedReportViewInput,
   CreateSupplierBillInput,
   CreateSupplierInput,
@@ -681,6 +685,19 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
       post<SaleQuote>(`/businesses/${businessId}/pos/quote`, input),
     createSale: (businessId: string, input: CreateSaleInput) =>
       post<SaleDetail>(`/businesses/${businessId}/pos/sales`, input),
+    createQuotation: (businessId: string, input: CreateQuotationInput) =>
+      post<SaleDetail>(`/businesses/${businessId}/pos/quotations`, input),
+    convertQuotationToOrder: (
+      businessId: string,
+      saleId: string,
+      input: ConvertQuotationToOrderInput = {},
+    ) =>
+      post<SaleDetail>(
+        `/businesses/${businessId}/pos/quotations/${saleId}/convert-to-order`,
+        input,
+      ),
+    createSalesOrder: (businessId: string, input: CreateSalesOrderInput) =>
+      post<SaleDetail>(`/businesses/${businessId}/pos/sales-orders`, input),
     listSales: (businessId: string, query: Partial<SaleQuery> = {}) =>
       request<Paginated<SaleListRow>>(`/businesses/${businessId}/pos/sales${toQuery(query)}`),
     getSale: (businessId: string, saleId: string) =>
@@ -689,6 +706,8 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
       put<SaleDetail>(`/businesses/${businessId}/pos/sales/${saleId}`, input),
     confirmSale: (businessId: string, saleId: string, input: { shiftId?: string } = {}) =>
       post<SaleDetail>(`/businesses/${businessId}/pos/sales/${saleId}/confirm`, input),
+    confirmSalesOrder: (businessId: string, saleId: string, input: ConfirmSalesOrderInput = {}) =>
+      post<SaleDetail>(`/businesses/${businessId}/pos/sales-orders/${saleId}/confirm`, input),
     voidSale: (businessId: string, saleId: string, input: VoidSaleInput) =>
       post<SaleDetail>(`/businesses/${businessId}/pos/sales/${saleId}/void`, input),
     addPayment: (businessId: string, saleId: string, input: AddPaymentInput) =>

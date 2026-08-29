@@ -24,18 +24,17 @@ A requirement is never marked Implemented only because its database table exists
 |---|---|---|---|---|---|
 | P0 | Business setup, isolation, branches, locations, users, roles, approvals, feature access, audit, numbering | 10 | 0 | 0 | [`01_P0`](./01_P0_IMPLEMENTATION_STATUS.md) |
 | P1 | Items, categories, variants, units, barcodes, prices, promotions, tax, customers, suppliers, imports | 11 | 0 | 0 | [`04_P1`](./04_P1_IMPLEMENTATION_STATUS.md) |
-| P2 | POS sales, tenders, receipts, returns and exchanges | 11 | 0 | 1 | [`08_P2`](./08_P2_IMPLEMENTATION_STATUS.md) |
+| P2 | POS sales, tenders, receipts, returns and exchanges | 12 | 0 | 0 | [`08_P2`](./08_P2_IMPLEMENTATION_STATUS.md) |
 | P3 | Inventory, purchasing and fulfillment | 11 | 0 | 1 | [`09_P3`](./09_P3_IMPLEMENTATION_STATUS.md) |
 | P4 | Finance, customer controls, loyalty and accounting events | 10 | 1 | 1 | [`10_P4`](./10_P4_IMPLEMENTATION_STATUS.md) |
 | P5 | Reusable business engines | 8 | 4 | 0 | [`11_P5`](./11_P5_IMPLEMENTATION_STATUS.md) |
 | P6 | Offline, devices and store reliability | 4 | 4 | 0 | [`12_P6`](./12_P6_IMPLEMENTATION_STATUS.md) |
 | P7 | Reporting, integrations and migration | 4 | 5 | 1 | [`13_P7`](./13_P7_IMPLEMENTATION_STATUS.md) |
 | P8 | Security, operations and production readiness | 3 | 6 | 1 | [`14_P8`](./14_P8_IMPLEMENTATION_STATUS.md) |
-| **Functional total** | 97 requirements | **72** | **20** | **5** | |
+| **Functional total** | 97 requirements | **73** | **20** | **4** | |
 | **User stories** | 18 stories | **15** | **3** | **0** | section 8 below |
 
-Every phase now has running code. P0 to P3 are complete except for stock counts and
-quotations/orders; P4 and P5 carry the working money and engine surfaces with named gaps; P6, P7
+Every phase now has running code. P0 to P3 are complete for their current documented scope; P4 and P5 carry the working money and engine surfaces with named gaps; P6, P7
 and P8 have their records, endpoints and contracts but not yet the operator-facing workflows.
 
 ## P0 Requirement Traceability
@@ -84,7 +83,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 | `CC-P2-009` Return | Implemented | Original sale lookup, per-line stepper, proportional refund estimate, stock disposition | - |
 | `CC-P2-010` Refund | Implemented | Original method, cash or store credit, with approval above the threshold | Card refunds |
 | `CC-P2-011` Exchange | Implemented | Return plus replacement sale in one flow | A POS screen for it |
-| `CC-P2-012` Quotation/Order | Not started | - | Quotations and sales orders for non-instant sales |
+| `CC-P2-012` Quotation/Order | Implemented | Quotations and sales orders persist as sale document states; Back Office can create them, convert quotations to orders and confirm orders into payable sales | Delivery, reservation and invoicing automation |
 
 ## P3 Requirement Traceability
 
@@ -197,10 +196,9 @@ that do not:
    (`CC-P8-002`); it is the last thing standing between P0 and a production Business.
 2. Turn the smoke runs into automated integration tests in CI.
 3. Mobile scanner-led counting and high-risk variance approval thresholds for stock counts.
-4. Quotations and sales orders (`CC-P2-012`) if the first vertical needs non-instant sales.
-5. Margin reporting (`CC-P4-011`), which needs an inventory valuation policy decided first.
-6. Webhook signing (`CC-P7-007`) before any external system is allowed to subscribe.
-7. Secret-vault integration and automated dependency/security scanning for P8.
+4. Margin reporting (`CC-P4-011`), which needs an inventory valuation policy decided first.
+5. Webhook signing (`CC-P7-007`) before any external system is allowed to subscribe.
+6. Secret-vault integration and automated dependency/security scanning for P8.
 
 ## Business-Type SRS Traceability
 

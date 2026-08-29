@@ -57,6 +57,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for current P2 commerce scope | `CC-P2-001` to `CC-P2-012`, `CC-US-004`, `CC-US-005`, `CC-US-006` | `1c8bbce` | Adapted the P2 commerce backend and POS workspace from `work/bizentra-p0-p1-p2.tgz`: shifts, cart pricing, idempotent sales, split/partial tenders, receipts, returns, refunds, exchanges, store credit, offline sale sync and Back Office sales review. |
+| 2026-08-29 | Implemented | `CC-P2-012` | This changeset | Added persisted quotations and sales orders, conversion from quotation to order and confirmation of an order into a payable sale. |
 
 ### Common Core P3 Inventory, Purchasing and Fulfillment
 
@@ -234,6 +235,19 @@ Each change entry should include:
 | Verification | `pnpm install` completed for all 16 workspace projects; `pnpm db:generate` passed; `pnpm db:migrate:deploy` applied migration `20260826090000_p0_approvals_p1_import_p2_commerce`; `pnpm format:check` passed after excluding local `work/` archive extracts; domain shared, business-access and commerce tests passed; API, Back Office and POS typechecks/lints passed; Back Office and POS production builds passed; `node scripts/smoke-common-core.mjs` passed 74 live API checks against local PostgreSQL/Redis/API. |
 | Commit | `1c8bbce feat: adapt common core P0 P1 P2 implementation` |
 | Remaining work | Production OIDC/session identity remains. P0: return-to-task UX after partial approvals, audit retention/export and repeatable lower-level integration tests for isolation/audit immutability. P1: bulk variant matrix editing, deeper category hierarchy editing, item media/images, opening-stock import in P3 and richer tax jurisdictions. P2: quotation/order workflow, payment-provider integration, provider-side payment idempotency, direct POS exchange/discard held cart actions, offline payments against an already-posted sale and connected thermal/electronic receipt delivery. |
+
+### 2026-08-29 - P2 Quotations and Sales Orders
+
+| Field | Details |
+|---|---|
+| Feature / slice | Quotations and sales orders for non-instant sales |
+| Status | Implemented |
+| SRS mapping | `CC-P2-012` Quotation/Order |
+| What changed | Added `QUOTATION` and `ORDER` sale statuses with a migration; added contracts and API/client routes to create quotations, create sales orders, convert a quotation into an order and confirm an order into a payable sale. The POS payment and return guards now refuse quotation/order documents until they are confirmed. Back Office Sales can create a quotation or order from the active catalogue, filter those statuses, convert quotations to orders and confirm orders. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829123000_p2_quotations_sales_orders/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/commerce/src/application/pos.service.ts`; `apps/api/src/controllers/pos.controller.ts`; `apps/backoffice/src/app/sales/page.tsx`; `docs/01_COMMON_CORE_SRS.md`; `docs/development/08_P2_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
+| Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-commerce typecheck` passed; `pnpm --filter @bizentra/domain-commerce build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api typecheck` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
+| Commit | This changeset |
+| Remaining work | P3 sales-order reservations and fulfillment allocation; P4 sale-to-invoice conversion; direct POS exchange screen; payment-provider integrations and connected printing remain. |
 
 ### 2026-08-26 - Shared Component System and Product Stylesheet
 
