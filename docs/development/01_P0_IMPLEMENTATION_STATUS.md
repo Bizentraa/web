@@ -25,11 +25,11 @@ Worker -> Redis/BullMQ
 |---|---|---|---|
 | CC-P0-001 Business Setup | Implemented | Bootstrap creates the Business, first Branch, Location and owner access; `/setup` edits name, legal name, contact, currency, time zone and country | First-run setup wizard for a brand-new Business |
 | CC-P0-002 Data Separation | Implemented | Every scoped table has `businessId` and forced PostgreSQL RLS; a user from another Business receives `403` in the smoke run | Turn the smoke checks into CI integration tests |
-| CC-P0-003 Branch | Implemented | Create, edit, activate and deactivate with an open-shift guard and a last-active-Branch guard, plus the `/setup` screen | Branch switcher that changes the working context |
+| CC-P0-003 Branch | Implemented | Create, edit, activate and deactivate with an open-shift guard and a last-active-Branch guard, plus the `/setup` screen and persisted Back Office Branch switcher | - |
 | CC-P0-004 Locations | Implemented | Create, edit and deactivate under a Branch with the seven Location types | Location rules that P3 inventory will need |
 | CC-P0-005 Users | Implemented | Invitation, activation, suspension, Role and Branch assignment through `/access`, with a last-Owner guard | Production sign-in so an invitation becomes a real login |
 | CC-P0-006 Roles | Implemented | Five Role templates, custom Roles, a permission matrix grouped by area and 52 permission definitions across P0, P1 and P2 | Separation-of-duties rules beyond the approver check |
-| CC-P0-007 Approvals | Implemented for `ANY_APPROVER` | Policies with thresholds, the approval request lifecycle, approver identity, reason capture and enforcement on discount, refund, void and shift variance | `ALL_APPROVERS` and `MINIMUM_APPROVERS` strategies |
+| CC-P0-007 Approvals | Implemented | Policies with thresholds, `ANY_APPROVER`, `MINIMUM_APPROVERS` and `ALL_APPROVERS` strategies, individual decision history, approver identity, reason capture and enforcement on discount, refund, void and shift variance | Return-to-task UX polish |
 | CC-P0-008 Feature Access | Implemented | Seven feature definitions, dependency validation, enable/disable with audit and outbox events, and the `/controls` screen | Per-feature settings and business-pack content |
 | CC-P0-009 Audit | Implemented | Every management and commerce action writes an append-only audit record; `/controls` searches by record, action, actor, Branch and date with before/after detail | Retention, archival and an auditor export |
 | CC-P0-010 Numbering | Implemented | Atomic allocation per Business/Branch/document type, forward-only settings and a next-number preview | Automated concurrency tests |
@@ -78,10 +78,9 @@ with no console errors and no horizontal overflow at 1440px or 390px.
 ## Next P0 Slices
 
 1. Connect production OIDC/session identity and remove the development header fallback.
-2. Add the `ALL_APPROVERS` and `MINIMUM_APPROVERS` approval strategies to the enforcement path.
-3. Add a first-run setup wizard and a working Branch switcher.
-4. Convert the smoke checks into automated integration tests that run in CI.
-5. Add document-number concurrency tests and audit retention rules.
+2. Add a first-run setup wizard.
+3. Convert the smoke checks into automated integration tests that run in CI.
+4. Add document-number concurrency tests and audit retention rules.
 
 P0 reaches its exit gate when CC-US-001 and CC-US-002 pass through UI, API, database, permission,
 audit and isolation tests that run automatically, not only through the manual smoke run.
