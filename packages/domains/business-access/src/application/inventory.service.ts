@@ -3,10 +3,12 @@ import type {
   CreateFulfillmentOrderInput,
   CreatePurchaseOrderInput,
   CreatePurchaseRequestInput,
+  CreateStockCountInput,
   DecidePurchaseRequestInput,
   FulfillmentOrderRow,
   GoodsReceiptRow,
   InventoryOverview,
+  PostStockCountInput,
   PurchaseOrderRow,
   PurchaseRequestRow,
   ReceivePurchaseOrderInput,
@@ -55,6 +57,7 @@ export class InventoryService {
         purchaseOrders,
         receipts,
         fulfillmentOrders,
+        stockCounts,
         movementCount,
       ] = await Promise.all([
         transaction.stockBalance.findMany({
@@ -123,6 +126,18 @@ export class InventoryService {
             lines: true,
           },
         }),
+        transaction.stockCountSession.findMany({
+          where: { businessId },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          include: {
+            branch: true,
+            location: true,
+            createdBy: { include: { user: { select: { displayName: true } } } },
+            postedBy: { include: { user: { select: { displayName: true } } } },
+            lines: { include: { item: true, variant: true }, orderBy: { id: "asc" } },
+          },
+        }),
         transaction.stockMovement.count({ where: { businessId } }),
       ]);
 
@@ -138,9 +153,12 @@ export class InventoryService {
           purchaseOrders: purchaseOrders.length,
           receipts: receipts.length,
           fulfillmentOrders: fulfillmentOrders.length,
+          stockCounts: stockCounts.length,
+          openStockCounts: stockCounts.filter((count) => count.status === "OPEN").length,
         },
         availability,
         movements: movements.map(mapMovement),
+        stockCounts: stockCounts.map(mapStockCount),
         reorderSuggestions,
         purchaseRequests: purchaseRequests.map(mapPurchaseRequest),
         purchaseOrders: purchaseOrders.map(mapPurchaseOrder),
@@ -236,6 +254,145 @@ export class InventoryService {
         onHandDelta: input.quantity,
       });
       return { outMovementId: outMovement.id, inMovementId: inMovement.id };
+    });
+  }
+
+  async createStockCount(
+    businessId: string,
+    actorUserId: string,
+    input: CreateStockCountInput,
+  ): Promise<CatalogRecordCreated> {
+    return this.write(businessId, actorUserId, "INVENTORY_ADJUST", async (transaction, actor) => {
+      const branch = await this.mustFind(transaction.branch, businessId, input.branchId, "Branch");
+      await this.mustFind(transaction.location, businessId, input.locationId, "Location");
+
+      const balances = await transaction.stockBalance.findMany({
+        where: {
+          businessId,
+          locationId: input.locationId,
+          ...(input.itemIds?.length ? { itemId: { in: input.itemIds } } : {}),
+          item: { stockTracked: true, status: "ACTIVE" },
+        },
+        include: { item: true },
+        orderBy: [{ item: { code: "asc" } }],
+      });
+      if (!balances.length) {
+        throw new BusinessAccessError(
+          "CONFLICT",
+          "Create a stock balance at this Location before opening a count.",
+        );
+      }
+
+      const number = await allocateDocumentNumber(transaction, {
+        businessId,
+        branchId: input.branchId,
+        branchCode: branch.code,
+        documentType: "STC",
+      });
+      const count = await transaction.stockCountSession.create({
+        data: {
+          businessId,
+          branchId: input.branchId,
+          locationId: input.locationId,
+          number,
+          name: input.name,
+          createdByMembershipId: actor.membershipId,
+        },
+      });
+      await transaction.stockCountLine.createMany({
+        data: balances.map((balance) => ({
+          businessId,
+          stockCountId: count.id,
+          itemId: balance.itemId,
+          variantId: balance.variantId,
+          expectedQuantity: quantityToDb(toNumber(balance.onHandQuantity)),
+        })),
+      });
+      await this.audit(transaction, businessId, actor, "CREATE", "StockCount", count.id, {
+        number,
+        name: input.name,
+        lineCount: balances.length,
+        locationId: input.locationId,
+      });
+      return { id: count.id };
+    });
+  }
+
+  async postStockCount(
+    businessId: string,
+    actorUserId: string,
+    stockCountId: string,
+    input: PostStockCountInput,
+  ): Promise<CatalogRecordCreated> {
+    return this.write(businessId, actorUserId, "INVENTORY_ADJUST", async (transaction, actor) => {
+      const count = await transaction.stockCountSession.findFirst({
+        where: { id: stockCountId, businessId },
+        include: { lines: true },
+      });
+      if (!count) throw new BusinessAccessError("NOT_FOUND", "Stock count was not found.");
+      if (count.status !== "OPEN") {
+        throw new BusinessAccessError("CONFLICT", "Only an open stock count can be posted.");
+      }
+
+      const countedByLineId = new Map(input.lines.map((line) => [line.stockCountLineId, line]));
+      if (countedByLineId.size !== count.lines.length) {
+        throw new BusinessAccessError(
+          "INVALID_INPUT",
+          "Every frozen stock count line needs a counted quantity.",
+        );
+      }
+
+      for (const line of count.lines) {
+        const countedLine = countedByLineId.get(line.id);
+        if (!countedLine) {
+          throw new BusinessAccessError(
+            "INVALID_INPUT",
+            "Every frozen stock count line needs a counted quantity.",
+          );
+        }
+        const expected = toNumber(line.expectedQuantity);
+        const variance = countedLine.countedQuantity - expected;
+        await transaction.stockCountLine.update({
+          where: { id: line.id },
+          data: {
+            countedQuantity: quantityToDb(countedLine.countedQuantity),
+            varianceQuantity: quantityToDb(variance),
+            note: countedLine.note ?? null,
+          },
+        });
+        if (Math.abs(variance) < 0.0001) continue;
+        await this.createMovement(transaction, businessId, actor, {
+          branchId: count.branchId,
+          locationId: count.locationId,
+          itemId: line.itemId,
+          variantId: line.variantId,
+          kind: "ADJUSTMENT",
+          quantity: variance,
+          unitCost: null,
+          reason: input.varianceReason,
+          referenceType: "StockCount",
+          referenceId: count.id,
+        });
+        await this.applyBalanceChange(transaction, businessId, count.locationId, line.itemId, {
+          variantId: line.variantId,
+          onHandDelta: variance,
+        });
+      }
+
+      await transaction.stockCountSession.update({
+        where: { id: stockCountId },
+        data: {
+          status: "POSTED",
+          varianceReason: input.varianceReason,
+          postedByMembershipId: actor.membershipId,
+          postedAt: new Date(),
+        },
+      });
+      await this.audit(transaction, businessId, actor, "UPDATE", "StockCount", stockCountId, {
+        status: "POSTED",
+        varianceReason: input.varianceReason,
+      });
+      return { id: stockCountId };
     });
   }
 
@@ -859,6 +1016,65 @@ function mapMovement(movement: {
     referenceId: movement.referenceId,
     actor: movement.createdBy.user.displayName,
     occurredAt: movement.occurredAt.toISOString(),
+  };
+}
+
+function mapStockCount(count: {
+  id: string;
+  number: string;
+  name: string;
+  status: InventoryOverview["stockCounts"][number]["status"];
+  createdAt: Date;
+  postedAt: Date | null;
+  branch: { name: string };
+  location: { name: string };
+  createdBy: { user: { displayName: string } };
+  postedBy: { user: { displayName: string } } | null;
+  lines: Array<{
+    id: string;
+    itemId: string;
+    expectedQuantity: unknown;
+    countedQuantity: unknown | null;
+    varianceQuantity: unknown | null;
+    note: string | null;
+    item: { code: string; name: string };
+    variant: { name: string } | null;
+  }>;
+}): InventoryOverview["stockCounts"][number] {
+  const lines = count.lines.map((line) => ({
+    id: line.id,
+    itemId: line.itemId,
+    itemCode: line.item.code,
+    itemName: line.item.name,
+    variantName: line.variant?.name ?? null,
+    expectedQuantity: toNumber(line.expectedQuantity),
+    countedQuantity: toOptionalNumber(line.countedQuantity),
+    varianceQuantity: toOptionalNumber(line.varianceQuantity),
+    note: line.note,
+  }));
+  const countedLines = lines.filter((line) => line.countedQuantity !== null);
+  return {
+    id: count.id,
+    number: count.number,
+    name: count.name,
+    branchName: count.branch.name,
+    locationName: count.location.name,
+    status: count.status,
+    lineCount: lines.length,
+    expectedQuantity: lines.reduce((sum, line) => sum + line.expectedQuantity, 0),
+    countedQuantity:
+      countedLines.length === lines.length
+        ? countedLines.reduce((sum, line) => sum + (line.countedQuantity ?? 0), 0)
+        : null,
+    varianceQuantity:
+      countedLines.length === lines.length
+        ? countedLines.reduce((sum, line) => sum + (line.varianceQuantity ?? 0), 0)
+        : null,
+    createdBy: count.createdBy.user.displayName,
+    createdAt: count.createdAt.toISOString(),
+    postedBy: count.postedBy?.user.displayName ?? null,
+    postedAt: count.postedAt?.toISOString() ?? null,
+    lines,
   };
 }
 

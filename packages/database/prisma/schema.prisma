@@ -237,6 +237,12 @@ enum StockMovementStatus {
   CANCELLED
 }
 
+enum StockCountStatus {
+  OPEN
+  POSTED
+  CANCELLED
+}
+
 enum PurchaseRequestStatus {
   DRAFT
   SUBMITTED
@@ -522,6 +528,8 @@ model Business {
   storeCredits         StoreCreditAccount[]
   stockBalances        StockBalance[]
   stockMovements       StockMovement[]
+  stockCounts          StockCountSession[]
+  stockCountLines      StockCountLine[]
   reorderSettings      ReorderSetting[]
   purchaseRequests     PurchaseRequest[]
   purchaseOrders       PurchaseOrder[]
@@ -793,6 +801,7 @@ model Item {
   saleLines            SaleLine[]
   stockBalances        StockBalance[]
   stockMovements       StockMovement[]
+  stockCountLines      StockCountLine[]
   reorderSettings      ReorderSetting[]
   purchaseRequestLines PurchaseRequestLine[]
   purchaseOrderLines   PurchaseOrderLine[]
@@ -829,6 +838,7 @@ model ItemVariant {
   saleLines            SaleLine[]
   stockBalances        StockBalance[]
   stockMovements       StockMovement[]
+  stockCountLines      StockCountLine[]
   reorderSettings      ReorderSetting[]
   purchaseRequestLines PurchaseRequestLine[]
   purchaseOrderLines   PurchaseOrderLine[]
@@ -1089,6 +1099,7 @@ model Branch {
   sales               Sale[]
   saleReturns         SaleReturn[]
   stockMovements      StockMovement[]
+  stockCounts         StockCountSession[]
   purchaseRequests    PurchaseRequest[]
   purchaseOrders      PurchaseOrder[]
   goodsReceipts       GoodsReceipt[]
@@ -1123,10 +1134,11 @@ model Location {
   createdAt  DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt  DateTime     @updatedAt @db.Timestamptz(3)
 
-  business        Business         @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  branch          Branch           @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  business        Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch          Branch              @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
   stockBalances   StockBalance[]
   stockMovements  StockMovement[]
+  stockCounts     StockCountSession[]
   reorderSettings ReorderSetting[]
   goodsReceipts   GoodsReceipt[]
   traceableUnits  TraceableUnit[]
@@ -1176,6 +1188,8 @@ model BusinessMembership {
   saleReturns          SaleReturn[]          @relation("ReturnCreatedBy")
   storeCreditEntries   StoreCreditEntry[]    @relation("StoreCreditCreatedBy")
   stockMovements       StockMovement[]       @relation("StockMovementCreatedBy")
+  createdStockCounts   StockCountSession[]   @relation("StockCountCreatedBy")
+  postedStockCounts    StockCountSession[]   @relation("StockCountPostedBy")
   purchaseRequests     PurchaseRequest[]     @relation("PurchaseRequestCreatedBy")
   purchaseOrders       PurchaseOrder[]       @relation("PurchaseOrderCreatedBy")
   goodsReceipts        GoodsReceipt[]        @relation("GoodsReceiptCreatedBy")
@@ -1790,6 +1804,58 @@ model StockMovement {
   @@index([businessId, locationId, occurredAt])
   @@index([businessId, referenceType, referenceId])
   @@map("stock_movements")
+}
+
+/// CC-P3-006: a stock count freezes expected quantities before variance posting.
+model StockCountSession {
+  id                    String           @id @default(uuid()) @db.Uuid
+  businessId            String           @db.Uuid
+  branchId              String           @db.Uuid
+  locationId            String           @db.Uuid
+  number                String           @db.VarChar(60)
+  name                  String           @db.VarChar(160)
+  status                StockCountStatus @default(OPEN)
+  varianceReason        String?          @db.VarChar(500)
+  createdByMembershipId String           @db.Uuid
+  postedByMembershipId  String?          @db.Uuid
+  createdAt             DateTime         @default(now()) @db.Timestamptz(3)
+  postedAt              DateTime?        @db.Timestamptz(3)
+  updatedAt             DateTime         @updatedAt @db.Timestamptz(3)
+
+  business  Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  branch    Branch              @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  location  Location            @relation(fields: [locationId, businessId], references: [id, businessId], onDelete: Restrict)
+  createdBy BusinessMembership  @relation("StockCountCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  postedBy  BusinessMembership? @relation("StockCountPostedBy", fields: [postedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+  lines     StockCountLine[]
+
+  @@unique([businessId, number])
+  @@unique([id, businessId])
+  @@index([businessId, status, createdAt])
+  @@index([businessId, locationId, status])
+  @@map("stock_count_sessions")
+}
+
+model StockCountLine {
+  id               String   @id @default(uuid()) @db.Uuid
+  businessId       String   @db.Uuid
+  stockCountId     String   @db.Uuid
+  itemId           String   @db.Uuid
+  variantId        String?  @db.Uuid
+  expectedQuantity Decimal  @db.Decimal(19, 4)
+  countedQuantity  Decimal? @db.Decimal(19, 4)
+  varianceQuantity Decimal? @db.Decimal(19, 4)
+  note             String?  @db.VarChar(240)
+
+  business   Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  stockCount StockCountSession @relation(fields: [stockCountId, businessId], references: [id, businessId], onDelete: Cascade)
+  item       Item              @relation(fields: [itemId, businessId], references: [id, businessId], onDelete: Restrict)
+  variant    ItemVariant?      @relation(fields: [variantId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, stockCountId, itemId, variantId])
+  @@unique([id, businessId])
+  @@index([businessId, itemId])
+  @@map("stock_count_lines")
 }
 
 /// CC-P3-008: replenishment rule used to propose purchase quantities.

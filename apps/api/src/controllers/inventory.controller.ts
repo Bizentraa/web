@@ -4,7 +4,9 @@ import {
   createFulfillmentOrderSchema,
   createPurchaseOrderSchema,
   createPurchaseRequestSchema,
+  createStockCountSchema,
   decidePurchaseRequestSchema,
+  postStockCountSchema,
   receivePurchaseOrderSchema,
   reorderSettingSchema,
   stockAdjustmentSchema,
@@ -56,6 +58,38 @@ export class InventoryController {
       businessId,
       identity.userId,
       stockTransferSchema.parse(body),
+    );
+  }
+
+  @Post("stock-counts")
+  @ApiOperation({ summary: "Open a stock count and freeze expected quantities" })
+  createStockCount(
+    @Param("businessId") businessId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.inventory.createStockCount(
+      businessId,
+      identity.userId,
+      createStockCountSchema.parse(body),
+    );
+  }
+
+  @Post("stock-counts/:stockCountId/post")
+  @ApiOperation({ summary: "Post a stock count and write variance movements" })
+  postStockCount(
+    @Param("businessId") businessId: string,
+    @Param("stockCountId") stockCountId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.inventory.postStockCount(
+      businessId,
+      identity.userId,
+      stockCountId,
+      postStockCountSchema.parse(body),
     );
   }
 

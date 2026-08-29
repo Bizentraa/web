@@ -63,6 +63,7 @@ import type {
   CreateUnitInput,
   CreateWarrantyClaimInput,
   CreateWebhookSubscriptionInput,
+  CreateStockCountInput,
   CreateWorkflowStatusInput,
   CreateWorkflowTransitionInput,
   CreateWorkTicketInput,
@@ -92,6 +93,7 @@ import type {
   Paginated,
   PaySupplierBillInput,
   PosCatalogEntry,
+  PostStockCountInput,
   PostBankTransactionInput,
   PostMaterialConsumptionInput,
   QueueOfflineOperationInput,
@@ -430,6 +432,13 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
     transferStock: (businessId: string, input: StockTransferInput) =>
       post<{ outMovementId: string; inMovementId: string }>(
         `/businesses/${businessId}/inventory/transfers`,
+        input,
+      ),
+    createStockCount: (businessId: string, input: CreateStockCountInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/inventory/stock-counts`, input),
+    postStockCount: (businessId: string, stockCountId: string, input: PostStockCountInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/inventory/stock-counts/${stockCountId}/post`,
         input,
       ),
     upsertReorderSetting: (businessId: string, input: ReorderSettingInput) =>

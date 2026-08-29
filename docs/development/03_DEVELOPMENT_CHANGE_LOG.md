@@ -41,6 +41,7 @@ Each change entry should include:
 | 2026-08-26 | In progress | `CC-P0-001` to `CC-P0-010`, `CC-US-001`, `CC-US-002` | `cb07234` | Established the first Common Core P0 foundation with Business, Branch, Location, owner user, roles/permissions, feature access, numbering, audit, outbox, local infrastructure, and app startup. |
 | 2026-08-26 | Implemented for appearance slice | `CC-P0-001`, `CC-P0-002`, `CC-P0-006`, `CC-P0-008`, `CC-P0-009`, `CC-US-001`, `CC-US-018` | `be8cd40` | Added Business-selectable colour themes shared by Back Office and POS, saved in PostgreSQL and cached per browser origin. |
 | 2026-08-26 | Implemented for current P0 management scope | `CC-P0-001` to `CC-P0-010`, `CC-US-001`, `CC-US-002`, `CC-US-018` | `1c8bbce` | Adapted the P0 management layer from `work/bizentra-p0-p1-p2.tgz`: Business/Branch/Location management, user invitation, role permissions, approvals, feature packs, audit search and document-number settings with Back Office screens and API smoke coverage. |
+| 2026-08-29 | Implemented | `CC-P0-007`, `CC-US-002`, `CC-US-018` | This changeset | Added multi-approver approval strategies with auditable per-approver decisions and Back Office rule controls. |
 
 ### Common Core P1 Master Data
 
@@ -63,6 +64,7 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
 | 2026-08-26 | Implemented for P3 access sync | `CC-P0-006`, `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `7107343` | Synced P3 permissions into the permission catalogue and existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles so existing owners can open inventory screens after phase delivery. |
+| 2026-08-29 | Implemented for current stock-count scope | `CC-P3-006` | This changeset | Added stock count sessions, frozen expected quantities, counted quantities, variance posting through stock movements, API/client methods and Back Office count controls. |
 
 ### Common Core P4 Finance, Customer Controls and Management
 
@@ -110,6 +112,7 @@ Each change entry should include:
 | 2026-08-28 | Implemented for Back Office header/table cleanup | Back Office shell and shared table API | `76d00b9` | Removed the `eyebrow` prop from the Back Office `Workspace` API and removed the `kicker` prop from `DataTable`; screen headers now rely on title, description, status and actions, while table headers rely on caption and toolbar. |
 | 2026-08-28 | Implemented for Back Office action deduplication | Back Office screen actions and table toolbars | `75f7215` | Removed duplicate create buttons from primary list table headers when the same action already appears in the Workspace header, keeping table toolbars for table-scoped actions. |
 | 2026-08-28 | Implemented for Back Office repeated-title cleanup | Back Office primary list tables | `1555113` | Hid the visible `DataTable` title on primary lists when it exactly repeats the surrounding `Workspace` title, while keeping the native table caption for assistive technology. |
+| 2026-08-28 | Implemented for requirement-tracking scope | `CC-P0-001` to `CC-P8-010`, `CC-US-001` to `CC-US-018` | This changeset | Added status columns to all three SRS files and rebuilt the Common Core traceability record, which still described P3 to P8 as not started although all six had shipped. |
 
 ## 4. Detailed Change Entries
 
@@ -125,6 +128,19 @@ Each change entry should include:
 | Verification | Local infrastructure became healthy; migrations applied; API readiness returned `ok`; Worker completed a queue job; two Businesses were created; cross-Business API access returned `403`; direct RLS checks isolated Business data; append-only audit protection rejected update attempts; full lint, type check, tests, and production builds passed. |
 | Commit | `cb07234 feat: establish common core P0 foundation` |
 | Remaining work | P0 backend/API: complete edit/activate/deactivate APIs for Business, Branch and Location; add user invitation/assignment APIs; complete custom Role and permission management; implement approval-rule configuration and approval request lifecycle; complete feature-pack management APIs; add document-number settings and concurrency tests; add production OIDC/session/MFA integration. P0 UI/UX: implement sidebar/topbar app shell, Business/Branch switcher, command palette, setup wizard, Business/Branch/Location management screens, user/role screens, approval UI, feature-pack UI, audit timeline/list and numbering settings. Quality/operations: convert manual cross-Business isolation, RLS, audit immutability and numbering checks into repeatable integration tests; add permission-denial tests, seed/reset scripts, observability dashboards, backup/restore checks and deployment runbook evidence. |
+
+### 2026-08-29 - Multi-Approver Approval Strategies
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P0 approval enforcement |
+| Status | Implemented |
+| SRS mapping | `CC-P0-007` Approvals; `CC-US-002`; `CC-US-018` |
+| What changed | Added an approval-decision ledger table; backfilled existing decided approval requests into the ledger during migration; updated approval decisions so one approver still completes `ANY_APPROVER`, configured distinct approver counts complete `MINIMUM_APPROVERS`, and every currently eligible active approver completes `ALL_APPROVERS`; kept rejection as an immediate final decision; prevented the requester and any approving user from posting the protected action; exposed decision history in the approval overview; added Back Office controls for strategy and minimum approver count. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829100000_p0_multi_approver_decisions/migration.sql`; `packages/domains/shared/src/approvals.ts`; `packages/domains/business-access/src/application/business-access.service.ts`; `packages/contracts/src/index.ts`; `apps/backoffice/src/app/controls/page.tsx`; `docs/01_COMMON_CORE_SRS.md`; `docs/development/01_P0_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
+| Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database typecheck` passed; `pnpm --filter @bizentra/domain-shared build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/api build` passed. |
+| Commit | This changeset |
+| Remaining work | Return-to-task UX polish after partial approvals, plus live smoke coverage for the new multi-approver cases. |
 
 ### 2026-08-26 - Business-Selectable Colour Themes
 
@@ -215,7 +231,7 @@ Each change entry should include:
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826090000_p0_approvals_p1_import_p2_commerce`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/shared`; `packages/domains/business-access`; `packages/domains/commerce`; `apps/api/src/controllers/business-foundation.controller.ts`; `apps/api/src/controllers/catalog.controller.ts`; `apps/api/src/controllers/pos.controller.ts`; `apps/backoffice/src/app/setup`; `apps/backoffice/src/app/access`; `apps/backoffice/src/app/controls`; `apps/backoffice/src/app/catalog`; `apps/backoffice/src/app/customers`; `apps/backoffice/src/app/suppliers`; `apps/backoffice/src/app/import`; `apps/backoffice/src/app/sales`; `apps/pos/src/app`; `scripts/smoke-common-core.mjs` |
 | Verification | `pnpm install` completed for all 16 workspace projects; `pnpm db:generate` passed; `pnpm db:migrate:deploy` applied migration `20260826090000_p0_approvals_p1_import_p2_commerce`; `pnpm format:check` passed after excluding local `work/` archive extracts; domain shared, business-access and commerce tests passed; API, Back Office and POS typechecks/lints passed; Back Office and POS production builds passed; `node scripts/smoke-common-core.mjs` passed 74 live API checks against local PostgreSQL/Redis/API. |
 | Commit | `1c8bbce feat: adapt common core P0 P1 P2 implementation` |
-| Remaining work | Production OIDC/session identity remains. P0: multi-approver strategies beyond the currently enforced approval behavior, audit retention/export and repeatable lower-level integration tests for isolation/audit immutability. P1: bulk variant matrix editing, deeper category hierarchy editing, item media/images, opening-stock import in P3 and richer tax jurisdictions. P2: quotation/order workflow, payment-provider integration, provider-side payment idempotency, direct POS exchange/discard held cart actions, offline payments against an already-posted sale and connected thermal/electronic receipt delivery. |
+| Remaining work | Production OIDC/session identity remains. P0: return-to-task UX after partial approvals, audit retention/export and repeatable lower-level integration tests for isolation/audit immutability. P1: bulk variant matrix editing, deeper category hierarchy editing, item media/images, opening-stock import in P3 and richer tax jurisdictions. P2: quotation/order workflow, payment-provider integration, provider-side payment idempotency, direct POS exchange/discard held cart actions, offline payments against an already-posted sale and connected thermal/electronic receipt delivery. |
 
 ### 2026-08-26 - Shared Component System and Product Stylesheet
 
@@ -254,7 +270,20 @@ Each change entry should include:
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260826090655_p3_inventory_purchasing_fulfillment`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `packages/domains/business-access/src/domain/permissions.ts`; `packages/domains/business-access/src/index.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/api/src/app.module.ts`; `apps/api/src/composition/providers.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `apps/backoffice/src/app/lib/workspace.tsx`; `packages/design-system/src/index.tsx`; `scripts/smoke-common-core.mjs`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md` |
 | Verification | `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm db:migrate:deploy` applied the P3 migration; `node scripts/smoke-common-core.mjs` passed 89 live API checks including P3 adjustment, transfer, reorder suggestion, purchase request approval, purchase order conversion, goods receipt, over-receive refusal, partial receipt status, fulfillment status flow and audit evidence. |
 | Commit | `b77d0e0 feat: add common core P3 inventory purchasing fulfillment` |
-| Remaining work | Stock counts/cycle counts are still not started; serial/batch/expiry dimensions belong with the P5 traceability engine; explicit in-transit transfer receiving, sales-order reservations, supplier returns, bill matching, scanner-led mobile receiving/counting/picking and richer browser/visual regression coverage remain for later slices. |
+| Remaining work | Serial/batch/expiry dimensions belong with the P5 traceability engine; explicit in-transit transfer receiving, sales-order reservations, supplier returns, bill matching, scanner-led mobile receiving/counting/picking, high-risk count variance approvals and richer browser/visual regression coverage remain for later slices. |
+
+### 2026-08-29 - P3 Stock Counts and Variance Posting
+
+| Field | Details |
+|---|---|
+| Feature / slice | Stock counts, frozen expected quantities and controlled variance posting |
+| Status | Implemented for current stock-count scope |
+| SRS mapping | `CC-P3-006` Counts |
+| What changed | Added stock count session and line records; opening a count freezes current expected quantities at one Location; posting a count requires counted quantities and a variance reason; non-zero variances post stock adjustment movements and update stock balances through the existing ledger path; added API contracts, API client methods, controller routes and a Back Office Counts tab with open/post flows. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829110000_p3_stock_counts/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md`; `docs/01_COMMON_CORE_SRS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
+| Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database typecheck` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-shared build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
+| Commit | This changeset |
+| Remaining work | Scanner-led mobile counting and approval thresholds for high-risk count variances. |
 
 ### 2026-08-26 - P3 Role and Permission Synchronization
 
@@ -440,6 +469,20 @@ Each change entry should include:
 | Verification | `pnpm prettier --write` for changed code/docs; `pnpm --filter @bizentra/design-system build`; `pnpm --filter @bizentra/design-system typecheck`; `pnpm --filter @bizentra/design-system lint`; `pnpm --filter @bizentra/backoffice typecheck`; `pnpm --filter @bizentra/backoffice lint`; `pnpm --filter @bizentra/backoffice build`; `pnpm format:check`; `pnpm typecheck`. |
 | Commit | `1555113 fix: hide repeated primary table titles` |
 | Remaining work | None for this cleanup. |
+### 2026-08-28 - SRS Status Columns and Traceability Sync
+
+| Field | Details |
+|---|---|
+| Feature / slice | Requirement tracking: status columns in every SRS and a refreshed traceability record |
+| Status | Implemented |
+| SRS mapping | All of `CC-P0-001` to `CC-P8-010`, `CC-US-001` to `CC-US-018`, `GROC-FR-*`, `GROC-US-*`, `RETL-FR-*`, `RETL-US-*` |
+| What changed | Added a `Status` column to the functional-requirement and user-story tables of all three SRS files - 115 rows in the Common Core, 38 in Grocery, 167 in General Retail - with a stated three-word vocabulary (`Implemented`, `Started`, `Not started`) and the rule that a table existing is not implementation. Each Common Core status was taken from its phase implementation-status document and re-checked against the API surface, which confirmed the gaps the documents claim: no stock-count endpoint (`CC-P3-006`), no reconciliation session (`CC-P4-008`), no margin report (`CC-P4-011`), no workforce report (`CC-P7-005`), no authentication endpoints (`CC-P8-002`). Rewrote `05_COMMON_CORE_SRS_TRACEABILITY.md`, which still described P3 to P8 as not started although all six had shipped: it now carries per-requirement tables for all nine phases, a counted status summary, user-story traceability for the three stories that do not yet pass their own acceptance check, and the immediate pending work. Marked every Grocery and General Retail row `Not started` on the evidence that no business-type pack exists - searching contracts and domains for weighted items, scale barcodes, FEFO, expiry blocking, click-and-collect and a business-type switch returns nothing. Synced `08_P2` for the POS work of this changeset (held carts can now be discarded from the POS; the close-shift drawer lists blocking tickets), `07_UIUX` for the rebuilt till, `00_README` to link every phase document, and the manifest. |
+| Main files | `docs/01_COMMON_CORE_SRS.md`; `docs/02_GROCERY_SUPERMARKET_SRS.md`; `docs/03_GENERAL_RETAIL_SRS.md`; `docs/00_README_AND_DEVELOPMENT_ORDER.md`; `docs/99_FILE_MANIFEST.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/07_UIUX_IMPLEMENTATION_STATUS.md`; `docs/development/08_P2_IMPLEMENTATION_STATUS.md` |
+| Current counts | Common Core: 87 Implemented, 23 Started, 5 Not started of 115 rows. Functional requirements alone: 72 / 20 / 5 of 97. Business-type packs: 205 rows, all Not started. |
+| Verification | Scripted table-integrity check over every file in `docs/` and `docs/development/` - header, separator and row pipe counts agree in every table; every requirement and story row carries exactly one status; status tallies recomputed from the files themselves rather than from the edit script. Phase claims cross-checked against the route decorators in the six API controllers. |
+| Commit | Uncommitted |
+| Remaining work | Re-check the status columns whenever a phase document changes; the rule is now stated in the traceability file: status changes in the code, the phase document and the SRS column in one commit. |
+
 
 ## 5. Consolidated Remaining Work Register
 
@@ -451,7 +494,7 @@ This section lists remaining work that must be considered before a phase or UI/U
 |---|---|
 | Business / Branch / Location | Implemented for current scope: edit/activate/deactivate APIs and Back Office setup screen. Remaining: production-grade Business/Branch switcher and broader Location type rules as later vertical packs require. |
 | Users / Roles / Permissions | Implemented for current scope: user invitation, Branch assignment, Role editor, permission catalogue and denied-action behavior. Remaining: production OIDC/session identity and deeper separation-of-duties policy tests. |
-| Approvals | Implemented for current scope: approval policies, request lifecycle, approver identity and self-approval prevention. Remaining: multi-approver strategies beyond the currently enforced behavior and return-to-task UX polish. |
+| Approvals | Implemented for current scope: approval policies, request lifecycle, approver identity, self-approval prevention, per-approver decision history and `ANY_APPROVER`/`MINIMUM_APPROVERS`/`ALL_APPROVERS` strategies. Remaining: return-to-task UX polish after partial approvals. |
 | Feature access | Implemented for current scope: feature-pack list/update, dependency validation and Core-protection rule. Remaining: business-type pack marketplace/configuration UX. |
 | Audit | Implemented for current scope: audit search/list and audit evidence for P0/P1/P2 actions. Remaining: retention/archive/export rules and lower-level immutable-audit integration tests. |
 | Numbering | Implemented for current scope: document-number settings, next-number preview/allocation and smoke-tested sequences. Remaining: heavier concurrency test suite and operational collision dashboards. |

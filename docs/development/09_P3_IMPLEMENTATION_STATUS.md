@@ -36,7 +36,7 @@ order records the pick, pack and dispatch lifecycle without pretending the stock
 | CC-P3-003 Availability | Implemented for current scope | `StockBalance` exposes on-hand, reserved, incoming and calculated available quantities in the inventory overview. | Add reservations from sales orders and fulfillment allocation. |
 | CC-P3-004 Receiving | Implemented for current scope | Purchase order approval does not affect stock. Goods receipt creates receipt lines, updates received quantity and increases stock. Over-receiving is refused. | Add barcode receiving, supplier returns and bill matching. |
 | CC-P3-005 Transfers | Implemented for current scope | Location-to-location transfer checks source availability, posts transfer-out and transfer-in movement rows, and updates both balances. | Add explicit in-transit receiving workflow for multi-step warehouse transfer. |
-| CC-P3-006 Counts | Not started | - | Add stock counts, cycle counts, frozen count sessions, variance review and controlled variance posting. |
+| CC-P3-006 Counts | Implemented for current scope | Stock count sessions freeze expected quantities from current balances, accept counted quantities, calculate variances and post controlled stock adjustment movements with reason, user and audit evidence. | Add mobile scanner-led counting and approval thresholds for high-risk variances. |
 | CC-P3-007 Adjustments | Implemented for current scope | Adjustments require a reason and are permission checked; movement and audit records are created. | Connect configurable approval thresholds for high-risk adjustment reasons. |
 | CC-P3-008 Reorder | Implemented for current scope | Reorder settings and reorder suggestions compare available stock against configured minimums. | Add demand forecasting and supplier lead-time weighted suggestions. |
 | CC-P3-009 Purchase Request | Implemented for current scope | Purchase requests can be created, submitted and approved/rejected with approver identity. | Add richer approval-return-to-task UX and multi-approver purchasing policies. |
@@ -111,9 +111,9 @@ The `/inventory` workspace follows the common operations workspace style from th
 
 ## Next P3 Slices
 
-1. Stock counts and cycle counts with controlled variance posting.
-2. Serial, batch, lot and expiry tracking, coordinated with the P5 traceability work.
-3. Reservation logic from sales orders and fulfillment allocation.
-4. Multi-step in-transit transfer receiving for warehouse-to-store operations.
-5. Supplier returns, bill matching and billed/returned quantities once P4 payables starts.
-6. Scanner-led mobile receiving, counting, picking and transfer views.
+1. Serial, batch, lot and expiry tracking, coordinated with the P5 traceability work.
+2. Reservation logic from sales orders and fulfillment allocation.
+3. Multi-step in-transit transfer receiving for warehouse-to-store operations.
+4. Supplier returns, bill matching and billed/returned quantities once P4 payables starts.
+5. Scanner-led mobile receiving, counting, picking and transfer views.
+6. Approval thresholds for high-risk count variances.

@@ -7,6 +7,7 @@ import type {
   ItemListRow,
   Paginated,
   PurchaseOrderRow,
+  StockCountRow,
   SupplierListRow,
 } from "@bizentra/contracts";
 import {
@@ -41,7 +42,16 @@ interface InventoryData {
   suppliers: Paginated<SupplierListRow>;
 }
 
-type DialogName = "adjust" | "transfer" | "reorder" | "request" | "order" | "receive" | "fulfill";
+type DialogName =
+  | "adjust"
+  | "transfer"
+  | "reorder"
+  | "count"
+  | "postCount"
+  | "request"
+  | "order"
+  | "receive"
+  | "fulfill";
 
 export default function InventoryPage() {
   const { api, identity } = useApi();
@@ -49,6 +59,7 @@ export default function InventoryPage() {
   const [tab, setTab] = useState("stock");
   const [dialog, setDialog] = useState<DialogName | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrderRow | null>(null);
+  const [selectedCount, setSelectedCount] = useState<StockCountRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const { data, state, error, reload } = useResource<InventoryData>(async (client, businessId) => {
@@ -124,10 +135,10 @@ export default function InventoryPage() {
                   tone="information"
                 />
                 <KpiCard
-                  label="Fulfillment"
-                  value={String(data.inventory.counts.fulfillmentOrders)}
-                  trend="Pick, pack and dispatch"
-                  tone="information"
+                  label="Stock counts"
+                  value={String(data.inventory.counts.stockCounts)}
+                  trend={`${data.inventory.counts.openStockCounts} open`}
+                  tone={data.inventory.counts.openStockCounts > 0 ? "warning" : "information"}
                 />
               </Grid>
 
@@ -136,6 +147,7 @@ export default function InventoryPage() {
                 onChange={setTab}
                 tabs={[
                   { value: "stock", label: "Stock ledger" },
+                  { value: "counts", label: "Counts" },
                   { value: "purchasing", label: "Purchasing" },
                   { value: "fulfillment", label: "Fulfillment" },
                 ]}
@@ -222,6 +234,57 @@ export default function InventoryPage() {
                     />
                   </aside>
                 </div>
+              ) : null}
+
+              {tab === "counts" ? (
+                <DataTable
+                  caption="Stock counts and variance posting"
+                  toolbar={<Button onClick={() => setDialog("count")}>Open stock count</Button>}
+                  empty="No stock counts yet."
+                  getRowKey={(row) => row.id}
+                  rows={data.inventory.stockCounts}
+                  columns={[
+                    { header: "Count", render: (row) => <strong>{row.number}</strong> },
+                    { header: "Name", render: (row) => row.name },
+                    { header: "Location", render: (row) => row.locationName },
+                    {
+                      header: "Status",
+                      render: (row) => (
+                        <Badge tone={row.status === "POSTED" ? "success" : "warning"}>
+                          {readable(row.status)}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      header: "Expected",
+                      align: "right",
+                      render: (row) => row.expectedQuantity.toLocaleString(),
+                    },
+                    {
+                      header: "Variance",
+                      align: "right",
+                      render: (row) =>
+                        row.varianceQuantity === null ? "-" : row.varianceQuantity.toLocaleString(),
+                    },
+                    {
+                      header: "Action",
+                      render: (row) =>
+                        row.status === "OPEN" ? (
+                          <Button
+                            onClick={() => {
+                              setSelectedCount(row);
+                              setDialog("postCount");
+                            }}
+                            size="quiet"
+                          >
+                            Post count
+                          </Button>
+                        ) : (
+                          <StatusChip tone="success">Posted</StatusChip>
+                        ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "purchasing" ? (
@@ -499,6 +562,88 @@ export default function InventoryPage() {
             />
           </FormGrid>
           <DialogFooter busy={busy} onClose={() => setDialog(null)} label="Save reorder level" />
+        </form>
+      </Dialog>
+
+      <Dialog onClose={() => setDialog(null)} open={dialog === "count"} title="Open stock count">
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(event, (form) =>
+              run("Stock count opened.", () =>
+                api && identity
+                  ? api.createStockCount(identity.businessId, {
+                      branchId: readText(form, "branchId"),
+                      locationId: readText(form, "locationId"),
+                      name: readText(form, "name"),
+                    })
+                  : Promise.resolve(),
+              ),
+            )
+          }
+        >
+          <FormGrid>
+            <BranchSelect reference={data?.reference} defaultValue={firstBranch?.id} />
+            <LocationSelect foundation={data?.foundation} defaultValue={firstLocation} />
+            <Field label="Count name" name="name" defaultValue="Cycle count" required />
+          </FormGrid>
+          <DialogFooter busy={busy} onClose={() => setDialog(null)} label="Open count" />
+        </form>
+      </Dialog>
+
+      <Dialog
+        onClose={() => setDialog(null)}
+        open={dialog === "postCount"}
+        title="Post stock count"
+      >
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(event, (form) =>
+              run("Stock count posted.", () =>
+                api && identity && selectedCount
+                  ? api.postStockCount(identity.businessId, selectedCount.id, {
+                      varianceReason: readText(form, "varianceReason"),
+                      lines: selectedCount.lines.map((line) => ({
+                        stockCountLineId: line.id,
+                        countedQuantity:
+                          readOptionalNumber(form, `countedQuantity:${line.id}`) ??
+                          line.expectedQuantity,
+                        note: readOptionalText(form, `note:${line.id}`),
+                      })),
+                    })
+                  : Promise.resolve(),
+              ),
+            )
+          }
+        >
+          <CardDescription>
+            {selectedCount
+              ? `${selectedCount.number} at ${selectedCount.locationName}. Variances post as stock adjustments.`
+              : "Choose an open stock count first."}
+          </CardDescription>
+          <div className="ui-stack">
+            {(selectedCount?.lines ?? []).map((line) => (
+              <FormGrid key={line.id}>
+                <Field label={`${line.itemCode} expected`} value={line.expectedQuantity} readOnly />
+                <Field
+                  label="Counted quantity"
+                  name={`countedQuantity:${line.id}`}
+                  defaultValue={line.expectedQuantity}
+                  inputMode="decimal"
+                  required
+                />
+                <Field label="Note" name={`note:${line.id}`} />
+              </FormGrid>
+            ))}
+          </div>
+          <Field
+            label="Variance reason"
+            name="varianceReason"
+            defaultValue="Cycle count variance"
+            required
+          />
+          <DialogFooter busy={busy} onClose={() => setDialog(null)} label="Post variances" />
         </form>
       </Dialog>
 

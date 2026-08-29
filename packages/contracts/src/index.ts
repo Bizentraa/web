@@ -127,6 +127,8 @@ export const stockMovementKindSchema = z.enum([
 
 export const stockMovementStatusSchema = z.enum(["POSTED", "IN_TRANSIT", "CANCELLED"]);
 
+export const stockCountStatusSchema = z.enum(["OPEN", "POSTED", "CANCELLED"]);
+
 export const purchaseRequestStatusSchema = z.enum([
   "DRAFT",
   "SUBMITTED",
@@ -311,6 +313,7 @@ export type RefundMethod = z.infer<typeof refundMethodSchema>;
 export type StockDisposition = z.infer<typeof stockDispositionSchema>;
 export type StockMovementKind = z.infer<typeof stockMovementKindSchema>;
 export type StockMovementStatus = z.infer<typeof stockMovementStatusSchema>;
+export type StockCountStatus = z.infer<typeof stockCountStatusSchema>;
 export type PurchaseRequestStatus = z.infer<typeof purchaseRequestStatusSchema>;
 export type PurchaseOrderStatus = z.infer<typeof purchaseOrderStatusSchema>;
 export type FulfillmentStatus = z.infer<typeof fulfillmentStatusSchema>;
@@ -1107,6 +1110,27 @@ export const stockTransferSchema = z.object({
   reason: reasonSchema,
 });
 
+export const createStockCountSchema = z.object({
+  branchId: z.uuid(),
+  locationId: z.uuid(),
+  name: z.string().trim().min(2).max(160),
+  itemIds: z.array(z.uuid()).max(100).optional(),
+});
+
+export const postStockCountSchema = z.object({
+  varianceReason: reasonSchema,
+  lines: z
+    .array(
+      z.object({
+        stockCountLineId: z.uuid(),
+        countedQuantity: nonNegativeMoneySchema,
+        note: z.string().trim().max(240).optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
 export const reorderSettingSchema = z
   .object({
     locationId: z.uuid(),
@@ -1643,6 +1667,8 @@ export type CatalogSearchQuery = z.output<typeof catalogSearchSchema>;
 export type SyncQueueInput = z.output<typeof syncQueueSchema>;
 export type StockAdjustmentInput = z.output<typeof stockAdjustmentSchema>;
 export type StockTransferInput = z.output<typeof stockTransferSchema>;
+export type CreateStockCountInput = z.output<typeof createStockCountSchema>;
+export type PostStockCountInput = z.output<typeof postStockCountSchema>;
 export type ReorderSettingInput = z.output<typeof reorderSettingSchema>;
 export type CreatePurchaseRequestInput = z.output<typeof createPurchaseRequestSchema>;
 export type DecidePurchaseRequestInput = z.output<typeof decidePurchaseRequestSchema>;
@@ -2218,6 +2244,34 @@ export interface ReorderSuggestionRow {
   suggestedQuantity: number;
 }
 
+export interface StockCountRow {
+  id: string;
+  number: string;
+  name: string;
+  branchName: string;
+  locationName: string;
+  status: StockCountStatus;
+  lineCount: number;
+  expectedQuantity: number;
+  countedQuantity: number | null;
+  varianceQuantity: number | null;
+  createdBy: string;
+  createdAt: string;
+  postedBy: string | null;
+  postedAt: string | null;
+  lines: Array<{
+    id: string;
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    variantName: string | null;
+    expectedQuantity: number;
+    countedQuantity: number | null;
+    varianceQuantity: number | null;
+    note: string | null;
+  }>;
+}
+
 export interface PurchaseRequestRow {
   id: string;
   number: string;
@@ -2293,9 +2347,12 @@ export interface InventoryOverview {
     purchaseOrders: number;
     receipts: number;
     fulfillmentOrders: number;
+    stockCounts: number;
+    openStockCounts: number;
   };
   availability: StockAvailabilityRow[];
   movements: StockMovementRow[];
+  stockCounts: StockCountRow[];
   reorderSuggestions: ReorderSuggestionRow[];
   purchaseRequests: PurchaseRequestRow[];
   purchaseOrders: PurchaseOrderRow[];
