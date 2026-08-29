@@ -9,6 +9,7 @@ import type {
   CreateExpenseCategoryInput,
   CreateExpenseInput,
   CreateSupplierBillInput,
+  CustomerCreditRow,
   CustomerCollectionRow,
   CustomerInvoiceRow,
   ExpenseCategoryRow,
@@ -59,6 +60,7 @@ export class FinanceService {
         bankTransactions,
         loyaltyAccounts,
         accountingEvents,
+        customerCreditCustomers,
       ] = await Promise.all([
         transaction.customerInvoice.findMany({
           where: { businessId },
@@ -112,6 +114,24 @@ export class FinanceService {
           orderBy: { createdAt: "desc" },
           take: 25,
         }),
+        transaction.customer.findMany({
+          where: {
+            businessId,
+            OR: [
+              { creditHold: true },
+              { creditLimit: { gt: 0 } },
+              { invoices: { some: { balanceAmount: { gt: 0 } } } },
+            ],
+          },
+          orderBy: { name: "asc" },
+          take: 25,
+          include: {
+            invoices: {
+              where: { balanceAmount: { gt: 0 } },
+              select: { balanceAmount: true, dueDate: true },
+            },
+          },
+        }),
       ]);
 
       return {
@@ -125,6 +145,7 @@ export class FinanceService {
             .length,
         },
         customerInvoices: customerInvoices.map(mapCustomerInvoice),
+        customerCredits: customerCreditCustomers.map(mapCustomerCredit),
         customerCollections: customerCollections.map(mapCustomerCollection),
         supplierBills: supplierBills.map(mapSupplierBill),
         supplierPayments: supplierPayments.map(mapSupplierPayment),
@@ -153,11 +174,17 @@ export class FinanceService {
     input: CreateCustomerInvoiceInput,
   ): Promise<CatalogRecordCreated> {
     return this.write(businessId, actorUserId, "AR_MANAGE", async (transaction, actor) => {
-      await assertCustomer(transaction, businessId, input.customerId);
+      const customer = await assertCustomer(transaction, businessId, input.customerId);
       const branch = input.branchId
         ? await assertBranch(transaction, businessId, input.branchId)
         : null;
       const total = totalLines(input.lines);
+      await assertCreditAllowed(transaction, businessId, customer, total);
+      const dueDate = input.dueDate
+        ? new Date(input.dueDate)
+        : customer.creditTermsDays === null
+          ? null
+          : addDays(new Date(), customer.creditTermsDays);
       const number = await allocateDocumentNumber(transaction, {
         businessId,
         branchId: input.branchId ?? null,
@@ -173,7 +200,7 @@ export class FinanceService {
           currencyCode: input.currencyCode,
           totalAmount: moneyToDb(total),
           balanceAmount: moneyToDb(total),
-          dueDate: input.dueDate ? new Date(input.dueDate) : null,
+          dueDate,
           notes: input.notes ?? null,
           createdByMembershipId: actor.membershipId,
         },
@@ -775,7 +802,9 @@ export class FinanceService {
 
 const invoiceInclude = {
   branch: { select: { name: true } },
-  customer: { select: { id: true, name: true } },
+  customer: {
+    select: { id: true, name: true, creditLimit: true, creditTermsDays: true, creditHold: true },
+  },
   createdBy: { include: { user: { select: { displayName: true } } } },
   lines: { select: { id: true } },
 } satisfies Prisma.CustomerInvoiceInclude;
@@ -847,11 +876,47 @@ async function assertCustomer(
   transaction: DatabaseTransaction,
   businessId: string,
   customerId: string,
-): Promise<void> {
+): Promise<{
+  id: string;
+  name: string;
+  creditLimit: Prisma.Decimal;
+  creditTermsDays: number | null;
+  creditHold: boolean;
+}> {
   const customer = await transaction.customer.findUnique({
     where: { id_businessId: { id: customerId, businessId } },
   });
   if (!customer) throw new BusinessAccessError("NOT_FOUND", "Customer was not found.");
+  return customer;
+}
+
+async function assertCreditAllowed(
+  transaction: DatabaseTransaction,
+  businessId: string,
+  customer: {
+    id: string;
+    name: string;
+    creditLimit: Prisma.Decimal;
+    creditHold: boolean;
+  },
+  newInvoiceTotal: number,
+): Promise<void> {
+  if (customer.creditHold) {
+    throw new BusinessAccessError("CONFLICT", `${customer.name} is on credit hold.`);
+  }
+  const creditLimit = toNumber(customer.creditLimit);
+  if (creditLimit <= 0) return;
+  const aggregate = await transaction.customerInvoice.aggregate({
+    where: { businessId, customerId: customer.id, balanceAmount: { gt: 0 } },
+    _sum: { balanceAmount: true },
+  });
+  const currentReceivable = toNumber(aggregate._sum.balanceAmount ?? 0);
+  if (currentReceivable + newInvoiceTotal > creditLimit + 0.0001) {
+    throw new BusinessAccessError(
+      "CONFLICT",
+      `${customer.name} would exceed the configured credit limit.`,
+    );
+  }
 }
 
 async function assertSupplier(
@@ -922,6 +987,8 @@ async function accountingEvent(
 function mapCustomerInvoice(
   invoice: Prisma.CustomerInvoiceGetPayload<{ include: typeof invoiceInclude }>,
 ): CustomerInvoiceRow {
+  const dueDate = invoice.dueDate ?? null;
+  const daysOverdue = dueDate ? calculateDaysOverdue(dueDate) : 0;
   return {
     id: invoice.id,
     number: invoice.number,
@@ -933,11 +1000,71 @@ function mapCustomerInvoice(
     totalAmount: toNumber(invoice.totalAmount),
     paidAmount: toNumber(invoice.paidAmount),
     balanceAmount: toNumber(invoice.balanceAmount),
-    dueDate: invoice.dueDate?.toISOString().slice(0, 10) ?? null,
+    dueDate: dueDate?.toISOString().slice(0, 10) ?? null,
+    daysOverdue,
+    ageingBucket: ageingBucket(daysOverdue),
     lineCount: invoice.lines.length,
     createdBy: invoice.createdBy.user.displayName,
     postedAt: invoice.postedAt.toISOString(),
   };
+}
+
+function mapCustomerCredit(
+  customer: Prisma.CustomerGetPayload<{
+    include: {
+      invoices: { select: { balanceAmount: true; dueDate: true } };
+    };
+  }>,
+): CustomerCreditRow {
+  const receivableBalance = customer.invoices.reduce(
+    (sum, invoice) => sum + toNumber(invoice.balanceAmount),
+    0,
+  );
+  const overdueInvoices = customer.invoices.filter(
+    (invoice) => invoice.dueDate && calculateDaysOverdue(invoice.dueDate) > 0,
+  );
+  const overdueBalance = overdueInvoices.reduce(
+    (sum, invoice) => sum + toNumber(invoice.balanceAmount),
+    0,
+  );
+  const maxDaysOverdue = overdueInvoices.reduce(
+    (max, invoice) => Math.max(max, calculateDaysOverdue(invoice.dueDate ?? new Date())),
+    0,
+  );
+  const creditLimit = toNumber(customer.creditLimit);
+  return {
+    customerId: customer.id,
+    customerName: customer.name,
+    creditLimit,
+    receivableBalance,
+    availableCredit: Math.max(0, creditLimit - receivableBalance),
+    creditTermsDays: customer.creditTermsDays,
+    creditHold: customer.creditHold,
+    overdueBalance,
+    maxDaysOverdue,
+  };
+}
+
+function calculateDaysOverdue(dueDate: Date): number {
+  const today = new Date();
+  const due = new Date(dueDate);
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.floor((today.getTime() - due.getTime()) / 86_400_000));
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function ageingBucket(daysOverdue: number): CustomerInvoiceRow["ageingBucket"] {
+  if (daysOverdue <= 0) return "CURRENT";
+  if (daysOverdue <= 30) return "1_30";
+  if (daysOverdue <= 60) return "31_60";
+  if (daysOverdue <= 90) return "61_90";
+  return "90_PLUS";
 }
 
 function mapCustomerCollection(

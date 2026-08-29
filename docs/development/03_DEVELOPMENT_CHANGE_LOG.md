@@ -66,7 +66,7 @@ Each change entry should include:
 | 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
 | 2026-08-26 | Implemented for P3 access sync | `CC-P0-006`, `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `7107343` | Synced P3 permissions into the permission catalogue and existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles so existing owners can open inventory screens after phase delivery. |
 | 2026-08-29 | Implemented for current stock-count scope | `CC-P3-006` | `2311a55 feat: add stock count variance posting` | Added stock count sessions, frozen expected quantities, counted quantities, variance posting through stock movements, API/client methods and Back Office count controls. |
-| 2026-08-29 | Implemented for current reservation scope | `CC-P3-003`, `CC-P3-012` | This changeset | Added sales order stock reservation into fulfillment, Location-aware fulfillment orders and dispatch stock relief. |
+| 2026-08-29 | Implemented for current reservation scope | `CC-P3-003`, `CC-P3-012` | `95021d6 feat: add sales order stock reservations` | Added sales order stock reservation into fulfillment, Location-aware fulfillment orders and dispatch stock relief. |
 
 ### Common Core P4 Finance, Customer Controls and Management
 
@@ -74,6 +74,7 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P4 finance foundation scope | `CC-P4-001` to `CC-P4-010`, `CC-P4-012`, `CC-US-010`, `CC-US-011` | `32e3a2c` | Added receivables, collections, payables, supplier payments, expenses, cash/bank accounts, bank transactions, loyalty balances, accounting events, P4 permissions/role sync, API/client contracts, Back Office `/finance` workspace and live smoke coverage. |
 | 2026-08-29 | Implemented for current cash/bank scope | `CC-P4-007`, `CC-US-010`, `CC-US-011` | `f42b891 feat: add cash bank transfers` | Added account-to-account cash/bank transfers that post paired transfer rows and update both balances in one transaction. |
+| 2026-08-29 | Implemented for current credit-control scope | `CC-P4-002`, `CC-US-010`, `CC-US-011` | This changeset | Added customer credit limits, terms, holds, invoice credit guard and finance credit ageing visibility. |
 
 ### Common Core P5 Reusable Business Engines
 
@@ -98,7 +99,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P8 production-readiness evidence foundation scope | `CC-P8-001` to `CC-P8-010`, `CC-US-018` | `a7232fa feat: add common core P7 P8 reporting and readiness` | Added security event, backup run, readiness check, privacy request and release-readiness evidence records, P8 permissions/role sync, API/client contracts, Back Office `/production-readiness` workspace and smoke coverage. |
-| 2026-08-29 | Implemented for current API security-header scope | `CC-P8-001` | This changeset | Added an explicit API Helmet policy for CSP, HSTS, frame denial, content sniffing protection, referrer policy and cross-origin protections, with unit-test coverage. |
+| 2026-08-29 | Implemented for current API security-header scope | `CC-P8-001` | `11850e5 feat: add api security header policy` | Added an explicit API Helmet policy for CSP, HSTS, frame denial, content sniffing protection, referrer policy and cross-origin protections, with unit-test coverage. |
 
 ### Common UI/UX System
 
@@ -116,7 +117,7 @@ Each change entry should include:
 | 2026-08-28 | Implemented for Back Office header/table cleanup | Back Office shell and shared table API | `76d00b9` | Removed the `eyebrow` prop from the Back Office `Workspace` API and removed the `kicker` prop from `DataTable`; screen headers now rely on title, description, status and actions, while table headers rely on caption and toolbar. |
 | 2026-08-28 | Implemented for Back Office action deduplication | Back Office screen actions and table toolbars | `75f7215` | Removed duplicate create buttons from primary list table headers when the same action already appears in the Workspace header, keeping table toolbars for table-scoped actions. |
 | 2026-08-28 | Implemented for Back Office repeated-title cleanup | Back Office primary list tables | `1555113` | Hid the visible `DataTable` title on primary lists when it exactly repeats the surrounding `Workspace` title, while keeping the native table caption for assistive technology. |
-| 2026-08-28 | Implemented for requirement-tracking scope | `CC-P0-001` to `CC-P8-010`, `CC-US-001` to `CC-US-018` | This changeset | Added status columns to all three SRS files and rebuilt the Common Core traceability record, which still described P3 to P8 as not started although all six had shipped. |
+| 2026-08-28 | Implemented for requirement-tracking scope | `CC-P0-001` to `CC-P8-010`, `CC-US-001` to `CC-US-018` | `7ddd87a docs: sync p0 remaining work status` | Added status columns to all three SRS files and rebuilt the Common Core traceability record, which still described P3 to P8 as not started although all six had shipped. |
 
 ## 4. Detailed Change Entries
 
@@ -312,7 +313,7 @@ Each change entry should include:
 | What changed | Added a reservation contract, API route and API client method for reserving a sales order from a selected Location. Reservation checks available stock, creates a fulfillment order sourced to the sales order, writes fulfillment lines and moves quantities from available to reserved stock. Fulfillment orders now store the source Location; dispatch creates stock movement rows and reduces both on-hand and reserved quantities. Back Office Inventory can reserve a sales order and shows the fulfillment Location. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829124500_p3_sales_order_reservations/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api typecheck` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
-| Commit | This changeset |
+| Commit | `95021d6 feat: add sales order stock reservations` |
 | Remaining work | Partial reservations, backorder handling, reallocation between Locations, route/delivery planning and scanner-led picking remain. |
 
 ### 2026-08-26 - P3 Role and Permission Synchronization
@@ -353,6 +354,19 @@ Each change entry should include:
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
 | Commit | `f42b891 feat: add cash bank transfers` |
 | Remaining work | Cash-up reconciliation, statement import and reconciliation matching remain. |
+
+### 2026-08-29 - P4 Customer Credit Controls
+
+| Field | Details |
+|---|---|
+| Feature / slice | Customer credit limits, terms, holds and ageing visibility |
+| Status | Implemented for current credit-control scope |
+| SRS mapping | `CC-P4-002` Customer Credit; `CC-US-010`; `CC-US-011` |
+| What changed | Added credit limit, credit terms and credit-hold fields to Customers with a migration. Customer create/edit/detail now exposes those settings. Customer invoice posting refuses customers on credit hold, refuses invoices that exceed the configured credit limit and applies customer credit terms as the default due date when no due date is supplied. Finance overview now returns customer credit exposure rows and invoice ageing buckets; Back Office Finance has a Credit tab plus overdue and hold visibility. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829131500_p4_customer_credit_controls/migration.sql`; `packages/contracts/src/index.ts`; `packages/domains/business-access/src/application/catalog.service.ts`; `packages/domains/business-access/src/application/finance.service.ts`; `apps/backoffice/src/app/customers/page.tsx`; `apps/backoffice/src/app/finance/page.tsx`; `docs/development/10_P4_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
+| Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api typecheck` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
+| Commit | This changeset |
+| Remaining work | Formal customer statements, collections task workflow and finance-safe invoice reversal/void flows remain. |
 
 ### 2026-08-27 - Common Core P5 Reusable Business Engines
 
@@ -416,7 +430,7 @@ Each change entry should include:
 | What changed | Replaced implicit default header protection with an explicit Fastify Helmet policy at API startup. The policy enforces CSP defaults with frame-ancestor denial, HSTS, denied framing, content-type sniffing protection, no-referrer policy, disabled DNS prefetching, cross-origin opener/resource protections and disabled cross-domain policy files. Added a focused unit test so the policy does not regress silently. |
 | Main files | `apps/api/src/main.ts`; `apps/api/src/security/security-headers.ts`; `apps/api/src/security/security-headers.test.ts`; `docs/development/14_P8_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md` |
 | Verification | `pnpm --filter @bizentra/api test` passed; `pnpm --filter @bizentra/api typecheck` passed. |
-| Commit | This changeset |
+| Commit | `11850e5 feat: add api security header policy` |
 | Remaining work | Secret-vault integration, automated dependency/security scanning and production OIDC/session/MFA controls remain. |
 
 ### 2026-08-27 - Back Office Sidebar on Tailwind and shadcn/ui
@@ -536,7 +550,7 @@ Each change entry should include:
 | Main files | `docs/01_COMMON_CORE_SRS.md`; `docs/02_GROCERY_SUPERMARKET_SRS.md`; `docs/03_GENERAL_RETAIL_SRS.md`; `docs/00_README_AND_DEVELOPMENT_ORDER.md`; `docs/99_FILE_MANIFEST.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/07_UIUX_IMPLEMENTATION_STATUS.md`; `docs/development/08_P2_IMPLEMENTATION_STATUS.md` |
 | Current counts | Common Core: 87 Implemented, 23 Started, 5 Not started of 115 rows. Functional requirements alone: 72 / 20 / 5 of 97. Business-type packs: 205 rows, all Not started. |
 | Verification | Scripted table-integrity check over every file in `docs/` and `docs/development/` - header, separator and row pipe counts agree in every table; every requirement and story row carries exactly one status; status tallies recomputed from the files themselves rather than from the edit script. Phase claims cross-checked against the route decorators in the six API controllers. |
-| Commit | Uncommitted |
+| Commit | `7ddd87a docs: sync p0 remaining work status` |
 | Remaining work | Re-check the status columns whenever a phase document changes; the rule is now stated in the traceability file: status changes in the code, the phase document and the SRS column in one commit. |
 
 

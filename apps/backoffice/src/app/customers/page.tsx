@@ -27,7 +27,13 @@ import {
 import { Dialog, Drawer, useDebouncedValue, useToasts } from "@bizentra/design-system/client";
 import { useState, type FormEvent } from "react";
 
-import { readOptionalText, readText } from "../lib/forms";
+import {
+  readBoolean,
+  readNumber,
+  readOptionalNumber,
+  readOptionalText,
+  readText,
+} from "../lib/forms";
 import { errorMessage, ResourceState, useApi, useResource, Workspace } from "../lib/workspace";
 
 interface CustomersData {
@@ -107,6 +113,9 @@ export default function CustomersPage() {
         ...(readOptionalText(form, "email") ? { email: readText(form, "email") } : {}),
         ...(readOptionalText(form, "phone") ? { phone: readText(form, "phone") } : {}),
         ...(readOptionalText(form, "notes") ? { notes: readText(form, "notes") } : {}),
+        creditLimit: readNumber(form, "creditLimit"),
+        creditTermsDays: readOptionalNumber(form, "creditTermsDays"),
+        creditHold: readBoolean(form, "creditHold"),
         ...(readOptionalText(form, "line1")
           ? {
               billingAddress: {
@@ -132,6 +141,9 @@ export default function CustomersPage() {
         email: readOptionalText(form, "email") ?? null,
         phone: readOptionalText(form, "phone") ?? null,
         notes: readOptionalText(form, "notes") ?? null,
+        creditLimit: readNumber(form, "creditLimit"),
+        creditTermsDays: readOptionalNumber(form, "creditTermsDays") ?? null,
+        creditHold: readBoolean(form, "creditHold"),
         status: readText(form, "status", "ACTIVE") as "ACTIVE" | "INACTIVE",
       }),
     );
@@ -210,6 +222,18 @@ export default function CustomersPage() {
                     ),
                 },
                 {
+                  header: "Credit limit",
+                  align: "right",
+                  hideOnMobile: true,
+                  render: (customer) => formatMoney(customer.creditLimit),
+                },
+                {
+                  header: "Credit hold",
+                  hideOnMobile: true,
+                  render: (customer) =>
+                    customer.creditHold ? <Badge tone="danger">Hold</Badge> : "-",
+                },
+                {
                   header: "Status",
                   render: (customer) => (
                     <Badge tone={customer.status === "ACTIVE" ? "success" : "neutral"}>
@@ -243,7 +267,23 @@ export default function CustomersPage() {
             </SelectField>
             <Field label="Phone" name="phone" />
             <Field label="Email" name="email" type="email" />
+            <Field
+              label="Credit limit"
+              name="creditLimit"
+              defaultValue="0"
+              inputMode="decimal"
+              type="number"
+            />
+            <Field
+              label="Credit terms days"
+              name="creditTermsDays"
+              inputMode="numeric"
+              type="number"
+            />
           </FormGrid>
+          <label className="ui-row ui-muted">
+            <input name="creditHold" type="checkbox" /> Credit hold
+          </label>
           <FormGrid>
             <Field label="Address line" name="line1" />
             <Field label="City" name="city" />
@@ -319,6 +359,8 @@ export default function CustomersPage() {
                   <span>{detail.salesCount} sale(s)</span>
                   <span>{formatMoney(detail.salesTotal)} spent</span>
                   <span>{formatMoney(detail.storeCredit)} store credit</span>
+                  <span>{formatMoney(detail.creditLimit)} credit limit</span>
+                  {detail.creditHold ? <span>Credit hold</span> : null}
                 </>
               }
             />
@@ -336,11 +378,29 @@ export default function CustomersPage() {
                 </SelectField>
                 <Field label="Phone" name="phone" defaultValue={detail.phone ?? ""} />
                 <Field label="Email" name="email" type="email" defaultValue={detail.email ?? ""} />
+                <Field
+                  label="Credit limit"
+                  name="creditLimit"
+                  defaultValue={String(detail.creditLimit)}
+                  inputMode="decimal"
+                  type="number"
+                />
+                <Field
+                  label="Credit terms days"
+                  name="creditTermsDays"
+                  defaultValue={detail.creditTermsDays?.toString() ?? ""}
+                  inputMode="numeric"
+                  type="number"
+                />
                 <SelectField label="Status" name="status" defaultValue={detail.status}>
                   <option value="ACTIVE">Active</option>
                   <option value="INACTIVE">Inactive</option>
                 </SelectField>
               </FormGrid>
+              <label className="ui-row ui-muted">
+                <input defaultChecked={detail.creditHold} name="creditHold" type="checkbox" />{" "}
+                Credit hold
+              </label>
               <Field label="Notes" name="notes" defaultValue={detail.notes ?? ""} />
               <FormFooter>
                 <Button onClick={() => setDetail(null)} variant="secondary">
@@ -405,6 +465,15 @@ export default function CustomersPage() {
               <DescriptionList
                 items={[
                   { label: "Customer code", value: detail.code },
+                  { label: "Credit limit", value: formatMoney(detail.creditLimit) },
+                  {
+                    label: "Credit terms",
+                    value:
+                      detail.creditTermsDays === null
+                        ? "No terms set"
+                        : `${detail.creditTermsDays} day(s)`,
+                  },
+                  { label: "Credit hold", value: detail.creditHold ? "On hold" : "No" },
                   {
                     label: "Billing address",
                     value: detail.billingAddress

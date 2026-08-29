@@ -10,6 +10,7 @@ import type {
   SupplierListRow,
 } from "@bizentra/contracts";
 import {
+  Badge,
   Button,
   CardDescription,
   CardHeader,
@@ -72,6 +73,9 @@ export default function FinancePage() {
     (account) => account.id !== firstBankAccount?.id,
   );
   const expenseCategoryOptions = useMemo(() => data?.finance.expenseCategories ?? [], [data]);
+  const creditHolds = data?.finance.customerCredits.filter((row) => row.creditHold).length ?? 0;
+  const overdueCredit =
+    data?.finance.customerCredits.reduce((sum, row) => sum + row.overdueBalance, 0) ?? 0;
 
   const run = async (success: string, work: () => Promise<unknown>) => {
     if (!api || !identity) return;
@@ -105,7 +109,7 @@ export default function FinancePage() {
                 <KpiCard
                   label="Receivables"
                   value={formatMoney(data.finance.totals.receivables, defaultCurrency)}
-                  trend={`${data.finance.customerInvoices.length} invoice(s)`}
+                  trend={`${formatMoney(overdueCredit, defaultCurrency)} overdue`}
                   tone={data.finance.totals.receivables > 0 ? "warning" : "success"}
                 />
                 <KpiCard
@@ -121,10 +125,10 @@ export default function FinancePage() {
                   tone="information"
                 />
                 <KpiCard
-                  label="Accounting queue"
-                  value={String(data.finance.totals.pendingAccountingEvents)}
-                  trend="Pending finance events"
-                  tone={data.finance.totals.pendingAccountingEvents > 0 ? "information" : "success"}
+                  label="Credit holds"
+                  value={String(creditHolds)}
+                  trend={`${data.finance.customerCredits.length} credit account(s)`}
+                  tone={creditHolds > 0 ? "danger" : "success"}
                 />
               </Grid>
 
@@ -133,6 +137,7 @@ export default function FinancePage() {
                 onChange={setTab}
                 tabs={[
                   { value: "receivables", label: "Receivables" },
+                  { value: "credit", label: "Credit" },
                   { value: "payables", label: "Payables" },
                   { value: "expenses", label: "Expenses" },
                   { value: "cash", label: "Cash / bank" },
@@ -154,6 +159,21 @@ export default function FinancePage() {
                         { header: "Invoice", render: (row) => row.number },
                         { header: "Customer", render: (row) => row.customerName },
                         { header: "Status", render: (row) => row.status.replaceAll("_", " ") },
+                        {
+                          header: "Due",
+                          hideOnMobile: true,
+                          render: (row) => row.dueDate ?? "-",
+                        },
+                        {
+                          header: "Ageing",
+                          hideOnMobile: true,
+                          render: (row) =>
+                            row.daysOverdue > 0 ? (
+                              <Badge tone="warning">{row.ageingBucket.replace("_", "-")}</Badge>
+                            ) : (
+                              <Badge tone="success">Current</Badge>
+                            ),
+                        },
                         {
                           header: "Balance",
                           align: "right",
@@ -197,6 +217,54 @@ export default function FinancePage() {
                     />
                   </aside>
                 </div>
+              ) : null}
+
+              {tab === "credit" ? (
+                <DataTable
+                  caption="Customer credit controls"
+                  className="ui-scroll-panel"
+                  empty="No customer credit exposure exists yet."
+                  getRowKey={(row) => row.customerId}
+                  rows={data.finance.customerCredits}
+                  columns={[
+                    { header: "Customer", render: (row) => row.customerName },
+                    {
+                      header: "Limit",
+                      align: "right",
+                      render: (row) => formatMoney(row.creditLimit, defaultCurrency),
+                    },
+                    {
+                      header: "Receivable",
+                      align: "right",
+                      render: (row) => formatMoney(row.receivableBalance, defaultCurrency),
+                    },
+                    {
+                      header: "Available",
+                      align: "right",
+                      render: (row) => formatMoney(row.availableCredit, defaultCurrency),
+                    },
+                    {
+                      header: "Overdue",
+                      align: "right",
+                      render: (row) => formatMoney(row.overdueBalance, defaultCurrency),
+                    },
+                    {
+                      header: "Terms",
+                      hideOnMobile: true,
+                      render: (row) =>
+                        row.creditTermsDays === null ? "-" : `${row.creditTermsDays} day(s)`,
+                    },
+                    {
+                      header: "Hold",
+                      render: (row) =>
+                        row.creditHold ? (
+                          <Badge tone="danger">Hold</Badge>
+                        ) : (
+                          <Badge tone="success">Clear</Badge>
+                        ),
+                    },
+                  ]}
+                />
               ) : null}
 
               {tab === "payables" ? (

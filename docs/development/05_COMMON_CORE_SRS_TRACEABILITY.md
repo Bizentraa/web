@@ -64,7 +64,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 | `CC-P1-006` Prices | Implemented | Price lists, tax mode, Branch prices, quantity breaks, customer pricing | - |
 | `CC-P1-007` Promotions | Implemented | Percentage, fixed, coupon, buy-X-get-Y with overlap detection | Cross-item bundles |
 | `CC-P1-008` Tax | Implemented | Categories, date-effective rates, inclusive and exclusive handling | Jurisdictions |
-| `CC-P1-009` Customers | Implemented | Contacts, groups, history and store credit | Credit limits in P4 |
+| `CC-P1-009` Customers | Implemented | Contacts, groups, history, store credit, credit limit, credit terms and credit hold | CRM task history |
 | `CC-P1-010` Suppliers | Implemented | Terms, lead time and supplier items | - |
 | `CC-P1-011` Import | Implemented | Validate, preview, apply and roll back, on Import and History tabs | Opening stock |
 
@@ -107,7 +107,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 | Requirement | Status | Developed evidence | Pending work |
 |---|---|---|---|
 | `CC-P4-001` Customer Invoice | Implemented | Numbered invoices with customer, lines, tax, totals, paid amount and balance | Invoice from sales order |
-| `CC-P4-002` Customer Credit | Implemented for current scope | Store credit from P2 plus receivable balance visibility | Enforced credit limit and terms |
+| `CC-P4-002` Customer Credit | Implemented for current scope | Store credit from P2, receivable balance visibility, customer credit limits, credit terms, credit holds, invoice credit guard and ageing exposure | Formal statements and collections tasks |
 | `CC-P4-003` Collections | Implemented | Allocation to invoices with over-allocation refused | Unallocated receipt application |
 | `CC-P4-004` Supplier Bill | Implemented | Numbered bills with supplier, optional purchase order, lines and payable balance | Three-way match |
 | `CC-P4-005` Supplier Payment | Implemented | Allocation to bills with over-payment refused | Payment batches |

@@ -838,6 +838,9 @@ export const createCustomerSchema = z.object({
   name: z.string().trim().min(1).max(180),
   groupId: z.uuid().optional(),
   billingAddress: optionalJsonRecordSchema,
+  creditLimit: nonNegativeMoneySchema.default(0),
+  creditTermsDays: z.coerce.number().int().min(0).max(3650).optional(),
+  creditHold: z.boolean().default(false),
   ...contactSchema,
 });
 
@@ -848,6 +851,9 @@ export const updateCustomerSchema = z.object({
   phone: z.string().trim().max(40).nullable().optional(),
   notes: z.string().trim().max(500).nullable().optional(),
   billingAddress: optionalJsonRecordSchema,
+  creditLimit: nonNegativeMoneySchema.optional(),
+  creditTermsDays: z.coerce.number().int().min(0).max(3650).nullable().optional(),
+  creditHold: z.boolean().optional(),
   status: recordStatusSchema.optional(),
 });
 
@@ -1960,6 +1966,9 @@ export interface CustomerListRow {
   salesCount: number;
   salesTotal: number;
   storeCredit: number;
+  creditLimit: number;
+  creditTermsDays: number | null;
+  creditHold: boolean;
   updatedAt: string;
 }
 
@@ -2424,9 +2433,23 @@ export interface CustomerInvoiceRow {
   paidAmount: number;
   balanceAmount: number;
   dueDate: string | null;
+  daysOverdue: number;
+  ageingBucket: "CURRENT" | "1_30" | "31_60" | "61_90" | "90_PLUS";
   lineCount: number;
   createdBy: string;
   postedAt: string;
+}
+
+export interface CustomerCreditRow {
+  customerId: string;
+  customerName: string;
+  creditLimit: number;
+  receivableBalance: number;
+  availableCredit: number;
+  creditTermsDays: number | null;
+  creditHold: boolean;
+  overdueBalance: number;
+  maxDaysOverdue: number;
 }
 
 export interface CustomerCollectionRow {
@@ -2551,6 +2574,7 @@ export interface FinanceOverview {
     pendingAccountingEvents: number;
   };
   customerInvoices: CustomerInvoiceRow[];
+  customerCredits: CustomerCreditRow[];
   customerCollections: CustomerCollectionRow[];
   supplierBills: SupplierBillRow[];
   supplierPayments: SupplierPaymentRow[];

@@ -952,6 +952,9 @@ model Customer {
   groupId        String?      @db.Uuid
   billingAddress Json?
   notes          String?      @db.VarChar(500)
+  creditLimit    Decimal      @default(0) @db.Decimal(19, 4)
+  creditTermsDays Int?
+  creditHold     Boolean      @default(false)
   status         RecordStatus @default(ACTIVE)
   createdAt      DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
@@ -973,6 +976,7 @@ model Customer {
   @@unique([id, businessId])
   @@index([businessId, name])
   @@index([businessId, status])
+  @@index([businessId, creditHold])
   @@map("customers")
 }
 

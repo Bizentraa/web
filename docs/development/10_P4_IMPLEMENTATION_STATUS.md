@@ -30,7 +30,7 @@ customer point balance from going below zero.
 | Requirement | Status | Current evidence | Remaining P4 work |
 |---|---|---|---|
 | CC-P4-001 Customer Invoice | Implemented for current scope | Customer invoices have document numbers, customer, optional Branch, lines, tax, totals, paid amount and balance. Smoke verifies invoice creation and partial balance. | Add invoice edit/void/statement workflows and sale-to-invoice conversion where needed. |
-| CC-P4-002 Customer Credit | Implemented for current scope through store credit + receivable balance visibility | Store credit already exists in P2; P4 overview shows customer receivable balances. | Add explicit credit limits, ageing, credit holds and statement output. |
+| CC-P4-002 Customer Credit | Implemented for current scope | Store credit already exists in P2; Customers now carry credit limit, credit terms and credit-hold settings. Customer invoices enforce credit hold and credit-limit checks. P4 overview shows customer credit exposure, available credit and overdue ageing. | Add formal statement output and collections task workflow. |
 | CC-P4-003 Collections | Implemented for current scope | Customer collections allocate to invoices and refuse over-allocation. | Add unallocated receipt application UI and reconciliation reports. |
 | CC-P4-004 Supplier Bill | Implemented for current scope | Supplier bills have document numbers, supplier, optional Branch/purchase order, lines and payable balance. | Add purchase order/goods receipt bill matching and variance workflows. |
 | CC-P4-005 Supplier Payment | Implemented for current scope | Supplier payments allocate to supplier bills and refuse over-payment allocation. | Add payment batch approval and bank reconciliation matching. |
@@ -46,7 +46,7 @@ customer point balance from going below zero.
 
 | Story | Status | Evidence |
 |---|---|---|
-| CC-US-010 Finance User reviews sales, credit and cash | Implemented for current scope | Finance overview shows receivables, payables, expenses, cash/bank, loyalty and accounting queue totals. |
+| CC-US-010 Finance User reviews sales, credit and cash | Implemented for current scope | Finance overview shows receivables, customer credit exposure, overdue ageing, payables, expenses, cash/bank, loyalty and accounting queue totals. |
 | CC-US-011 Business Owner reviews margins and money position | Partially implemented | Owner can open finance overview and see money owed, money payable, cash/bank and accounting queue. Margin reporting remains pending. |
 
 ## API Surface
@@ -81,8 +81,9 @@ P4 follows the same additive sync rule introduced for P3:
 
 The `/finance` workspace follows the common UI/UX pattern:
 
-- KPI cards for receivables, payables, cash/bank and accounting queue;
-- tabs for receivables, payables, expenses, cash/bank, loyalty and accounting events;
+- KPI cards for receivables, credit holds, payables and cash/bank;
+- tabs for receivables, credit exposure, payables, expenses, cash/bank, loyalty and accounting
+  events;
 - dense responsive table layout with internal scroll panels;
 - quick-create forms for invoice, supplier bill, expense category, expense, cash/bank account,
   account transfer and loyalty adjustment;
@@ -92,6 +93,7 @@ The `/finance` workspace follows the common UI/UX pattern:
 
 - `packages/database/prisma/schema.prisma`
 - `packages/database/prisma/migrations/20260826200839_p4_finance_foundation/migration.sql`
+- `packages/database/prisma/migrations/20260829131500_p4_customer_credit_controls/migration.sql`
 - `packages/contracts/src/index.ts`
 - `packages/api-client/src/index.ts`
 - `packages/domains/business-access/src/application/finance.service.ts`
@@ -101,6 +103,7 @@ The `/finance` workspace follows the common UI/UX pattern:
 - `apps/api/src/app.module.ts`
 - `apps/api/src/composition/providers.ts`
 - `apps/backoffice/src/app/finance/page.tsx`
+- `apps/backoffice/src/app/customers/page.tsx`
 - `apps/backoffice/src/app/lib/workspace.tsx`
 - `packages/design-system/src/index.tsx`
 - `scripts/smoke-common-core.mjs`
@@ -116,6 +119,8 @@ The `/finance` workspace follows the common UI/UX pattern:
 - `pnpm --filter @bizentra/api-client build` passed.
 - `pnpm --filter @bizentra/api build` passed.
 - `pnpm --filter @bizentra/backoffice typecheck` passed.
+- Customer credit-control slice checks passed: contracts build, database build, API client build,
+  business-access typecheck/build, API typecheck/build and Back Office typecheck.
 - `node scripts/smoke-common-core.mjs` passed 111 live API checks when run against
   `http://localhost:4010/api/v1`, including explicit P4 permission catalogue and Role checks,
   invoice/collection, supplier bill/payment, expense, bank account/transaction, loyalty and audit
@@ -123,7 +128,7 @@ The `/finance` workspace follows the common UI/UX pattern:
 
 ## Next P4 Slices
 
-1. Customer credit limits, ageing, statements and credit-hold behavior.
+1. Formal customer statement output and collections task workflow.
 2. Formal cash-up and bank reconciliation sessions.
 3. Purchase order / goods receipt / supplier bill matching.
 4. Sales, cost and gross-margin reporting.
