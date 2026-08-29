@@ -51,7 +51,8 @@ type DialogName =
   | "request"
   | "order"
   | "receive"
-  | "fulfill";
+  | "fulfill"
+  | "reserveOrder";
 
 export default function InventoryPage() {
   const { api, identity } = useApi();
@@ -390,7 +391,10 @@ export default function InventoryPage() {
                 <DataTable
                   caption="Pick, pack and dispatch"
                   toolbar={
-                    <Button onClick={() => setDialog("fulfill")}>New fulfillment order</Button>
+                    <div className="ui-row">
+                      <Button onClick={() => setDialog("reserveOrder")}>Reserve sales order</Button>
+                      <Button onClick={() => setDialog("fulfill")}>New fulfillment order</Button>
+                    </div>
                   }
                   empty="No fulfillment orders yet."
                   getRowKey={(row) => row.id}
@@ -398,6 +402,11 @@ export default function InventoryPage() {
                   columns={[
                     { header: "Number", render: (row) => <strong>{row.number}</strong> },
                     { header: "Customer", render: (row) => row.customerName ?? "Not assigned" },
+                    {
+                      header: "Location",
+                      hideOnMobile: true,
+                      render: (row) => row.locationName ?? "-",
+                    },
                     {
                       header: "Status",
                       render: (row) => (
@@ -802,6 +811,7 @@ export default function InventoryPage() {
                 api && identity
                   ? api.createFulfillmentOrder(identity.businessId, {
                       branchId: readText(form, "branchId"),
+                      locationId: readOptionalText(form, "locationId"),
                       customerName: readOptionalText(form, "customerName"),
                       sourceType: "MANUAL",
                       sourceId: readText(form, "sourceId", `manual-${Date.now()}`),
@@ -819,6 +829,7 @@ export default function InventoryPage() {
         >
           <FormGrid>
             <BranchSelect reference={data?.reference} defaultValue={firstBranch?.id} />
+            <LocationSelect foundation={data?.foundation} defaultValue={firstLocation} />
             <ItemSelect items={stockItems} defaultValue={firstStockItem?.id} />
             <Field label="Quantity" name="quantity" defaultValue="1" inputMode="decimal" required />
             <Field label="Customer" name="customerName" placeholder="Customer / counter order" />
@@ -830,6 +841,38 @@ export default function InventoryPage() {
             />
           </FormGrid>
           <DialogFooter busy={busy} onClose={() => setDialog(null)} label="Create fulfillment" />
+        </form>
+      </Dialog>
+
+      <Dialog
+        onClose={() => setDialog(null)}
+        open={dialog === "reserveOrder"}
+        title="Reserve sales order"
+      >
+        <form
+          className="ui-stack"
+          onSubmit={(event) =>
+            void submit(event, (form) =>
+              run("Sales order reserved for fulfillment.", () =>
+                api && identity
+                  ? api.reserveSalesOrder(identity.businessId, {
+                      salesOrderId: readText(form, "salesOrderId"),
+                      locationId: readText(form, "locationId"),
+                    })
+                  : Promise.resolve(),
+              ),
+            )
+          }
+        >
+          <CardDescription>
+            Open the order from Sales and use its document id. Reservation moves quantity from
+            available to reserved and creates fulfillment work.
+          </CardDescription>
+          <FormGrid>
+            <LocationSelect foundation={data?.foundation} defaultValue={firstLocation} />
+            <Field label="Sales order id" name="salesOrderId" required />
+          </FormGrid>
+          <DialogFooter busy={busy} onClose={() => setDialog(null)} label="Reserve order" />
         </form>
       </Dialog>
     </Workspace>

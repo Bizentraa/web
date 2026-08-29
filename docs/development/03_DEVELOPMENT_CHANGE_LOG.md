@@ -57,7 +57,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for current P2 commerce scope | `CC-P2-001` to `CC-P2-012`, `CC-US-004`, `CC-US-005`, `CC-US-006` | `1c8bbce` | Adapted the P2 commerce backend and POS workspace from `work/bizentra-p0-p1-p2.tgz`: shifts, cart pricing, idempotent sales, split/partial tenders, receipts, returns, refunds, exchanges, store credit, offline sale sync and Back Office sales review. |
-| 2026-08-29 | Implemented | `CC-P2-012` | This changeset | Added persisted quotations and sales orders, conversion from quotation to order and confirmation of an order into a payable sale. |
+| 2026-08-29 | Implemented | `CC-P2-012` | `2618283 feat: add quotations and sales orders` | Added persisted quotations and sales orders, conversion from quotation to order and confirmation of an order into a payable sale. |
 
 ### Common Core P3 Inventory, Purchasing and Fulfillment
 
@@ -66,6 +66,7 @@ Each change entry should include:
 | 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
 | 2026-08-26 | Implemented for P3 access sync | `CC-P0-006`, `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `7107343` | Synced P3 permissions into the permission catalogue and existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles so existing owners can open inventory screens after phase delivery. |
 | 2026-08-29 | Implemented for current stock-count scope | `CC-P3-006` | `2311a55 feat: add stock count variance posting` | Added stock count sessions, frozen expected quantities, counted quantities, variance posting through stock movements, API/client methods and Back Office count controls. |
+| 2026-08-29 | Implemented for current reservation scope | `CC-P3-003`, `CC-P3-012` | This changeset | Added sales order stock reservation into fulfillment, Location-aware fulfillment orders and dispatch stock relief. |
 
 ### Common Core P4 Finance, Customer Controls and Management
 
@@ -246,8 +247,8 @@ Each change entry should include:
 | What changed | Added `QUOTATION` and `ORDER` sale statuses with a migration; added contracts and API/client routes to create quotations, create sales orders, convert a quotation into an order and confirm an order into a payable sale. The POS payment and return guards now refuse quotation/order documents until they are confirmed. Back Office Sales can create a quotation or order from the active catalogue, filter those statuses, convert quotations to orders and confirm orders. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829123000_p2_quotations_sales_orders/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/commerce/src/application/pos.service.ts`; `apps/api/src/controllers/pos.controller.ts`; `apps/backoffice/src/app/sales/page.tsx`; `docs/01_COMMON_CORE_SRS.md`; `docs/development/08_P2_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-commerce typecheck` passed; `pnpm --filter @bizentra/domain-commerce build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api typecheck` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
-| Commit | This changeset |
-| Remaining work | P3 sales-order reservations and fulfillment allocation; P4 sale-to-invoice conversion; direct POS exchange screen; payment-provider integrations and connected printing remain. |
+| Commit | `2618283 feat: add quotations and sales orders` |
+| Remaining work | P4 sale-to-invoice conversion; direct POS exchange screen; payment-provider integrations and connected printing remain. P3 allocation refinements continue separately. |
 
 ### 2026-08-26 - Shared Component System and Product Stylesheet
 
@@ -300,6 +301,19 @@ Each change entry should include:
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database typecheck` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-shared build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
 | Commit | `2311a55 feat: add stock count variance posting` |
 | Remaining work | Scanner-led mobile counting and approval thresholds for high-risk count variances. |
+
+### 2026-08-29 - P3 Sales Order Reservations and Fulfillment Dispatch
+
+| Field | Details |
+|---|---|
+| Feature / slice | Sales order stock reservation and Location-aware fulfillment |
+| Status | Implemented for current reservation scope |
+| SRS mapping | `CC-P3-003` Availability; `CC-P3-012` Picking/Packing |
+| What changed | Added a reservation contract, API route and API client method for reserving a sales order from a selected Location. Reservation checks available stock, creates a fulfillment order sourced to the sales order, writes fulfillment lines and moves quantities from available to reserved stock. Fulfillment orders now store the source Location; dispatch creates stock movement rows and reduces both on-hand and reserved quantities. Back Office Inventory can reserve a sales order and shows the fulfillment Location. |
+| Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829124500_p3_sales_order_reservations/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
+| Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api typecheck` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
+| Commit | This changeset |
+| Remaining work | Partial reservations, backorder handling, reallocation between Locations, route/delivery planning and scanner-led picking remain. |
 
 ### 2026-08-26 - P3 Role and Permission Synchronization
 

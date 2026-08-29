@@ -9,6 +9,7 @@ import {
   postStockCountSchema,
   receivePurchaseOrderSchema,
   reorderSettingSchema,
+  reserveSalesOrderSchema,
   stockAdjustmentSchema,
   stockTransferSchema,
   updateFulfillmentStatusSchema,
@@ -179,6 +180,27 @@ export class InventoryController {
       businessId,
       identity.userId,
       createFulfillmentOrderSchema.parse(body),
+    );
+  }
+
+  @Post("sales-orders/:salesOrderId/reserve")
+  @ApiOperation({
+    summary: "Reserve available stock for a sales order and create fulfillment work",
+  })
+  reserveSalesOrder(
+    @Param("businessId") businessId: string,
+    @Param("salesOrderId") salesOrderId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.inventory.reserveSalesOrder(
+      businessId,
+      identity.userId,
+      reserveSalesOrderSchema.parse({
+        ...(typeof body === "object" && body !== null ? body : {}),
+        salesOrderId,
+      }),
     );
   }
 

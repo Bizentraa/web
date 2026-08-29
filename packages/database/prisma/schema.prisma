@@ -1143,6 +1143,7 @@ model Location {
   stockCounts     StockCountSession[]
   reorderSettings ReorderSetting[]
   goodsReceipts   GoodsReceipt[]
+  fulfillments    FulfillmentOrder[]
   traceableUnits  TraceableUnit[]
 
   @@unique([businessId, branchId, code])
@@ -2028,6 +2029,7 @@ model FulfillmentOrder {
   id                    String            @id @default(uuid()) @db.Uuid
   businessId            String            @db.Uuid
   branchId              String            @db.Uuid
+  locationId            String?           @db.Uuid
   number                String            @db.VarChar(60)
   status                FulfillmentStatus @default(READY_TO_PICK)
   customerName          String?           @db.VarChar(180)
@@ -2040,11 +2042,13 @@ model FulfillmentOrder {
 
   business  Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
   branch    Branch             @relation(fields: [branchId, businessId], references: [id, businessId], onDelete: Restrict)
+  location  Location?          @relation(fields: [locationId, businessId], references: [id, businessId], onDelete: Restrict)
   createdBy BusinessMembership @relation("FulfillmentCreatedBy", fields: [createdByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
   lines     FulfillmentLine[]
 
   @@unique([businessId, number])
   @@unique([id, businessId])
+  @@index([businessId, locationId, status])
   @@index([businessId, status, createdAt])
   @@map("fulfillment_orders")
 }

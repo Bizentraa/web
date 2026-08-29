@@ -114,6 +114,7 @@ import type {
   ReportingOperationsOverview,
   RequestDataExportInput,
   ReorderSettingInput,
+  ReserveSalesOrderInput,
   ResolvePaymentInput,
   ResolvePrivacyRequestInput,
   ResolveSyncConflictInput,
@@ -472,6 +473,11 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
       ),
     createFulfillmentOrder: (businessId: string, input: CreateFulfillmentOrderInput) =>
       post<CatalogRecordCreated>(`/businesses/${businessId}/inventory/fulfillment-orders`, input),
+    reserveSalesOrder: (businessId: string, input: ReserveSalesOrderInput) =>
+      post<CatalogRecordCreated>(
+        `/businesses/${businessId}/inventory/sales-orders/${input.salesOrderId}/reserve`,
+        { locationId: input.locationId },
+      ),
     updateFulfillmentStatus: (
       businessId: string,
       fulfillmentOrderId: string,

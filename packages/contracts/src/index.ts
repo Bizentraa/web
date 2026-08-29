@@ -1207,10 +1207,16 @@ export const receivePurchaseOrderSchema = z.object({
 
 export const createFulfillmentOrderSchema = z.object({
   branchId: z.uuid(),
+  locationId: z.uuid().optional(),
   customerName: z.string().trim().max(180).optional(),
   sourceType: z.string().trim().min(2).max(80),
   sourceId: z.string().trim().min(2).max(80),
   lines: z.array(p3LineSchema).min(1).max(100),
+});
+
+export const reserveSalesOrderSchema = z.object({
+  salesOrderId: z.uuid(),
+  locationId: z.uuid(),
 });
 
 export const updateFulfillmentStatusSchema = z.object({
@@ -1718,6 +1724,7 @@ export type DecidePurchaseRequestInput = z.output<typeof decidePurchaseRequestSc
 export type CreatePurchaseOrderInput = z.output<typeof createPurchaseOrderSchema>;
 export type ReceivePurchaseOrderInput = z.output<typeof receivePurchaseOrderSchema>;
 export type CreateFulfillmentOrderInput = z.output<typeof createFulfillmentOrderSchema>;
+export type ReserveSalesOrderInput = z.output<typeof reserveSalesOrderSchema>;
 export type UpdateFulfillmentStatusInput = z.output<typeof updateFulfillmentStatusSchema>;
 export type CreateCustomerInvoiceInput = z.output<typeof createCustomerInvoiceSchema>;
 export type CollectCustomerPaymentInput = z.output<typeof collectCustomerPaymentSchema>;
@@ -2371,6 +2378,7 @@ export interface FulfillmentOrderRow {
   id: string;
   number: string;
   branchName: string;
+  locationName: string | null;
   status: FulfillmentStatus;
   customerName: string | null;
   sourceType: string;

@@ -13,6 +13,7 @@ import type {
   PurchaseRequestRow,
   ReceivePurchaseOrderInput,
   ReorderSettingInput,
+  ReserveSalesOrderInput,
   ReorderSuggestionRow,
   StockAdjustmentInput,
   StockAvailabilityRow,
@@ -122,6 +123,7 @@ export class InventoryService {
           take: 20,
           include: {
             branch: true,
+            location: true,
             createdBy: { include: { user: { select: { displayName: true } } } },
             lines: true,
           },
@@ -705,6 +707,9 @@ export class InventoryService {
   ): Promise<CatalogRecordCreated> {
     return this.write(businessId, actorUserId, "FULFILLMENT_MANAGE", async (transaction, actor) => {
       const branch = await this.mustFind(transaction.branch, businessId, input.branchId, "Branch");
+      if (input.locationId) {
+        await this.mustFind(transaction.location, businessId, input.locationId, "Location");
+      }
       await this.assertLines(
         transaction,
         businessId,
@@ -724,6 +729,7 @@ export class InventoryService {
           customerName: input.customerName ?? null,
           sourceType: input.sourceType,
           sourceId: input.sourceId,
+          locationId: input.locationId ?? null,
           createdByMembershipId: actor.membershipId,
         },
       });
@@ -749,6 +755,117 @@ export class InventoryService {
     });
   }
 
+  async reserveSalesOrder(
+    businessId: string,
+    actorUserId: string,
+    input: ReserveSalesOrderInput,
+  ): Promise<CatalogRecordCreated> {
+    return this.write(businessId, actorUserId, "FULFILLMENT_MANAGE", async (transaction, actor) => {
+      const location = await this.mustFind(
+        transaction.location,
+        businessId,
+        input.locationId,
+        "Location",
+      );
+      const salesOrder = await transaction.sale.findFirst({
+        where: { id: input.salesOrderId, businessId, status: "ORDER" },
+        include: {
+          branch: true,
+          customer: true,
+          lines: { include: { item: true } },
+        },
+      });
+      if (!salesOrder) {
+        throw new BusinessAccessError(
+          "NOT_FOUND",
+          "Sales order was not found or is not ready for reservation.",
+        );
+      }
+
+      const duplicate = await transaction.fulfillmentOrder.findFirst({
+        where: { businessId, sourceType: "SALES_ORDER", sourceId: input.salesOrderId },
+      });
+      if (duplicate) return { id: duplicate.id };
+
+      const stockLines = salesOrder.lines.filter((line) => line.stockTracked);
+      if (!stockLines.length) {
+        throw new BusinessAccessError(
+          "CONFLICT",
+          "This sales order does not contain stock-tracked lines to reserve.",
+        );
+      }
+
+      for (const line of stockLines) {
+        const available = await this.getAvailableQuantity(
+          transaction,
+          businessId,
+          input.locationId,
+          line.itemId,
+          line.variantId,
+        );
+        const needed = toNumber(line.quantity);
+        if (available + 0.0001 < needed) {
+          throw new BusinessAccessError(
+            "CONFLICT",
+            `${line.item.name} only has ${available} available at ${location.name}.`,
+          );
+        }
+      }
+
+      const number = await allocateDocumentNumber(transaction, {
+        businessId,
+        branchId: salesOrder.branchId,
+        branchCode: salesOrder.branch.code,
+        documentType: "FUL",
+      });
+      const fulfillment = await transaction.fulfillmentOrder.create({
+        data: {
+          businessId,
+          branchId: salesOrder.branchId,
+          number,
+          customerName: salesOrder.customer?.name ?? null,
+          sourceType: "SALES_ORDER",
+          sourceId: salesOrder.id,
+          locationId: input.locationId,
+          createdByMembershipId: actor.membershipId,
+        },
+      });
+      await transaction.fulfillmentLine.createMany({
+        data: stockLines.map((line) => ({
+          businessId,
+          fulfillmentOrderId: fulfillment.id,
+          itemId: line.itemId,
+          variantId: line.variantId,
+          quantity: quantityToDb(toNumber(line.quantity)),
+        })),
+      });
+
+      for (const line of stockLines) {
+        await this.applyBalanceChange(transaction, businessId, input.locationId, line.itemId, {
+          variantId: line.variantId,
+          reservedDelta: toNumber(line.quantity),
+        });
+      }
+
+      await this.audit(
+        transaction,
+        businessId,
+        actor,
+        "CREATE",
+        "FulfillmentOrder",
+        fulfillment.id,
+        {
+          number,
+          sourceType: "SALES_ORDER",
+          sourceId: salesOrder.id,
+          locationId: input.locationId,
+          reservedLines: stockLines.length,
+        },
+      );
+      return { id: fulfillment.id };
+    });
+  }
+
   async updateFulfillmentStatus(
     businessId: string,
     actorUserId: string,
@@ -762,6 +879,87 @@ export class InventoryService {
         fulfillmentOrderId,
         "Fulfillment order",
       );
+      if (before.status === input.status) return { id: fulfillmentOrderId };
+      if (before.status === "DISPATCHED" || before.status === "CANCELLED") {
+        throw new BusinessAccessError(
+          "CONFLICT",
+          "A dispatched or cancelled fulfillment order cannot change status.",
+        );
+      }
+      if (input.status === "CANCELLED" && before.locationId) {
+        const lines = await transaction.fulfillmentLine.findMany({
+          where: { businessId, fulfillmentOrderId },
+        });
+        for (const line of lines) {
+          const balance = await transaction.stockBalance.findFirst({
+            where: {
+              businessId,
+              locationId: before.locationId,
+              itemId: line.itemId,
+              variantId: line.variantId,
+            },
+          });
+          const reserved = toNumber(balance?.reservedQuantity ?? 0);
+          await this.applyBalanceChange(transaction, businessId, before.locationId, line.itemId, {
+            variantId: line.variantId,
+            reservedDelta: -Math.min(reserved, toNumber(line.quantity)),
+          });
+        }
+      }
+      if (input.status === "DISPATCHED") {
+        if (!before.locationId) {
+          throw new BusinessAccessError(
+            "CONFLICT",
+            "Dispatch needs a reserved Location so stock can be relieved.",
+          );
+        }
+        const lines = await transaction.fulfillmentLine.findMany({
+          where: { businessId, fulfillmentOrderId },
+          include: { item: true },
+        });
+        for (const line of lines) {
+          const quantity = toNumber(line.quantity);
+          const available = await this.getAvailableQuantity(
+            transaction,
+            businessId,
+            before.locationId,
+            line.itemId,
+            line.variantId,
+          );
+          const balance = await transaction.stockBalance.findFirst({
+            where: {
+              businessId,
+              locationId: before.locationId,
+              itemId: line.itemId,
+              variantId: line.variantId,
+            },
+          });
+          const reserved = toNumber(balance?.reservedQuantity ?? 0);
+          if (reserved + available + 0.0001 < quantity) {
+            throw new BusinessAccessError(
+              "CONFLICT",
+              `${line.item.name} does not have enough stock at the fulfillment Location.`,
+            );
+          }
+          await this.createMovement(transaction, businessId, actor, {
+            branchId: before.branchId,
+            locationId: before.locationId,
+            itemId: line.itemId,
+            variantId: line.variantId,
+            kind: "DISPATCH",
+            quantity: -quantity,
+            unitCost: null,
+            reason: `Fulfillment ${before.number} dispatched`,
+            referenceType: "FulfillmentOrder",
+            referenceId: fulfillmentOrderId,
+          });
+          await this.applyBalanceChange(transaction, businessId, before.locationId, line.itemId, {
+            variantId: line.variantId,
+            onHandDelta: -quantity,
+            reservedDelta: -Math.min(reserved, quantity),
+          });
+        }
+      }
       const updated = await transaction.fulfillmentOrder.update({
         where: { id: fulfillmentOrderId },
         data: {
@@ -806,7 +1004,7 @@ export class InventoryService {
       locationId: string;
       itemId: string;
       variantId: string | null;
-      kind: "OPENING" | "ADJUSTMENT" | "TRANSFER_OUT" | "TRANSFER_IN" | "RECEIPT";
+      kind: "OPENING" | "ADJUSTMENT" | "TRANSFER_OUT" | "TRANSFER_IN" | "RECEIPT" | "DISPATCH";
       quantity: number;
       unitCost: number | null;
       reason: string;
@@ -846,18 +1044,23 @@ export class InventoryService {
     businessId: string,
     locationId: string,
     itemId: string,
-    input: { variantId: string | null; onHandDelta: number },
+    input: { variantId: string | null; onHandDelta?: number; reservedDelta?: number },
   ): Promise<void> {
     const existing = await transaction.stockBalance.findFirst({
       where: { businessId, locationId, itemId, variantId: input.variantId },
     });
     if (existing) {
-      const onHand = toNumber(existing.onHandQuantity) + input.onHandDelta;
-      const available = onHand - toNumber(existing.reservedQuantity);
+      const onHand = toNumber(existing.onHandQuantity) + (input.onHandDelta ?? 0);
+      const reserved = toNumber(existing.reservedQuantity) + (input.reservedDelta ?? 0);
+      const available = onHand - reserved;
+      if (onHand < -0.0001 || reserved < -0.0001 || available < -0.0001) {
+        throw new BusinessAccessError("CONFLICT", "This stock change would make stock negative.");
+      }
       await transaction.stockBalance.update({
         where: { id: existing.id },
         data: {
           onHandQuantity: quantityToDb(onHand),
+          reservedQuantity: quantityToDb(reserved),
           availableQuantity: quantityToDb(available),
         },
       });
@@ -869,8 +1072,9 @@ export class InventoryService {
         locationId,
         itemId,
         variantId: input.variantId,
-        onHandQuantity: quantityToDb(input.onHandDelta),
-        availableQuantity: quantityToDb(input.onHandDelta),
+        onHandQuantity: quantityToDb(input.onHandDelta ?? 0),
+        reservedQuantity: quantityToDb(input.reservedDelta ?? 0),
+        availableQuantity: quantityToDb((input.onHandDelta ?? 0) - (input.reservedDelta ?? 0)),
       },
     });
   }
@@ -1234,6 +1438,7 @@ function mapFulfillment(order: {
   createdAt: Date;
   dispatchedAt: Date | null;
   branch: { name: string };
+  location: { name: string } | null;
   createdBy: { user: { displayName: string } };
   lines: Array<{ quantity: unknown }>;
 }): FulfillmentOrderRow {
@@ -1241,6 +1446,7 @@ function mapFulfillment(order: {
     id: order.id,
     number: order.number,
     branchName: order.branch.name,
+    locationName: order.location?.name ?? null,
     status: order.status,
     customerName: order.customerName,
     sourceType: order.sourceType,

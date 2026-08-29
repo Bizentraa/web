@@ -33,7 +33,7 @@ order records the pick, pack and dispatch lifecycle without pretending the stock
 |---|---|---|---|
 | CC-P3-001 Stock Ledger | Implemented for current scope | `StockMovement` stores item, optional variant, location, quantity, movement kind, status, reference, reason and posting user. The live smoke test verifies adjustment, transfer and receipt ledger rows. | Add serial/batch/expiry ledger dimensions in P5 where traceability becomes explicit. |
 | CC-P3-002 One Movement Rule | Implemented for current scope | Adjustment creates one movement; transfer creates one outbound and one inbound movement; receipt creates receipt movements only when goods are received. | Add stronger reversal/correction workflows for cancelled or corrected warehouse documents. |
-| CC-P3-003 Availability | Implemented for current scope | `StockBalance` exposes on-hand, reserved, incoming and calculated available quantities in the inventory overview. | Add reservations from sales orders and fulfillment allocation. |
+| CC-P3-003 Availability | Implemented for current scope | `StockBalance` exposes on-hand, reserved, incoming and calculated available quantities in the inventory overview. Sales order reservation checks available quantity, increases reserved quantity and reduces available quantity for the selected Location. | Add allocation refinements, backorder handling and reallocation between Locations. |
 | CC-P3-004 Receiving | Implemented for current scope | Purchase order approval does not affect stock. Goods receipt creates receipt lines, updates received quantity and increases stock. Over-receiving is refused. | Add barcode receiving, supplier returns and bill matching. |
 | CC-P3-005 Transfers | Implemented for current scope | Location-to-location transfer checks source availability, posts transfer-out and transfer-in movement rows, and updates both balances. | Add explicit in-transit receiving workflow for multi-step warehouse transfer. |
 | CC-P3-006 Counts | Implemented for current scope | Stock count sessions freeze expected quantities from current balances, accept counted quantities, calculate variances and post controlled stock adjustment movements with reason, user and audit evidence. | Add mobile scanner-led counting and approval thresholds for high-risk variances. |
@@ -42,7 +42,7 @@ order records the pick, pack and dispatch lifecycle without pretending the stock
 | CC-P3-009 Purchase Request | Implemented for current scope | Purchase requests can be created, submitted and approved/rejected with approver identity. | Add richer approval-return-to-task UX and multi-approver purchasing policies. |
 | CC-P3-010 Purchase Order | Implemented for current scope | Approved purchase requests can be converted to purchase orders by supplier, item, quantity, cost and expected date. | Add supplier comparison, landed cost and change-order workflow. |
 | CC-P3-011 Purchase Variance | Implemented for current scope | Purchase order overview shows ordered and received quantity by line and status changes to partial/received. | Add billed and returned quantity tracking with payables in P4. |
-| CC-P3-012 Picking/Packing | Implemented for current scope | Fulfillment orders can be created and moved through picking, packed and dispatched states. | Add sales-order reservations, route/delivery planning and scanner-led picking. |
+| CC-P3-012 Picking/Packing | Implemented for current scope | Fulfillment orders can be created manually or from sales order reservation, carry the source Location and move through picking, packed and dispatched states. Dispatch posts stock movements and releases reserved quantity. | Add route/delivery planning, scanner-led picking and partial shipment workflows. |
 
 ## User Story Status
 
@@ -64,6 +64,7 @@ POST   /api/v1/businesses/{businessId}/inventory/purchase-requests/{requestId}/d
 POST   /api/v1/businesses/{businessId}/inventory/purchase-orders
 POST   /api/v1/businesses/{businessId}/inventory/purchase-orders/{purchaseOrderId}/receipts
 POST   /api/v1/businesses/{businessId}/inventory/fulfillment-orders
+POST   /api/v1/businesses/{businessId}/inventory/sales-orders/{salesOrderId}/reserve
 PUT    /api/v1/businesses/{businessId}/inventory/fulfillment-orders/{fulfillmentOrderId}/status
 ```
 
@@ -75,7 +76,7 @@ The `/inventory` workspace follows the common operations workspace style from th
 - tabbed work areas for stock ledger, purchasing and fulfillment;
 - responsive tables that remain usable on smaller screens;
 - modal flows for stock adjustment, transfer, reorder settings, purchase request, purchase order,
-  receiving and fulfillment;
+  receiving, sales order reservation and fulfillment;
 - state handling for loading, empty data, errors and retry actions;
 - shared design-system components for cards, badges, tabs, tables, dialogs and buttons.
 
@@ -83,6 +84,7 @@ The `/inventory` workspace follows the common operations workspace style from th
 
 - `packages/database/prisma/schema.prisma`
 - `packages/database/prisma/migrations/20260826090655_p3_inventory_purchasing_fulfillment`
+- `packages/database/prisma/migrations/20260829124500_p3_sales_order_reservations`
 - `packages/contracts/src/index.ts`
 - `packages/api-client/src/index.ts`
 - `packages/domains/business-access/src/application/inventory.service.ts`
@@ -103,6 +105,8 @@ The `/inventory` workspace follows the common operations workspace style from th
   existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User
   Roles.
 - Domain, API and Back Office targeted type/build checks passed.
+- Reservation slice checks passed: contracts build, database build, business-access typecheck/build,
+  API client build, API typecheck/build and Back Office typecheck.
 - `scripts/smoke-common-core.mjs` completed 91 live API checks against local PostgreSQL/Redis/API,
   including P3 stock adjustment, reorder suggestion, transfer, purchase request approval, purchase
   order conversion, goods receipt, over-receive refusal, partial receiving, fulfillment status flow
@@ -112,7 +116,7 @@ The `/inventory` workspace follows the common operations workspace style from th
 ## Next P3 Slices
 
 1. Serial, batch, lot and expiry tracking, coordinated with the P5 traceability work.
-2. Reservation logic from sales orders and fulfillment allocation.
+2. Allocation refinements: partial reservations, backorders and reallocation between Locations.
 3. Multi-step in-transit transfer receiving for warehouse-to-store operations.
 4. Supplier returns, bill matching and billed/returned quantities once P4 payables starts.
 5. Scanner-led mobile receiving, counting, picking and transfer views.

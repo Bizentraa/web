@@ -25,13 +25,13 @@ A requirement is never marked Implemented only because its database table exists
 | P0 | Business setup, isolation, branches, locations, users, roles, approvals, feature access, audit, numbering | 10 | 0 | 0 | [`01_P0`](./01_P0_IMPLEMENTATION_STATUS.md) |
 | P1 | Items, categories, variants, units, barcodes, prices, promotions, tax, customers, suppliers, imports | 11 | 0 | 0 | [`04_P1`](./04_P1_IMPLEMENTATION_STATUS.md) |
 | P2 | POS sales, tenders, receipts, returns and exchanges | 12 | 0 | 0 | [`08_P2`](./08_P2_IMPLEMENTATION_STATUS.md) |
-| P3 | Inventory, purchasing and fulfillment | 11 | 0 | 1 | [`09_P3`](./09_P3_IMPLEMENTATION_STATUS.md) |
+| P3 | Inventory, purchasing and fulfillment | 12 | 0 | 0 | [`09_P3`](./09_P3_IMPLEMENTATION_STATUS.md) |
 | P4 | Finance, customer controls, loyalty and accounting events | 10 | 1 | 1 | [`10_P4`](./10_P4_IMPLEMENTATION_STATUS.md) |
 | P5 | Reusable business engines | 8 | 4 | 0 | [`11_P5`](./11_P5_IMPLEMENTATION_STATUS.md) |
 | P6 | Offline, devices and store reliability | 4 | 4 | 0 | [`12_P6`](./12_P6_IMPLEMENTATION_STATUS.md) |
 | P7 | Reporting, integrations and migration | 4 | 5 | 1 | [`13_P7`](./13_P7_IMPLEMENTATION_STATUS.md) |
 | P8 | Security, operations and production readiness | 3 | 6 | 1 | [`14_P8`](./14_P8_IMPLEMENTATION_STATUS.md) |
-| **Functional total** | 97 requirements | **73** | **20** | **4** | |
+| **Functional total** | 97 requirements | **74** | **20** | **3** | |
 | **User stories** | 18 stories | **15** | **3** | **0** | section 8 below |
 
 Every phase now has running code. P0 to P3 are complete for their current documented scope; P4 and P5 carry the working money and engine surfaces with named gaps; P6, P7
@@ -91,7 +91,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 |---|---|---|---|
 | `CC-P3-001` Stock Ledger | Implemented | `StockMovement` with item, variant, location, quantity, kind, status, reference, reason and posting user | Valuation layers |
 | `CC-P3-002` One Movement Rule | Implemented | Adjustment posts one movement; a transfer posts one out and one in; receipt posts receipt movements | - |
-| `CC-P3-003` Availability | Implemented | `StockBalance` exposes on-hand, reserved, incoming and available | Reservation from sales orders |
+| `CC-P3-003` Availability | Implemented | `StockBalance` exposes on-hand, reserved, incoming and available; sales order reservation increases reserved quantity and reduces available quantity for the selected Location | Allocation refinements and backorder handling |
 | `CC-P3-004` Receiving | Implemented | Approval alone does not move stock; goods receipt increases it | Landed cost |
 | `CC-P3-005` Transfers | Implemented | Source availability checked, both balances updated | In-transit states |
 | `CC-P3-006` Counts | Implemented | Frozen count sessions, counted quantities, variance calculation and controlled variance posting through stock adjustment movements | Mobile scanner-led counting and high-risk variance approval thresholds |
@@ -100,7 +100,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 | `CC-P3-009` Purchase Request | Implemented | Create, submit and approve/reject with approver identity | Return-to-taker flow |
 | `CC-P3-010` Purchase Order | Implemented | Approved requests convert to orders by supplier, item, quantity, cost and date | Supplier price history |
 | `CC-P3-011` Purchase Variance | Implemented | Ordered and received quantity by line, partial/received states | Billed and returned columns |
-| `CC-P3-012` Picking/Packing | Implemented | Fulfillment orders move through picking, packed and dispatched | Route and carrier integration |
+| `CC-P3-012` Picking/Packing | Implemented | Fulfillment orders move through picking, packed and dispatched; sales order reservation creates fulfillment work and dispatch posts stock movements | Route, carrier, scanner and partial shipment workflows |
 
 ## P4 Requirement Traceability
 
