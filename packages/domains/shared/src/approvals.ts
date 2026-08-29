@@ -56,6 +56,7 @@ export async function enforceApproval(
       businessId: check.businessId,
       actionCode: check.actionCode,
     },
+    include: { decisions: true },
   });
 
   if (!request) {
@@ -67,7 +68,10 @@ export async function enforceApproval(
       `The approval request is ${request.status.toLowerCase()}. Only an approved request can release this action.`,
     );
   }
-  if (request.decidedByMembershipId === check.membership.membershipId) {
+  const actorDecision = request.decisions.find(
+    (decision) => decision.decidedByMembershipId === check.membership.membershipId,
+  );
+  if (request.decidedByMembershipId === check.membership.membershipId || actorDecision) {
     throw new BusinessAccessError(
       "CONFLICT",
       "The approver must be a different user than the person performing the action.",

@@ -2895,6 +2895,13 @@ export interface ApprovalRequestRow {
   decidedBy: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  decisions: Array<{
+    id: string;
+    decision: ApprovalRequestStatus;
+    decidedBy: string;
+    decidedAt: string;
+    note: string | null;
+  }>;
   branchName: string | null;
   context: Record<string, unknown> | null;
 }

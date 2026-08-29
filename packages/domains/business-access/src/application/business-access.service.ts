@@ -925,6 +925,10 @@ export class BusinessAccessService {
             branch: true,
             requestedBy: { include: { user: { select: { displayName: true } } } },
             decidedBy: { include: { user: { select: { displayName: true } } } },
+            decisions: {
+              orderBy: { decidedAt: "asc" },
+              include: { decidedBy: { include: { user: { select: { displayName: true } } } } },
+            },
           },
         }),
       ]);
@@ -958,6 +962,13 @@ export class BusinessAccessService {
           decidedBy: request.decidedBy?.user.displayName ?? null,
           decidedAt: request.decidedAt?.toISOString() ?? null,
           decisionNote: request.decisionNote,
+          decisions: request.decisions.map((decision) => ({
+            id: decision.id,
+            decision: decision.decision,
+            decidedBy: decision.decidedBy.user.displayName,
+            decidedAt: decision.decidedAt.toISOString(),
+            note: decision.note,
+          })),
           branchName: request.branch?.name ?? null,
           context: asJsonObject(request.context),
         })),
@@ -1084,6 +1095,7 @@ export class BusinessAccessService {
       const actor = await loadMembershipContext(transaction, businessId, actorUserId);
       const request = await transaction.approvalRequest.findFirst({
         where: { id: requestId, businessId },
+        include: { policy: true, decisions: true },
       });
       if (!request) throw new BusinessAccessError("NOT_FOUND", "Approval request was not found.");
       if (request.status !== "PENDING") {
@@ -1100,11 +1112,57 @@ export class BusinessAccessService {
           "A different user must approve this request. Manager override never means sharing a login.",
         );
       }
+      if (
+        request.decisions.some((decision) => decision.decidedByMembershipId === actor.membershipId)
+      ) {
+        throw new BusinessAccessError(
+          "CONFLICT",
+          "This user has already recorded a decision for the approval request.",
+        );
+      }
+
+      const policy =
+        request.policy ??
+        (await transaction.approvalPolicy.findFirst({
+          where: { businessId, actionCode: request.actionCode, enabled: true },
+        }));
+      const eligibleApproverIds = await this.findEligibleApproverIds(transaction, {
+        businessId,
+        branchId: request.branchId,
+        actionCode: request.actionCode,
+        requestedByMembershipId: request.requestedByMembershipId,
+      });
+      if (!eligibleApproverIds.includes(actor.membershipId)) {
+        throw new BusinessAccessError(
+          "FORBIDDEN",
+          "This user is not an eligible approver for the request.",
+        );
+      }
+
+      await transaction.approvalDecision.create({
+        data: {
+          businessId,
+          approvalRequestId: requestId,
+          decidedByMembershipId: actor.membershipId,
+          decision: input.decision,
+          note: input.note ?? null,
+        },
+      });
+
+      const approvedDecisionCount =
+        input.decision === "APPROVED"
+          ? request.decisions.filter((decision) => decision.decision === "APPROVED").length + 1
+          : request.decisions.filter((decision) => decision.decision === "APPROVED").length;
+      const requiredApprovers = this.requiredApproverCount(policy, eligibleApproverIds.length);
+      const finalStatus =
+        input.decision === "REJECTED" || approvedDecisionCount >= requiredApprovers
+          ? input.decision
+          : "PENDING";
 
       const updated = await transaction.approvalRequest.update({
         where: { id: requestId },
         data: {
-          status: input.decision,
+          status: finalStatus,
           decidedByMembershipId: actor.membershipId,
           decidedAt: new Date(),
           decisionNote: input.note ?? null,
@@ -1118,8 +1176,13 @@ export class BusinessAccessService {
         action: input.decision === "APPROVED" ? "APPROVE" : "REJECT",
         entityType: "ApprovalRequest",
         entityId: requestId,
-        before: { status: request.status },
-        after: { status: updated.status, note: input.note ?? null },
+        before: { status: request.status, approvedDecisionCount: approvedDecisionCount - 1 },
+        after: {
+          status: updated.status,
+          note: input.note ?? null,
+          approvedDecisionCount,
+          requiredApprovers,
+        },
       });
 
       await publishEvent(transaction, {
@@ -1127,7 +1190,14 @@ export class BusinessAccessService {
         eventType: input.decision === "APPROVED" ? "ApprovalGranted" : "ApprovalRejected",
         aggregateType: "ApprovalRequest",
         aggregateId: requestId,
-        payload: { businessId, actionCode: request.actionCode, decidedBy: actor.membershipId },
+        payload: {
+          businessId,
+          actionCode: request.actionCode,
+          decidedBy: actor.membershipId,
+          status: updated.status,
+          approvedDecisionCount,
+          requiredApprovers,
+        },
       });
 
       return { id: requestId, status: updated.status };
@@ -1733,6 +1803,49 @@ export class BusinessAccessService {
         "A Business must keep at least one active Business Owner.",
       );
     }
+  }
+
+  private async findEligibleApproverIds(
+    transaction: DatabaseTransaction,
+    input: {
+      businessId: string;
+      branchId: string | null;
+      actionCode: string;
+      requestedByMembershipId: string;
+    },
+  ): Promise<string[]> {
+    const permissionCode = decisionPermissionForAction(input.actionCode);
+    const memberships = await transaction.businessMembership.findMany({
+      where: {
+        businessId: input.businessId,
+        status: "ACTIVE",
+        id: { not: input.requestedByMembershipId },
+        ...(input.branchId ? { branchAssignments: { some: { branchId: input.branchId } } } : {}),
+        roleAssignments: {
+          some: {
+            role: {
+              status: "ACTIVE",
+              permissions: { some: { permission: { code: permissionCode } } },
+            },
+          },
+        },
+      },
+      select: { id: true },
+      orderBy: { id: "asc" },
+    });
+    return memberships.map((membership) => membership.id);
+  }
+
+  private requiredApproverCount(
+    policy: {
+      strategy: "ANY_APPROVER" | "ALL_APPROVERS" | "MINIMUM_APPROVERS";
+      minimumApprovers: number;
+    } | null,
+    eligibleApproverCount: number,
+  ): number {
+    if (!policy || policy.strategy === "ANY_APPROVER") return 1;
+    if (policy.strategy === "ALL_APPROVERS") return Math.max(1, eligibleApproverCount);
+    return Math.max(1, Math.min(policy.minimumApprovers, eligibleApproverCount));
   }
 }
 

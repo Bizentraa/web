@@ -496,6 +496,7 @@ model Business {
   memberships          BusinessMembership[]
   roles                Role[]
   approvalPolicies     ApprovalPolicy[]
+  approvalDecisions    ApprovalDecision[]
   features             BusinessFeature[]
   auditEvents          AuditEvent[]
   documentSequences    DocumentSequence[]
@@ -1166,6 +1167,7 @@ model BusinessMembership {
   auditEvents          AuditEvent[]          @relation("AuditActor")
   approvalRequests     ApprovalRequest[]     @relation("ApprovalRequestedBy")
   approvalDecisions    ApprovalRequest[]     @relation("ApprovalDecidedBy")
+  approvalDecisionRows ApprovalDecision[]    @relation("ApprovalDecisionActor")
   openedShifts         PosShift[]            @relation("ShiftOpenedBy")
   closedShifts         PosShift[]            @relation("ShiftClosedBy")
   cashMovements        CashMovement[]        @relation("CashMovementCreatedBy")
@@ -1431,11 +1433,31 @@ model ApprovalRequest {
   requestedBy BusinessMembership  @relation("ApprovalRequestedBy", fields: [requestedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
   decidedBy   BusinessMembership? @relation("ApprovalDecidedBy", fields: [decidedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
   returns     SaleReturn[]
+  decisions   ApprovalDecision[]
 
   @@unique([id, businessId])
   @@index([businessId, status, requestedAt])
   @@index([businessId, actionCode, status])
   @@map("approval_requests")
+}
+
+/// CC-P0-007: each approval decision is retained so multi-approver strategies are auditable.
+model ApprovalDecision {
+  id                    String                @id @default(uuid()) @db.Uuid
+  businessId            String                @db.Uuid
+  approvalRequestId     String                @db.Uuid
+  decidedByMembershipId String                @db.Uuid
+  decision              ApprovalRequestStatus
+  note                  String?               @db.VarChar(500)
+  decidedAt             DateTime              @default(now()) @db.Timestamptz(3)
+
+  business        Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  approvalRequest ApprovalRequest    @relation(fields: [approvalRequestId, businessId], references: [id, businessId], onDelete: Cascade)
+  decidedBy       BusinessMembership @relation("ApprovalDecisionActor", fields: [decidedByMembershipId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, approvalRequestId, decidedByMembershipId])
+  @@index([businessId, approvalRequestId, decision])
+  @@map("approval_decisions")
 }
 
 /// CC-P2-001: a POS shift owns opening cash, cash movements and closing reconciliation.

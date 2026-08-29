@@ -95,8 +95,13 @@ export default function ControlsPage() {
       api.upsertApprovalPolicy(identity.businessId, {
         actionCode: policyDialog,
         name: readText(form, "name"),
-        strategy: "ANY_APPROVER",
-        minimumApprovers: 1,
+        strategy:
+          form.get("strategy") === "ALL_APPROVERS"
+            ? "ALL_APPROVERS"
+            : form.get("strategy") === "MINIMUM_APPROVERS"
+              ? "MINIMUM_APPROVERS"
+              : "ANY_APPROVER",
+        minimumApprovers: readOptionalNumber(form, "minimumApprovers") ?? 1,
         thresholdAmount: threshold ?? null,
         currencyCode: readText(form, "currencyCode") || null,
         enabled: form.get("enabled") !== null,
@@ -248,17 +253,29 @@ export default function ControlsPage() {
                       {
                         header: "Status",
                         render: (request) => (
-                          <Badge
-                            tone={
-                              request.status === "APPROVED"
-                                ? "success"
-                                : request.status === "PENDING"
-                                  ? "warning"
-                                  : "danger"
-                            }
-                          >
-                            {request.status}
-                          </Badge>
+                          <div className="ui-stack ui-stack--xs">
+                            <Badge
+                              tone={
+                                request.status === "APPROVED"
+                                  ? "success"
+                                  : request.status === "PENDING"
+                                    ? "warning"
+                                    : "danger"
+                              }
+                            >
+                              {request.status}
+                            </Badge>
+                            {request.decisions.length ? (
+                              <span className="ui-card-description">
+                                {
+                                  request.decisions.filter(
+                                    (decision) => decision.decision === "APPROVED",
+                                  ).length
+                                }{" "}
+                                approved
+                              </span>
+                            ) : null}
+                          </div>
                         ),
                       },
                       {
@@ -300,7 +317,16 @@ export default function ControlsPage() {
                               </Button>
                             </div>
                           ) : (
-                            <span className="ui-card-description">{request.decidedBy ?? "-"}</span>
+                            <span className="ui-card-description">
+                              {request.decisions.length
+                                ? request.decisions
+                                    .map(
+                                      (decision) =>
+                                        `${decision.decidedBy} ${decision.decision.toLowerCase()}`,
+                                    )
+                                    .join(", ")
+                                : (request.decidedBy ?? "-")}
+                            </span>
                           ),
                       },
                     ]}
@@ -524,6 +550,25 @@ export default function ControlsPage() {
             required
           />
           <FormGrid>
+            <SelectField
+              defaultValue={activePolicy?.strategy ?? "ANY_APPROVER"}
+              label="Approval strategy"
+              name="strategy"
+            >
+              <option value="ANY_APPROVER">Any approver</option>
+              <option value="MINIMUM_APPROVERS">Minimum approvers</option>
+              <option value="ALL_APPROVERS">All eligible approvers</option>
+            </SelectField>
+            <Field
+              hint="Used by the minimum-approvers strategy."
+              label="Minimum approvers"
+              name="minimumApprovers"
+              defaultValue={activePolicy?.minimumApprovers ?? 1}
+              inputMode="numeric"
+              min={1}
+              max={10}
+              type="number"
+            />
             <Field
               hint="Leave empty to require approval every time."
               label="Threshold amount"
