@@ -1290,6 +1290,22 @@ export const postBankTransactionSchema = z.object({
   occurredAt: z.iso.datetime().optional(),
 });
 
+export const postBankTransferSchema = z
+  .object({
+    branchId: z.uuid().optional(),
+    fromAccountId: z.uuid(),
+    toAccountId: z.uuid(),
+    amount: positiveQuantitySchema,
+    currencyCode: currencyCodeSchema,
+    reference: z.string().trim().max(120).optional(),
+    description: z.string().trim().min(2).max(240),
+    occurredAt: z.iso.datetime().optional(),
+  })
+  .refine((input) => input.fromAccountId !== input.toAccountId, {
+    message: "Transfer needs two different accounts.",
+    path: ["toAccountId"],
+  });
+
 export const adjustLoyaltySchema = z.object({
   customerId: z.uuid(),
   kind: loyaltyEntryKindSchema,
@@ -1684,6 +1700,7 @@ export type CreateExpenseCategoryInput = z.output<typeof createExpenseCategorySc
 export type CreateExpenseInput = z.output<typeof createExpenseSchema>;
 export type CreateBankAccountInput = z.output<typeof createBankAccountSchema>;
 export type PostBankTransactionInput = z.output<typeof postBankTransactionSchema>;
+export type PostBankTransferInput = z.output<typeof postBankTransferSchema>;
 export type AdjustLoyaltyInput = z.output<typeof adjustLoyaltySchema>;
 export type CreateWorkflowStatusInput = z.output<typeof createWorkflowStatusSchema>;
 export type CreateWorkflowTransitionInput = z.output<typeof createWorkflowTransitionSchema>;

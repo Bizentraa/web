@@ -93,9 +93,10 @@ import type {
   Paginated,
   PaySupplierBillInput,
   PosCatalogEntry,
-  PostStockCountInput,
+  PostBankTransferInput,
   PostBankTransactionInput,
   PostMaterialConsumptionInput,
+  PostStockCountInput,
   QueueOfflineOperationInput,
   PromotionRow,
   ProductionReadinessOverview,
@@ -496,6 +497,8 @@ export function createApiClient(baseUrl: string, identity?: ApiIdentity) {
       post<CatalogRecordCreated>(`/businesses/${businessId}/finance/bank-accounts`, input),
     postBankTransaction: (businessId: string, input: PostBankTransactionInput) =>
       post<CatalogRecordCreated>(`/businesses/${businessId}/finance/bank-transactions`, input),
+    postBankTransfer: (businessId: string, input: PostBankTransferInput) =>
+      post<CatalogRecordCreated>(`/businesses/${businessId}/finance/bank-transfers`, input),
     adjustLoyalty: (businessId: string, input: AdjustLoyaltyInput) =>
       post<CatalogRecordCreated>(`/businesses/${businessId}/finance/loyalty-adjustments`, input),
 

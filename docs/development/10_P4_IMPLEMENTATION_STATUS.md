@@ -35,7 +35,7 @@ customer point balance from going below zero.
 | CC-P4-004 Supplier Bill | Implemented for current scope | Supplier bills have document numbers, supplier, optional Branch/purchase order, lines and payable balance. | Add purchase order/goods receipt bill matching and variance workflows. |
 | CC-P4-005 Supplier Payment | Implemented for current scope | Supplier payments allocate to supplier bills and refuse over-payment allocation. | Add payment batch approval and bank reconciliation matching. |
 | CC-P4-006 Expenses | Implemented for current scope | Expense categories and posted expenses are stored with payment method, tax, supplier text and audit. | Add receipt attachment management and recurring expenses. |
-| CC-P4-007 Cash/Bank | Implemented for current scope | Cash/bank accounts and posted transactions maintain current balance. | Add transfers between two accounts and cash-up reconciliation screens. |
+| CC-P4-007 Cash/Bank | Implemented for current scope | Cash/bank accounts, posted transactions and account-to-account transfers maintain current balances with paired transfer rows. | Add cash-up reconciliation screens. |
 | CC-P4-008 Reconciliation | Started | Bank/cash records and accounting events exist as reconciliation inputs. | Add formal reconciliation session, statement import, matching and variance approval. |
 | CC-P4-009 Loyalty | Implemented for current scope | Loyalty earn/redeem/adjust/expire entries update customer points and prevent negative balances. | Add automated earn/redeem rules from POS sales and expiry jobs. |
 | CC-P4-010 Store Credit | Implemented for current scope from P2, visible in customer detail | P2 return/store-credit flow is smoke-tested and customer history shows store credit. | Add finance-facing store-credit ageing/liability reports. |
@@ -61,6 +61,7 @@ POST /api/v1/businesses/{businessId}/finance/expense-categories
 POST /api/v1/businesses/{businessId}/finance/expenses
 POST /api/v1/businesses/{businessId}/finance/bank-accounts
 POST /api/v1/businesses/{businessId}/finance/bank-transactions
+POST /api/v1/businesses/{businessId}/finance/bank-transfers
 POST /api/v1/businesses/{businessId}/finance/loyalty-adjustments
 ```
 
@@ -83,8 +84,8 @@ The `/finance` workspace follows the common UI/UX pattern:
 - KPI cards for receivables, payables, cash/bank and accounting queue;
 - tabs for receivables, payables, expenses, cash/bank, loyalty and accounting events;
 - dense responsive table layout with internal scroll panels;
-- quick-create forms for invoice, supplier bill, expense category, expense, cash/bank account and
-  loyalty adjustment;
+- quick-create forms for invoice, supplier bill, expense category, expense, cash/bank account,
+  account transfer and loyalty adjustment;
 - loading, permission, error and empty states through the shared `ResourceState` wrapper.
 
 ## Main Implementation Files

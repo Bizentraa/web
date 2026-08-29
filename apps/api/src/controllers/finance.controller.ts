@@ -9,6 +9,7 @@ import {
   createExpenseSchema,
   createSupplierBillSchema,
   paySupplierBillSchema,
+  postBankTransferSchema,
   postBankTransactionSchema,
 } from "@bizentra/contracts";
 import { FinanceService } from "@bizentra/domain-business-access";
@@ -136,6 +137,20 @@ export class FinanceController {
       businessId,
       identity.userId,
       postBankTransactionSchema.parse(body),
+    );
+  }
+
+  @Post("bank-transfers")
+  postBankTransfer(
+    @Param("businessId") businessId: string,
+    @Headers() headers: RequestHeaders,
+    @Body() body: unknown,
+  ) {
+    const identity = identityForBusiness(headers, businessId);
+    return this.finance.postBankTransfer(
+      businessId,
+      identity.userId,
+      postBankTransferSchema.parse(body),
     );
   }
 

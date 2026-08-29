@@ -67,6 +67,10 @@ export default function FinancePage() {
   const firstItem = data?.items.rows[0];
   const defaultCurrency = data?.foundation.business.defaultCurrency ?? "USD";
   const firstExpenseCategory = data?.finance.expenseCategories[0];
+  const firstBankAccount = data?.finance.bankAccounts[0];
+  const secondBankAccount = data?.finance.bankAccounts.find(
+    (account) => account.id !== firstBankAccount?.id,
+  );
   const expenseCategoryOptions = useMemo(() => data?.finance.expenseCategories ?? [], [data]);
 
   const run = async (success: string, work: () => Promise<unknown>) => {
@@ -346,6 +350,28 @@ export default function FinancePage() {
                             type: readText(form, "type", "CASH") as "CASH",
                             currencyCode: readText(form, "currencyCode", defaultCurrency),
                             openingBalance: readNumber(form, "openingBalance", 0),
+                          }),
+                        );
+                      }}
+                    />
+                    <QuickBankTransfer
+                      accounts={data.finance.bankAccounts}
+                      busy={busy}
+                      currency={defaultCurrency}
+                      fromAccountId={firstBankAccount?.id ?? ""}
+                      toAccountId={secondBankAccount?.id ?? ""}
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const form = new FormData(event.currentTarget);
+                        void run("Cash or bank transfer posted", () =>
+                          api!.postBankTransfer(identity!.businessId, {
+                            branchId: firstBranch?.id,
+                            fromAccountId: readText(form, "fromAccountId"),
+                            toAccountId: readText(form, "toAccountId"),
+                            amount: readNumber(form, "amount", 0),
+                            currencyCode: readText(form, "currencyCode", defaultCurrency),
+                            reference: readOptionalText(form, "reference"),
+                            description: readText(form, "description", "Account transfer"),
                           }),
                         );
                       }}
@@ -631,6 +657,57 @@ function QuickBankAccount({
   );
 }
 
+function QuickBankTransfer({
+  accounts,
+  busy,
+  currency,
+  fromAccountId,
+  onSubmit,
+  toAccountId,
+}: {
+  accounts: FinanceOverview["bankAccounts"];
+  busy: boolean;
+  currency: string;
+  fromAccountId: string;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  toAccountId: string;
+}) {
+  return (
+    <FormCard onSubmit={onSubmit}>
+      <CardHeader>
+        <div>
+          <Kicker>Transfer</Kicker>
+          <CardTitle>Move between accounts</CardTitle>
+          <CardDescription>Creates both sides of the cash or bank movement.</CardDescription>
+        </div>
+      </CardHeader>
+      <FormGrid>
+        <BankAccountSelect
+          accounts={accounts}
+          label="From account"
+          name="fromAccountId"
+          defaultValue={fromAccountId}
+        />
+        <BankAccountSelect
+          accounts={accounts}
+          label="To account"
+          name="toAccountId"
+          defaultValue={toAccountId}
+        />
+        <Field label="Amount" name="amount" defaultValue="100" inputMode="decimal" required />
+        <Field label="Currency" name="currencyCode" defaultValue={currency} required />
+        <Field label="Reference" name="reference" placeholder="Optional" />
+        <Field label="Description" name="description" defaultValue="Account transfer" required />
+      </FormGrid>
+      <FormFooter>
+        <Button disabled={busy || accounts.length < 2} type="submit">
+          Post transfer
+        </Button>
+      </FormFooter>
+    </FormCard>
+  );
+}
+
 function QuickLoyalty({
   busy,
   customerId,
@@ -670,5 +747,28 @@ function QuickLoyalty({
         </Button>
       </FormFooter>
     </FormCard>
+  );
+}
+
+function BankAccountSelect({
+  accounts,
+  defaultValue,
+  label,
+  name,
+}: {
+  accounts: FinanceOverview["bankAccounts"];
+  defaultValue: string;
+  label: string;
+  name: string;
+}) {
+  return (
+    <SelectField label={label} name={name} defaultValue={defaultValue} required>
+      <option value="">Choose account</option>
+      {accounts.map((account) => (
+        <option key={account.id} value={account.id}>
+          {account.code} · {account.name}
+        </option>
+      ))}
+    </SelectField>
   );
 }

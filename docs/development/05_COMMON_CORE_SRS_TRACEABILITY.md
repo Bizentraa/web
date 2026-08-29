@@ -113,7 +113,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 | `CC-P4-004` Supplier Bill | Implemented | Numbered bills with supplier, optional purchase order, lines and payable balance | Three-way match |
 | `CC-P4-005` Supplier Payment | Implemented | Allocation to bills with over-payment refused | Payment batches |
 | `CC-P4-006` Expenses | Implemented | Categories and posted expenses with payment method, tax and audit | Receipt attachments |
-| `CC-P4-007` Cash/Bank | Implemented | Accounts and posted transactions maintaining balance | Account-to-account transfers |
+| `CC-P4-007` Cash/Bank | Implemented | Accounts, posted transactions and paired account-to-account transfers maintaining balance | Cash-up reconciliation |
 | `CC-P4-008` Reconciliation | Started | Bank/cash records and accounting events exist as inputs | Reconciliation session, statement import, matching, variance |
 | `CC-P4-009` Loyalty | Implemented | Earn, redeem, adjust and expire entries; negative balances refused | Automated rules from sales |
 | `CC-P4-010` Store Credit | Implemented | P2 issue and redemption, visible in customer history | Expiry policy |

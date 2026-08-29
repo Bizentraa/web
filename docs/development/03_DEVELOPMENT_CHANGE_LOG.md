@@ -71,6 +71,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P4 finance foundation scope | `CC-P4-001` to `CC-P4-010`, `CC-P4-012`, `CC-US-010`, `CC-US-011` | `32e3a2c` | Added receivables, collections, payables, supplier payments, expenses, cash/bank accounts, bank transactions, loyalty balances, accounting events, P4 permissions/role sync, API/client contracts, Back Office `/finance` workspace and live smoke coverage. |
+| 2026-08-29 | Implemented for current cash/bank scope | `CC-P4-007`, `CC-US-010`, `CC-US-011` | This changeset | Added account-to-account cash/bank transfers that post paired transfer rows and update both balances in one transaction. |
 
 ### Common Core P5 Reusable Business Engines
 
@@ -310,6 +311,19 @@ Each change entry should include:
 | Verification | `pnpm check` passed; `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm db:migrate:deploy` applied migration `20260826200839_p4_finance_foundation`; `node scripts/smoke-common-core.mjs` passed 111 live API checks against `http://localhost:4010/api/v1`, including P4 permission catalogue/role checks, invoice/collection, supplier bill/payment, expense, bank account/transaction, loyalty and audit evidence. |
 | Commit | `32e3a2c feat: add common core P4 finance foundation` |
 | Remaining work | P4 still needs customer credit limits, ageing, statements, formal reconciliation sessions, purchase order/goods receipt/supplier bill matching, sales-cost-gross-margin reporting, accounting export/retry/failure integration and richer finance-safe reversal/void workflows with approval hooks. |
+
+### 2026-08-29 - P4 Cash and Bank Transfers
+
+| Field | Details |
+|---|---|
+| Feature / slice | Account-to-account cash and bank transfers |
+| Status | Implemented for current cash/bank scope |
+| SRS mapping | `CC-P4-007` Cash/Bank; `CC-US-010`; `CC-US-011` |
+| What changed | Added a first-class transfer payload, API client method, Finance API route and domain service operation. A transfer refuses same-account or currency-mismatch input, writes `TRANSFER_OUT` and `TRANSFER_IN` bank transaction rows in one Business-scoped transaction, updates both account balances, emits an accounting event and records audit/business-event evidence. Back Office Cash / bank now includes a transfer form that requires two accounts. |
+| Main files | `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/finance.service.ts`; `apps/api/src/controllers/finance.controller.ts`; `apps/backoffice/src/app/finance/page.tsx`; `docs/development/10_P4_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
+| Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
+| Commit | This changeset |
+| Remaining work | Cash-up reconciliation, statement import and reconciliation matching remain. |
 
 ### 2026-08-27 - Common Core P5 Reusable Business Engines
 

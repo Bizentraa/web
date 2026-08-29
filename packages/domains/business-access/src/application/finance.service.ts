@@ -16,6 +16,7 @@ import type {
   FinanceOverview,
   LoyaltyAccountRow,
   PaySupplierBillInput,
+  PostBankTransferInput,
   PostBankTransactionInput,
   SupplierBillRow,
   SupplierPaymentRow,
@@ -594,6 +595,106 @@ export class FinanceService {
         eventPayload: { bankTransactionId: bankTransaction.id, amount: input.amount, delta },
       });
       return { id: bankTransaction.id };
+    });
+  }
+
+  async postBankTransfer(
+    businessId: string,
+    actorUserId: string,
+    input: PostBankTransferInput,
+  ): Promise<CatalogRecordCreated> {
+    return this.write(businessId, actorUserId, "BANK_MANAGE", async (transaction, actor) => {
+      const [fromAccount, toAccount] = await Promise.all([
+        assertBankAccount(transaction, businessId, input.fromAccountId),
+        assertBankAccount(transaction, businessId, input.toAccountId),
+      ]);
+      if (fromAccount.id === toAccount.id) {
+        throw new BusinessAccessError("INVALID_INPUT", "Transfer needs two different accounts.");
+      }
+      if (
+        fromAccount.currencyCode !== input.currencyCode ||
+        toAccount.currencyCode !== input.currencyCode
+      ) {
+        throw new BusinessAccessError(
+          "INVALID_INPUT",
+          "Transfer currency must match both accounts.",
+        );
+      }
+      if (input.branchId) await assertBranch(transaction, businessId, input.branchId);
+      const reference =
+        input.reference ??
+        `transfer-${input.fromAccountId.slice(0, 8)}-${input.toAccountId.slice(0, 8)}`;
+
+      const outTransaction = await transaction.bankTransaction.create({
+        data: {
+          businessId,
+          branchId: input.branchId ?? null,
+          accountId: input.fromAccountId,
+          kind: "TRANSFER_OUT",
+          amount: moneyToDb(input.amount),
+          currencyCode: input.currencyCode,
+          reference,
+          description: input.description,
+          ...(input.occurredAt ? { occurredAt: new Date(input.occurredAt) } : {}),
+          createdByMembershipId: actor.membershipId,
+        },
+      });
+      const inTransaction = await transaction.bankTransaction.create({
+        data: {
+          businessId,
+          branchId: input.branchId ?? null,
+          accountId: input.toAccountId,
+          kind: "TRANSFER_IN",
+          amount: moneyToDb(input.amount),
+          currencyCode: input.currencyCode,
+          reference,
+          description: input.description,
+          ...(input.occurredAt ? { occurredAt: new Date(input.occurredAt) } : {}),
+          createdByMembershipId: actor.membershipId,
+        },
+      });
+
+      await transaction.bankAccount.update({
+        where: { id_businessId: { id: input.fromAccountId, businessId } },
+        data: { currentBalance: { decrement: moneyToDb(input.amount) } },
+      });
+      await transaction.bankAccount.update({
+        where: { id_businessId: { id: input.toAccountId, businessId } },
+        data: { currentBalance: { increment: moneyToDb(input.amount) } },
+      });
+      await accountingEvent(transaction, businessId, "BankTransfer", outTransaction.id, "POSTED", {
+        amount: input.amount,
+        currencyCode: input.currencyCode,
+        payload: {
+          fromAccountId: input.fromAccountId,
+          toAccountId: input.toAccountId,
+          inTransactionId: inTransaction.id,
+        },
+      });
+      await recordChange(transaction, {
+        businessId,
+        actorMembershipId: actor.membershipId,
+        action: "CREATE",
+        entityType: "BankTransfer",
+        entityId: outTransaction.id,
+        branchId: input.branchId ?? null,
+        after: {
+          amount: input.amount,
+          currencyCode: input.currencyCode,
+          fromAccountId: input.fromAccountId,
+          toAccountId: input.toAccountId,
+          outTransactionId: outTransaction.id,
+          inTransactionId: inTransaction.id,
+        },
+        eventType: "finance.bank_transfer.posted",
+        eventPayload: {
+          bankTransferId: outTransaction.id,
+          amount: input.amount,
+          outTransactionId: outTransaction.id,
+          inTransactionId: inTransaction.id,
+        },
+      });
+      return { id: outTransaction.id };
     });
   }
 
