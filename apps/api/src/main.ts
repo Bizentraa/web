@@ -9,6 +9,7 @@ import { createLogger } from "@bizentra/observability";
 
 import { AppModule } from "./app.module.js";
 import { ApiExceptionFilter } from "./errors/api-exception.filter.js";
+import { securityHeaderPolicy } from "./security/security-headers.js";
 
 const logger = createLogger("bizentra-api");
 
@@ -27,7 +28,7 @@ function resolveAllowedOrigins(): Array<RegExp | string> {
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
 
-  await app.register(helmet);
+  await app.register(helmet, securityHeaderPolicy);
   await app.register(cors, {
     origin: resolveAllowedOrigins(),
     credentials: true,

@@ -41,7 +41,7 @@ Each change entry should include:
 | 2026-08-26 | In progress | `CC-P0-001` to `CC-P0-010`, `CC-US-001`, `CC-US-002` | `cb07234` | Established the first Common Core P0 foundation with Business, Branch, Location, owner user, roles/permissions, feature access, numbering, audit, outbox, local infrastructure, and app startup. |
 | 2026-08-26 | Implemented for appearance slice | `CC-P0-001`, `CC-P0-002`, `CC-P0-006`, `CC-P0-008`, `CC-P0-009`, `CC-US-001`, `CC-US-018` | `be8cd40` | Added Business-selectable colour themes shared by Back Office and POS, saved in PostgreSQL and cached per browser origin. |
 | 2026-08-26 | Implemented for current P0 management scope | `CC-P0-001` to `CC-P0-010`, `CC-US-001`, `CC-US-002`, `CC-US-018` | `1c8bbce` | Adapted the P0 management layer from `work/bizentra-p0-p1-p2.tgz`: Business/Branch/Location management, user invitation, role permissions, approvals, feature packs, audit search and document-number settings with Back Office screens and API smoke coverage. |
-| 2026-08-29 | Implemented | `CC-P0-007`, `CC-US-002`, `CC-US-018` | This changeset | Added multi-approver approval strategies with auditable per-approver decisions and Back Office rule controls. |
+| 2026-08-29 | Implemented | `CC-P0-007`, `CC-US-002`, `CC-US-018` | `e29dc29 feat: add multi-approver approval strategies` | Added multi-approver approval strategies with auditable per-approver decisions and Back Office rule controls. |
 
 ### Common Core P1 Master Data
 
@@ -64,14 +64,14 @@ Each change entry should include:
 |---|---|---|---|---|
 | 2026-08-26 | Implemented for current P3 operations scope | `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `b77d0e0` | Added the P3 inventory, purchasing and fulfillment layer: stock balances, stock movements, reorder settings/suggestions, purchase requests, purchase orders, goods receipts, fulfillment orders, API/client contracts, Back Office `/inventory` workspace and live smoke coverage. |
 | 2026-08-26 | Implemented for P3 access sync | `CC-P0-006`, `CC-P3-001` to `CC-P3-012`, `CC-US-007`, `CC-US-008`, `CC-US-009` | `7107343` | Synced P3 permissions into the permission catalogue and existing Business Owner, Business Administrator, Branch Manager, Inventory User and Purchasing User Roles so existing owners can open inventory screens after phase delivery. |
-| 2026-08-29 | Implemented for current stock-count scope | `CC-P3-006` | This changeset | Added stock count sessions, frozen expected quantities, counted quantities, variance posting through stock movements, API/client methods and Back Office count controls. |
+| 2026-08-29 | Implemented for current stock-count scope | `CC-P3-006` | `2311a55 feat: add stock count variance posting` | Added stock count sessions, frozen expected quantities, counted quantities, variance posting through stock movements, API/client methods and Back Office count controls. |
 
 ### Common Core P4 Finance, Customer Controls and Management
 
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P4 finance foundation scope | `CC-P4-001` to `CC-P4-010`, `CC-P4-012`, `CC-US-010`, `CC-US-011` | `32e3a2c` | Added receivables, collections, payables, supplier payments, expenses, cash/bank accounts, bank transactions, loyalty balances, accounting events, P4 permissions/role sync, API/client contracts, Back Office `/finance` workspace and live smoke coverage. |
-| 2026-08-29 | Implemented for current cash/bank scope | `CC-P4-007`, `CC-US-010`, `CC-US-011` | This changeset | Added account-to-account cash/bank transfers that post paired transfer rows and update both balances in one transaction. |
+| 2026-08-29 | Implemented for current cash/bank scope | `CC-P4-007`, `CC-US-010`, `CC-US-011` | `f42b891 feat: add cash bank transfers` | Added account-to-account cash/bank transfers that post paired transfer rows and update both balances in one transaction. |
 
 ### Common Core P5 Reusable Business Engines
 
@@ -96,6 +96,7 @@ Each change entry should include:
 | Date | Status | SRS mapping | Commit | Summary |
 |---|---|---|---|---|
 | 2026-08-27 | Implemented for current P8 production-readiness evidence foundation scope | `CC-P8-001` to `CC-P8-010`, `CC-US-018` | `a7232fa feat: add common core P7 P8 reporting and readiness` | Added security event, backup run, readiness check, privacy request and release-readiness evidence records, P8 permissions/role sync, API/client contracts, Back Office `/production-readiness` workspace and smoke coverage. |
+| 2026-08-29 | Implemented for current API security-header scope | `CC-P8-001` | This changeset | Added an explicit API Helmet policy for CSP, HSTS, frame denial, content sniffing protection, referrer policy and cross-origin protections, with unit-test coverage. |
 
 ### Common UI/UX System
 
@@ -140,7 +141,7 @@ Each change entry should include:
 | What changed | Added an approval-decision ledger table; backfilled existing decided approval requests into the ledger during migration; updated approval decisions so one approver still completes `ANY_APPROVER`, configured distinct approver counts complete `MINIMUM_APPROVERS`, and every currently eligible active approver completes `ALL_APPROVERS`; kept rejection as an immediate final decision; prevented the requester and any approving user from posting the protected action; exposed decision history in the approval overview; added Back Office controls for strategy and minimum approver count. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829100000_p0_multi_approver_decisions/migration.sql`; `packages/domains/shared/src/approvals.ts`; `packages/domains/business-access/src/application/business-access.service.ts`; `packages/contracts/src/index.ts`; `apps/backoffice/src/app/controls/page.tsx`; `docs/01_COMMON_CORE_SRS.md`; `docs/development/01_P0_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database typecheck` passed; `pnpm --filter @bizentra/domain-shared build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed; `pnpm --filter @bizentra/api build` passed. |
-| Commit | This changeset |
+| Commit | `e29dc29 feat: add multi-approver approval strategies` |
 | Remaining work | Return-to-task UX polish after partial approvals, plus live smoke coverage for the new multi-approver cases. |
 
 ### 2026-08-26 - Business-Selectable Colour Themes
@@ -283,7 +284,7 @@ Each change entry should include:
 | What changed | Added stock count session and line records; opening a count freezes current expected quantities at one Location; posting a count requires counted quantities and a variance reason; non-zero variances post stock adjustment movements and update stock balances through the existing ledger path; added API contracts, API client methods, controller routes and a Back Office Counts tab with open/post flows. |
 | Main files | `packages/database/prisma/schema.prisma`; `packages/database/prisma/migrations/20260829110000_p3_stock_counts/migration.sql`; `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/inventory.service.ts`; `apps/api/src/controllers/inventory.controller.ts`; `apps/backoffice/src/app/inventory/page.tsx`; `docs/development/09_P3_IMPLEMENTATION_STATUS.md`; `docs/01_COMMON_CORE_SRS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/database typecheck` passed; `pnpm --filter @bizentra/database build` passed; `pnpm --filter @bizentra/domain-shared build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
-| Commit | This changeset |
+| Commit | `2311a55 feat: add stock count variance posting` |
 | Remaining work | Scanner-led mobile counting and approval thresholds for high-risk count variances. |
 
 ### 2026-08-26 - P3 Role and Permission Synchronization
@@ -322,7 +323,7 @@ Each change entry should include:
 | What changed | Added a first-class transfer payload, API client method, Finance API route and domain service operation. A transfer refuses same-account or currency-mismatch input, writes `TRANSFER_OUT` and `TRANSFER_IN` bank transaction rows in one Business-scoped transaction, updates both account balances, emits an accounting event and records audit/business-event evidence. Back Office Cash / bank now includes a transfer form that requires two accounts. |
 | Main files | `packages/contracts/src/index.ts`; `packages/api-client/src/index.ts`; `packages/domains/business-access/src/application/finance.service.ts`; `apps/api/src/controllers/finance.controller.ts`; `apps/backoffice/src/app/finance/page.tsx`; `docs/development/10_P4_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md` |
 | Verification | `pnpm --filter @bizentra/contracts build` passed; `pnpm --filter @bizentra/domain-business-access typecheck` passed; `pnpm --filter @bizentra/domain-business-access build` passed; `pnpm --filter @bizentra/api-client build` passed; `pnpm --filter @bizentra/api build` passed; `pnpm --filter @bizentra/backoffice typecheck` passed. |
-| Commit | This changeset |
+| Commit | `f42b891 feat: add cash bank transfers` |
 | Remaining work | Cash-up reconciliation, statement import and reconciliation matching remain. |
 
 ### 2026-08-27 - Common Core P5 Reusable Business Engines
@@ -376,6 +377,19 @@ Each change entry should include:
 | Verification | Prisma schema formatted and generated; database build passed; migration `20260827100101_p7_p8_reporting_readiness` applied with deploy mode; focused contracts, domain-business-access, API client, API and Back Office checks passed. |
 | Commit | `a7232fa feat: add common core P7 P8 reporting and readiness` |
 | Remaining work | P8 still needs production OIDC/session/MFA enforcement, infrastructure backup scheduler and restore automation, logs/metrics/traces dashboards, load tests and POS response targets, customer-data export/delete execution and retention enforcement, deployment pipeline gates, release approvals, rollback automation and database-level immutable audit tests. |
+
+### 2026-08-29 - API Security Header Policy
+
+| Field | Details |
+|---|---|
+| Feature / slice | Common Core P8 API security-header policy |
+| Status | Implemented for current API security-header scope |
+| SRS mapping | `CC-P8-001` Security |
+| What changed | Replaced implicit default header protection with an explicit Fastify Helmet policy at API startup. The policy enforces CSP defaults with frame-ancestor denial, HSTS, denied framing, content-type sniffing protection, no-referrer policy, disabled DNS prefetching, cross-origin opener/resource protections and disabled cross-domain policy files. Added a focused unit test so the policy does not regress silently. |
+| Main files | `apps/api/src/main.ts`; `apps/api/src/security/security-headers.ts`; `apps/api/src/security/security-headers.test.ts`; `docs/development/14_P8_IMPLEMENTATION_STATUS.md`; `docs/development/05_COMMON_CORE_SRS_TRACEABILITY.md`; `docs/development/03_DEVELOPMENT_CHANGE_LOG.md` |
+| Verification | `pnpm --filter @bizentra/api test` passed; `pnpm --filter @bizentra/api typecheck` passed. |
+| Commit | This changeset |
+| Remaining work | Secret-vault integration, automated dependency/security scanning and production OIDC/session/MFA controls remain. |
 
 ### 2026-08-27 - Back Office Sidebar on Tailwind and shadcn/ui
 
@@ -599,7 +613,7 @@ This section lists remaining work that must be considered before a phase or UI/U
 
 | Area | Remaining work |
 |---|---|
-| Security/privacy | Implemented for current scope: security event records and privacy request lifecycle records. Remaining: encrypted transport/security headers, secret-vault integration, production OIDC/session/MFA controls, customer-data export/delete execution and retention enforcement. |
+| Security/privacy | Implemented for current scope: security event records, explicit API transport/security headers and privacy request lifecycle records. Remaining: secret-vault integration, production OIDC/session/MFA controls, customer-data export/delete execution and retention enforcement. |
 | Audit integrity | Implemented for current scope: P8 overview includes audit count and security/readiness evidence. Remaining: broader immutable audit protection and automated database-level immutability tests. |
 | Backup/DR | Implemented for current scope: backup run evidence with RPO/RTO and restore-tested flag. Remaining: scheduler integration, restore-test automation and failure alerts. |
 | Observability/performance | Implemented for current scope: readiness checks can record observability, performance and scalability targets/measurements. Remaining: logs/metrics/traces dashboards, load tests and POS response-time thresholds. |

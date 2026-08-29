@@ -28,7 +28,7 @@ unless tests, migrations, backup/restore, rollback and operational checks have v
 
 | Requirement | Status | Current evidence | Remaining P8 work |
 |---|---|---|---|
-| CC-P8-001 Security | Started | Security event records capture severity, subject, details and metadata for sensitive activity. | Add enforced transport/security headers, secret-vault integration and automated security scans. |
+| CC-P8-001 Security | Started | Security event records capture severity, subject, details and metadata for sensitive activity; API startup applies an explicit Helmet policy for CSP, HSTS, frame denial, content sniffing protection, referrer policy and cross-origin protections. | Add secret-vault integration and automated security scans. |
 | CC-P8-002 Authentication | Not started | - | Add production OIDC/session/MFA policy integration and privileged-user MFA enforcement. |
 | CC-P8-003 Audit Integrity | Started | P0 audit records exist; P8 overview counts audit records and security events. | Add database-level immutable audit protection in migration tests and broader critical-action audit assertions. |
 | CC-P8-004 Backup | Implemented for current scope | Backup run records store scope, status, storage reference, size and failure reason. | Add scheduler integration and automatic failure alerts. |
@@ -89,6 +89,7 @@ The `/production-readiness` workspace follows the common UI/UX pattern:
 - `packages/domains/business-access/src/domain/permissions.ts`
 - `packages/domains/business-access/src/application/access-sync.ts`
 - `apps/api/src/controllers/production-readiness.controller.ts`
+- `apps/api/src/security/security-headers.ts`
 - `apps/api/src/app.module.ts`
 - `apps/api/src/composition/providers.ts`
 - `apps/backoffice/src/app/production-readiness/page.tsx`
@@ -107,13 +108,16 @@ The `/production-readiness` workspace follows the common UI/UX pattern:
 - `pnpm --filter @bizentra/api-client build` passed.
 - `pnpm --filter @bizentra/api build` passed.
 - `pnpm --filter @bizentra/backoffice typecheck` passed.
+- `pnpm --filter @bizentra/api test` passed for the explicit API security-header policy.
+- `pnpm --filter @bizentra/api typecheck` passed after wiring the policy into startup.
 
 ## Next P8 Slices
 
 1. Production OIDC/session/MFA integration and privileged-user MFA controls.
-2. Infrastructure backup scheduler integration and restore-test automation.
-3. Logs, metrics, traces and alert dashboards.
-4. Automated load tests and POS response-time thresholds.
-5. Data export/delete execution and retention-policy enforcement.
-6. Deployment pipeline gate, release approvals and rollback automation.
-7. Database-level audit immutability tests for critical financial/stock actions.
+2. Secret-vault integration and automated security scans.
+3. Infrastructure backup scheduler integration and restore-test automation.
+4. Logs, metrics, traces and alert dashboards.
+5. Automated load tests and POS response-time thresholds.
+6. Data export/delete execution and retention-policy enforcement.
+7. Deployment pipeline gate, release approvals and rollback automation.
+8. Database-level audit immutability tests for critical financial/stock actions.

@@ -169,7 +169,7 @@ and P8 have their records, endpoints and contracts but not yet the operator-faci
 
 | Requirement | Status | Developed evidence | Pending work |
 |---|---|---|---|
-| `CC-P8-001` Security | Started | Security events capture severity, subject, details and metadata | Transport headers, secret vault, dependency scanning |
+| `CC-P8-001` Security | Started | Security events capture severity, subject, details and metadata; API responses use an explicit Helmet security-header policy with CSP, HSTS, frame denial, content sniffing protection, referrer policy and cross-origin protections | Secret vault and dependency scanning |
 | `CC-P8-002` Authentication | Not started | - | Production OIDC, sessions, password policy, MFA for privileged users |
 | `CC-P8-003` Audit Integrity | Started | P0 append-only audit records; P8 counts audit and security events | Database-level immutability proven by migration tests |
 | `CC-P8-004` Backup | Implemented | Backup runs with scope, status, storage reference, size and failure reason | Scheduler and failure alerting |
@@ -200,6 +200,7 @@ that do not:
 4. Quotations and sales orders (`CC-P2-012`) if the first vertical needs non-instant sales.
 5. Margin reporting (`CC-P4-011`), which needs an inventory valuation policy decided first.
 6. Webhook signing (`CC-P7-007`) before any external system is allowed to subscribe.
+7. Secret-vault integration and automated dependency/security scanning for P8.
 
 ## Business-Type SRS Traceability
 
